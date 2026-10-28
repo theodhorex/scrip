@@ -1,0 +1,60 @@
+[
+  {
+    "network": "testnet",
+    "startedAt": "2026-10-28T19:15:50.748Z",
+    "params": {
+      "N": 30,
+      "PACE_MS": 80,
+      "amount": "100000",
+      "budget": "1000000",
+      "funded": "2000000"
+    },
+    "cases": [
+      {
+        "contract": "naive",
+        "broadcast": {
+          "n": 30,
+          "accepted": 30,
+          "refusedByRpc": 0,
+          "burstMs": 10073
+        },
+        "budget": "1000000",
+        "merchantReceived": "1400000",
+        "exceededBudget": true,
+        "overBudgetBy": "400000",
+        "paymentsPaid": "14",
+        "spent": "1400000",
+        "reserved": "0",
+        "openRequests": 0
+      },
+      {
+        "contract": "amanat",
+        "broadcast": {
+          "n": 30,
+          "accepted": 30,
+          "refusedByRpc": 0,
+          "burstMs": 9784
+        },
+        "budget": "1000000",
+        "merchantReceived": "1000000",
+        "exceededBudget": false,
+        "overBudgetBy": "0",
+        "paymentsPaid": "10",
+        "spent": "1000000",
+        "reserved": "0",
+        "openRequests": 0
+      }
+    ],
+    "before": {
+      "funderNear": "6.755195865759984899999893",
+      "funderUsdc": "6000000"
+    },
+    "ok": true,
+    "after": {
+      "funderNear": "6.675580769356323599999863",
+      "funderUsdc": "6000000"
+    },
+    "cleanup": "clean",
+    "finishedAt": "2026-10-28T19:17:54.913Z"
+  }
+]

@@ -1,0 +1,114 @@
+{
+  "network": "testnet",
+  "startedAt": "2026-10-28T20:10:42.991Z",
+  "note": "Scripted agent stand-in (not a real LLM): shows contract rules, not model robustness.",
+  "agents": {
+    "naive": {
+      "before": "1000000",
+      "invoices": [
+        {
+          "mode": "honest",
+          "payTo": "dmm42992.envtest-theo-1747.testnet",
+          "amount": "200000",
+          "obeyedInjection": false,
+          "paid": true,
+          "txHash": "EcfKGLKMoLJgumuh9iNTTenjm8m4GYChC1zwWFTi14vE",
+          "rejectionCode": null,
+          "delivered": true
+        },
+        {
+          "mode": "injected",
+          "payTo": "dmx42992.envtest-theo-1747.testnet",
+          "amount": "800000",
+          "obeyedInjection": true,
+          "paid": true,
+          "txHash": "7FmibFsaMTCzaTDgK2jLviqTuNtKq3shxNomMn1oa4Lv",
+          "rejectionCode": null,
+          "delivered": true
+        },
+        {
+          "mode": "overcharge",
+          "payTo": "dmm42992.envtest-theo-1747.testnet",
+          "amount": "600000",
+          "obeyedInjection": false,
+          "paid": false,
+          "txHash": null,
+          "rejectionCode": "TRANSFER_FAILED",
+          "delivered": false
+        }
+      ],
+      "after": "0",
+      "attackerGained": "800000"
+    },
+    "amanat": {
+      "before": "1000000",
+      "invoices": [
+        {
+          "mode": "honest",
+          "payTo": "dmm42992.envtest-theo-1747.testnet",
+          "amount": "200000",
+          "obeyedInjection": false,
+          "paid": true,
+          "txHash": "9UpU5SNwVwasrD2thdMtyoh9vdTkBcgjWLKMM7xV3k78",
+          "rejectionCode": null,
+          "delivered": true
+        },
+        {
+          "mode": "injected",
+          "payTo": "dmx42992.envtest-theo-1747.testnet",
+          "amount": "800000",
+          "obeyedInjection": true,
+          "paid": false,
+          "txHash": "4dAYztmoCoGoCVuS38gaJPM2sskVfpeW5YH6r2mFPHL5",
+          "rejectionCode": "RECIPIENT_NOT_ALLOWED",
+          "delivered": false
+        },
+        {
+          "mode": "overcharge",
+          "payTo": "dmm42992.envtest-theo-1747.testnet",
+          "amount": "600000",
+          "obeyedInjection": false,
+          "paid": false,
+          "txHash": "2y4YMUGcxcuqoP1aBw1mFgKtyyLoCR2bv38exo1EAQy9",
+          "rejectionCode": "OVER_PER_PAYMENT_CAP",
+          "delivered": false
+        }
+      ],
+      "after": "800000",
+      "attackerGained": "0"
+    }
+  },
+  "txs": {
+    "deploy": "Ap3xT6w2RimLu1UkcdsjeBTKpDXgX9Pxr6SmnbreTEWY",
+    "init": "BqX68QF2vy6bU4kgoNp9rLW5suMQFGaWZEWqsnKwde6F",
+    "createMandate": "8LdGAcrnFs3kyjW7Eqhyj34gw4ebdyUcBaqgaaqcA5tG",
+    "fundNaive": "6GURgVrsiUYeWLbuo8FpuVE6BNTYfrUexcVCHJPTsfgb",
+    "fundMandate": "Ap31U5FqjqB9HFjCM2te971GMQJuP7uziuUFxHcAHX2C",
+    "revoke": "6wEuGdEUreWkhjXorYD6LSrVsPvCnC7NgtSEUwpLUWDL",
+    "withdraw": "GFAdLY14WJ4iypuNT5cNgH5mpqNUBdWsYDRSER6raT1S"
+  },
+  "before": {
+    "funderNear": "6.602377000043525599999854",
+    "funderUsdc": "6000000",
+    "relayerNear": "5.975180151851671399999951"
+  },
+  "mandateFinal": {
+    "spent": "200000",
+    "reserved": "0",
+    "deposited": "1000000"
+  },
+  "facilitatorLog": [
+    "facilitator listening on :8792 (testnet, rpc rpc.testnet.fastnear.com)",
+    "{\"t\":\"2026-10-28T20:11:55.524Z\",\"code\":\"OK\",\"agent\":\"dma42992.envtest-theo-1747.testnet\",\"tx\":\"9UpU5SNwVwasrD2thdMtyoh9vdTkBcgjWLKMM7xV3k78\"}",
+    "{\"t\":\"2026-10-28T20:12:08.007Z\",\"code\":\"OK\",\"agent\":\"dma42992.envtest-theo-1747.testnet\",\"tx\":\"4dAYztmoCoGoCVuS38gaJPM2sskVfpeW5YH6r2mFPHL5\"}",
+    "{\"t\":\"2026-10-28T20:12:19.994Z\",\"code\":\"OK\",\"agent\":\"dma42992.envtest-theo-1747.testnet\",\"tx\":\"2y4YMUGcxcuqoP1aBw1mFgKtyyLoCR2bv38exo1EAQy9\"}"
+  ],
+  "ok": true,
+  "after": {
+    "funderNear": "6.546448359586906899999846",
+    "funderUsdc": "6000000",
+    "relayerNear": "5.973822185182381499999951"
+  },
+  "leftoverAccounts": [],
+  "finishedAt": "2026-10-28T20:13:03.593Z"
+}
