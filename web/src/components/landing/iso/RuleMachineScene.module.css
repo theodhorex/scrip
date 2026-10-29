@@ -1,0 +1,128 @@
+.control {
+  cursor: pointer;
+  outline: none;
+}
+
+.control .focusRing {
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+
+.control:focus-visible .focusRing {
+  opacity: 1;
+}
+
+.control:hover .hoverLift {
+  opacity: 0.92;
+}
+
+.packet {
+  transition:
+    transform 260ms cubic-bezier(0.22, 0.85, 0.32, 1),
+    opacity 180ms ease;
+  will-change: transform, opacity;
+}
+
+.packetInstant {
+  transition: none;
+}
+
+.leverArm {
+  transition: transform 200ms cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.leverInstant {
+  transition: none;
+}
+
+.barrierArm {
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.barrierInstant {
+  transition: none;
+}
+
+.dialNeedle {
+  transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.lampGlow {
+  transition: opacity 200ms ease, transform 200ms ease;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.beltActive {
+  animation: beltPulse 520ms linear infinite;
+}
+
+.spark {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: sparkBurst 360ms ease-out infinite;
+}
+
+.targetBeacon {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: beaconBreath 2200ms ease-in-out infinite;
+}
+
+.resetCap {
+  transition: transform 120ms ease;
+}
+
+.control:active .resetCap {
+  transform: translateY(2px);
+}
+
+@keyframes beltPulse {
+  0%,
+  100% {
+    opacity: 0.48;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes sparkBurst {
+  0% {
+    transform: scale(0.62);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.42);
+    opacity: 0;
+  }
+}
+
+@keyframes beaconBreath {
+  0%,
+  100% {
+    opacity: 0.85;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.42;
+    transform: scale(0.95);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .packet,
+  .leverArm,
+  .barrierArm,
+  .dialNeedle,
+  .lampGlow,
+  .resetCap {
+    transition: none;
+  }
+
+  .beltActive,
+  .spark,
+  .targetBeacon {
+    animation: none;
+  }
+}

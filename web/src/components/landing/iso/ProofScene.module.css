@@ -1,0 +1,60 @@
+/* Isometric Archive Cabinet & Evidence Rack transitions (GPU transform & opacity only) */
+
+.drawerSlide {
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.drawerStill {
+  transition: none;
+}
+
+.staggerHidden {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.staggerShown {
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.staggerInstant {
+  opacity: 1;
+  transform: none;
+  transition: none;
+}
+
+.interactiveControl {
+  cursor: pointer;
+  outline: none;
+}
+
+.focusRing {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease;
+}
+
+.interactiveControl:focus-visible .focusRing {
+  opacity: 1;
+}
+
+.lampGlow {
+  filter: drop-shadow(0 0 6px currentColor);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawerSlide,
+  .staggerShown,
+  .focusRing {
+    transition: none !important;
+  }
+
+  .staggerHidden {
+    opacity: 1;
+    transform: none;
+  }
+}
