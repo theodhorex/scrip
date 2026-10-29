@@ -1,0 +1,63 @@
+.code {
+  margin: 3.5rem auto 0;
+  max-width: 52rem;
+  text-align: left;
+  background: var(--bp-surface);
+  border: 1px solid var(--bp-line-strong);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.75rem 0.5rem 1rem;
+  border-bottom: 1px solid var(--bp-line);
+  font: 12px var(--font-geist-mono), monospace;
+  color: var(--bp-muted);
+}
+.copy {
+  font: 12px var(--font-geist-mono), monospace;
+  color: var(--bp-ink);
+  background: var(--bp-surface-raised);
+  border: 1px solid var(--bp-line-strong);
+  border-radius: 4px;
+  padding: 0.25rem 0.7rem;
+  cursor: pointer;
+  transition: border-color var(--bp-d-fast, 150ms) ease;
+}
+.copy:hover { border-color: var(--bp-pass); }
+.copy:focus-visible, .tx:focus-visible { outline: 2px solid var(--bp-pass); outline-offset: 2px; }
+.pre {
+  margin: 0;
+  padding: 1rem;
+  overflow-x: auto;
+  font: 12px/1.7 var(--font-geist-mono), monospace;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.entry { display: flex; flex-direction: column; }
+.call { color: var(--bp-ink); font: inherit; white-space: pre; }
+.ok { color: var(--bp-pass); padding-left: 1rem; }
+.no { color: var(--bp-reject); padding-left: 1rem; font-weight: 600; }
+.tx { color: var(--bp-muted); padding-left: 1rem; text-decoration: underline; text-underline-offset: 3px; width: fit-content; }
+.tx:hover { color: var(--bp-ink); }
+.sr {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip-path: inset(50%); white-space: nowrap;
+}
+
+.closing { position: relative; overflow: hidden; text-align: center; }
+.title { text-wrap: balance; }
+.sub { margin: 1.25rem auto 0; max-width: 34rem; }
+.actions { margin-top: 2.5rem; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+
+.footer { border-top: 1px solid var(--bp-line); background: var(--bp-surface); padding-block: 2.25rem; }
+.fRow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem 1.5rem; font: 12px var(--font-geist-mono), monospace; color: var(--bp-muted); }
+.fName { font-family: var(--font-fraunces), serif; font-size: 1rem; color: var(--bp-ink); }
+.fLink { color: var(--bp-muted); text-decoration: underline; text-underline-offset: 4px; }
+.fLink:hover { color: var(--bp-ink); }
+.fLink:focus-visible { outline: 2px solid var(--bp-pass); outline-offset: 3px; }
+.fNote { margin-top: 0.75rem; font: 12px var(--font-geist-mono), monospace; color: var(--bp-muted); }

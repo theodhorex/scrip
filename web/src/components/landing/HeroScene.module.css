@@ -1,0 +1,75 @@
+.coin {
+  transition: transform 900ms cubic-bezier(0.22, 0.8, 0.28, 1);
+}
+.coinStill {
+  transition: none;
+}
+.lampGlow {
+  filter: drop-shadow(0 0 6px currentColor);
+  transition: opacity 300ms ease;
+}
+.spark {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: spark 700ms ease-out infinite;
+}
+.sparkStill {
+  animation: none;
+}
+.pulse {
+  animation: pulse 1800ms ease-in-out infinite;
+}
+.bob {
+  animation: bob 2600ms ease-in-out infinite;
+}
+.fillBar {
+  transition: transform 900ms ease;
+  transform-box: fill-box;
+  transform-origin: bottom;
+}
+@keyframes spark {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .coin, .fillBar { transition: none; }
+  .spark, .pulse, .bob { animation: none; }
+}
+
+.scene polygon,
+.scene circle,
+.scene text {
+  transition: fill 450ms ease, stroke 450ms ease, opacity 450ms ease;
+}
+.pop {
+  transform-box: fill-box;
+  transform-origin: left center;
+  animation: pop 420ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+@keyframes pop {
+  0% { opacity: 0; transform: translateY(6px) scale(0.92); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop { animation: none; }
+  .scene polygon, .scene circle, .scene text { transition: none; }
+}
+
+.breathe {
+  animation: breathe 5200ms ease-in-out infinite;
+}
+@keyframes breathe {
+  0%, 100% { opacity: 0.65; }
+  50% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .breathe { animation: none; }
+}

@@ -1,0 +1,104 @@
+
+/* ---- Chapter layout: 35/65 split with sticky text column on desktop ---- */
+.layout {
+  display: grid;
+  gap: 2.5rem;
+  width: 100%;
+  max-width: 92rem;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 3vw, 2.5rem);
+}
+
+.caption {
+  max-width: 44ch;
+}
+
+.proseCol {
+  max-width: 44ch;
+}
+
+@media (min-width: 1280px) {
+  .layout {
+    grid-template-columns: minmax(0, 35fr) minmax(0, 65fr);
+    gap: clamp(32px, 5vw, 96px);
+    align-items: start;
+  }
+
+  /* No ancestor sets overflow hidden/auto (body and .blueprint-grid use overflow-x: clip), so sticky holds. */
+  .sticky {
+    position: sticky;
+    top: 7rem;
+  }
+}
+
+.try {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  max-width: 44ch;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--bp-muted);
+}
+
+.try b {
+  color: var(--bp-ink);
+  font-weight: 600;
+}
+
+/* Closing proof figures */
+.figures {
+  display: grid;
+  gap: 1.5rem 2.5rem;
+  margin-top: clamp(3rem, 5vw, 5rem);
+  padding-top: 1.75rem;
+  border-top: 1px solid var(--bp-line-strong);
+}
+
+.figuresRow {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.bigNum {
+  font-family: var(--font-fraunces), Georgia, serif;
+  font-weight: 500;
+  font-size: clamp(3.5rem, 6vw, 6.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.035em;
+  color: var(--bp-ink);
+  font-variant-numeric: lining-nums;
+}
+
+.bigUnit {
+  font-size: 0.34em;
+  letter-spacing: 0;
+  margin-left: 0.25em;
+  color: var(--bp-muted);
+}
+
+.bigCap {
+  margin-top: 0.7rem;
+  max-width: 44ch;
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--bp-muted);
+}
+
+.bigCap b {
+  color: var(--bp-ink);
+  font-weight: 600;
+}
+
+/* Keyboard focus for DOM controls in the readout */
+.focusable:focus-visible {
+  outline: 2px solid var(--bp-pass);
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  .figuresRow {
+    grid-template-columns: 1fr;
+  }
+}
