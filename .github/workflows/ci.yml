@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: contracts/amanat
+      - name: Install JS dependencies
+        run: make setup
+      - name: Tests (offline)
+        run: make test
+      - name: Clippy (warnings denied)
+        run: make static
+      - name: Build wasm
+        run: make contract-build
