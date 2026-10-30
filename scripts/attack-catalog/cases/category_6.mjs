@@ -1,0 +1,468 @@
+// Parametric generator for Category 6: Delegate Actions and Keys (Layer C - Client Delegate Helpers)
+// Based on PRD 3.4, client/README.md, and client/src/delegate.mjs:
+// buildRequestPayment: validates action parameters, contracts, gas, and amounts.
+// signDelegate: validates agentId, contractId, action, nonce, maxBlockHeight, keyPair.
+// relayBodyFor: validates canonical base64 for POST /relay.
+// parseRequestResult: validates and decodes PaymentResult variants and reject codes.
+
+const TGAS = 10n ** 12n;
+const U64_MAX = (1n << 64n) - 1n;
+const U64_MAX_PLUS_1 = 1n << 64n;
+
+const VALID_REQ_PARAMS = {
+  contractId: 'amanat.testnet',
+  mandateId: 1n,
+  recipient: 'bob.near',
+  amount: '1000',
+  nonce: 1n,
+};
+
+/**
+ * Parameter strategies for Category 6 (Client Delegate and Actions).
+ */
+export const DELEGATE_VARIATIONS = [
+  // --- buildRequestPayment variations ---
+  {
+    subId: '01',
+    title: 'buildRequestPayment: contractId empty string',
+    target: 'buildRequestPayment',
+    params: { ...VALID_REQ_PARAMS, contractId: '' },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'contractId must be 1..64 chars',
+  },
+  {
+    subId: '02',
+    title: 'buildRequestPayment: contractId length 65 bytes',
+    target: 'buildRequestPayment',
+    params: { ...VALID_REQ_PARAMS, contractId: 'c'.repeat(65) },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'contractId longer than 64 chars throws RangeError',
+  },
+  {
+    subId: '03',
+    title: 'buildRequestPayment: contractId non-string type',
+    target: 'buildRequestPayment',
+    params: { ...VALID_REQ_PARAMS, contractId: 12345 },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'contractId must be a string',
+  },
+  {
+    subId: '04',
+    title: 'buildRequestPayment: gas below minimum 60 Tgas (59 Tgas)',
+    target: 'buildRequestPayment',
+    params: { ...VALID_REQ_PARAMS, gas: 59n * TGAS },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Gas below 60 Tgas is refused by contract and client helper',
+  },
+  {
+    subId: '05',
+    title: 'buildRequestPayment: gas non-BigInt type (number 100)',
+    target: 'buildRequestPayment',
+    params: { ...VALID_REQ_PARAMS, gas: 100 },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'Gas must be a BigInt',
+  },
+  {
+    subId: '06',
+    title: 'buildRequestPayment: gas exceeds u64 range',
+    target: 'buildRequestPayment',
+    params: { ...VALID_REQ_PARAMS, gas: U64_MAX_PLUS_1 },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Gas out of u64 range throws RangeError',
+  },
+  {
+    subId: '07',
+    title: 'buildRequestPayment: recipient contains uppercase letters',
+    target: 'buildRequestPayment',
+    params: { ...VALID_REQ_PARAMS, recipient: 'ALICE.near' },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Recipient must match lowercase [a-z0-9._-]',
+  },
+  {
+    subId: '08',
+    title: 'buildRequestPayment: recipient empty string',
+    target: 'buildRequestPayment',
+    params: { ...VALID_REQ_PARAMS, recipient: '' },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Recipient must not be empty',
+  },
+  {
+    subId: '09',
+    title: 'buildRequestPayment: amount non-canonical with leading zero',
+    target: 'buildRequestPayment',
+    params: { ...VALID_REQ_PARAMS, amount: '0100' },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Amount must be canonical decimal string',
+  },
+  {
+    subId: '10',
+    title: 'buildRequestPayment: amount negative decimal string',
+    target: 'buildRequestPayment',
+    params: { ...VALID_REQ_PARAMS, amount: '-500' },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Negative amount throws RangeError',
+  },
+  {
+    subId: '11',
+    title: 'buildRequestPayment: nonce negative BigInt',
+    target: 'buildRequestPayment',
+    params: { ...VALID_REQ_PARAMS, nonce: -1n },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Negative nonce throws RangeError',
+  },
+  {
+    subId: '12',
+    title: 'buildRequestPayment: nonce floating point number',
+    target: 'buildRequestPayment',
+    params: { ...VALID_REQ_PARAMS, nonce: 2.5 },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'Float nonce throws TypeError',
+  },
+  {
+    subId: '13',
+    title: 'buildRequestPayment: mandateId floating point number',
+    target: 'buildRequestPayment',
+    params: { ...VALID_REQ_PARAMS, mandateId: 3.14 },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'Float mandateId throws TypeError',
+  },
+  {
+    subId: '14',
+    title: 'buildRequestPayment: null input argument',
+    target: 'buildRequestPayment',
+    params: null,
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'Input must be an object',
+  },
+
+  // --- signDelegate parameter validations ---
+  {
+    subId: '15',
+    title: 'signDelegate: agentId empty string',
+    target: 'signDelegate',
+    params: { agentId: '', contractId: 'amanat.testnet', nonce: 1n, maxBlockHeight: 1000n },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'agentId must be 1..64 chars',
+  },
+  {
+    subId: '16',
+    title: 'signDelegate: agentId longer than 64 chars',
+    target: 'signDelegate',
+    params: { agentId: 'a'.repeat(65), contractId: 'amanat.testnet', nonce: 1n, maxBlockHeight: 1000n },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'agentId longer than 64 chars throws RangeError',
+  },
+  {
+    subId: '17',
+    title: 'signDelegate: agentId not a string',
+    target: 'signDelegate',
+    params: { agentId: 999, contractId: 'amanat.testnet', nonce: 1n, maxBlockHeight: 1000n },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'agentId must be a string',
+  },
+  {
+    subId: '18',
+    title: 'signDelegate: contractId empty string',
+    target: 'signDelegate',
+    params: { agentId: 'agent.testnet', contractId: '', nonce: 1n, maxBlockHeight: 1000n },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'contractId must be 1..64 chars',
+  },
+  {
+    subId: '19',
+    title: 'signDelegate: action is null',
+    target: 'signDelegate',
+    params: { agentId: 'agent.testnet', contractId: 'amanat.testnet', action: null, nonce: 1n, maxBlockHeight: 1000n },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'action must be an action object',
+  },
+  {
+    subId: '20',
+    title: 'signDelegate: nonce negative BigInt',
+    target: 'signDelegate',
+    params: { agentId: 'agent.testnet', contractId: 'amanat.testnet', nonce: -1n, maxBlockHeight: 1000n },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Negative nonce throws RangeError',
+  },
+  {
+    subId: '21',
+    title: 'signDelegate: nonce float number',
+    target: 'signDelegate',
+    params: { agentId: 'agent.testnet', contractId: 'amanat.testnet', nonce: 1.5, maxBlockHeight: 1000n },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'Float nonce throws TypeError',
+  },
+  {
+    subId: '22',
+    title: 'signDelegate: nonce exceeds u64 maximum',
+    target: 'signDelegate',
+    params: { agentId: 'agent.testnet', contractId: 'amanat.testnet', nonce: U64_MAX_PLUS_1, maxBlockHeight: 1000n },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Nonce > 2^64-1 throws RangeError',
+  },
+  {
+    subId: '23',
+    title: 'signDelegate: maxBlockHeight non-integer string',
+    target: 'signDelegate',
+    params: { agentId: 'agent.testnet', contractId: 'amanat.testnet', nonce: 1n, maxBlockHeight: 'expired_block' },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'maxBlockHeight must be BigInt or safe-integer Number',
+  },
+  {
+    subId: '24',
+    title: 'signDelegate: maxBlockHeight negative BigInt',
+    target: 'signDelegate',
+    params: { agentId: 'agent.testnet', contractId: 'amanat.testnet', nonce: 1n, maxBlockHeight: -50n },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Negative maxBlockHeight throws RangeError',
+  },
+  {
+    subId: '25',
+    title: 'signDelegate: maxBlockHeight exceeds u64 range',
+    target: 'signDelegate',
+    params: { agentId: 'agent.testnet', contractId: 'amanat.testnet', nonce: 1n, maxBlockHeight: U64_MAX_PLUS_1 },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'maxBlockHeight > 2^64-1 throws RangeError',
+  },
+  {
+    subId: '26',
+    title: 'signDelegate: keyPair is null',
+    target: 'signDelegate',
+    params: { agentId: 'agent.testnet', contractId: 'amanat.testnet', nonce: 1n, maxBlockHeight: 1000n, keyPair: null },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'keyPair must be a near-api-js KeyPair',
+  },
+  {
+    subId: '27',
+    title: 'signDelegate: keyPair lacks getPublicKey method',
+    target: 'signDelegate',
+    params: { agentId: 'agent.testnet', contractId: 'amanat.testnet', nonce: 1n, maxBlockHeight: 1000n, keyPair: {} },
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'Invalid keyPair object throws TypeError',
+  },
+
+  // --- relayBodyFor validations ---
+  {
+    subId: '28',
+    title: 'relayBodyFor: empty base64 string',
+    target: 'relayBodyFor',
+    input: '',
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'Empty base64 throws TypeError',
+  },
+  {
+    subId: '29',
+    title: 'relayBodyFor: non-canonical base64 characters',
+    target: 'relayBodyFor',
+    input: 'not!canonical!base64',
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Invalid characters in base64 throw RangeError',
+  },
+  {
+    subId: '30',
+    title: 'relayBodyFor: non-string input (number)',
+    target: 'relayBodyFor',
+    input: 12345,
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'Non-string base64 throws TypeError',
+  },
+  {
+    subId: '31',
+    title: 'relayBodyFor: unpadded base64 with length % 4 !== 0',
+    target: 'relayBodyFor',
+    input: 'ABCDE',
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Unpadded base64 fails canonical check',
+  },
+  {
+    subId: '32',
+    title: 'relayBodyFor: valid canonical base64',
+    target: 'relayBodyFor',
+    input: 'AAAA',
+    expectedLabel: 'INERT',
+    expectedCode: null,
+    reason: 'Valid canonical base64 generates relay body',
+  },
+
+  // --- Signature tampering verification ---
+  {
+    subId: '33',
+    title: 'Delegate signature tampering: bit flip in signature data',
+    target: 'tamperedSignature',
+    tamperType: 'signature_bit_flip',
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'SignatureVerificationError',
+    reason: 'Tampered ed25519 signature fails cryptographic verification',
+  },
+  {
+    subId: '34',
+    title: 'Delegate action tampering: modified receiver in signed payload',
+    target: 'tamperedSignature',
+    tamperType: 'action_receiver_tampered',
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'SignatureVerificationError',
+    reason: 'Payload modification causes hash mismatch during verification',
+  },
+
+  // --- parseRequestResult validations ---
+  {
+    subId: '35',
+    title: 'parseRequestResult: non-string input (null)',
+    target: 'parseRequestResult',
+    input: null,
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'TypeError',
+    reason: 'input must be a string',
+  },
+  {
+    subId: '36',
+    title: 'parseRequestResult: empty string',
+    target: 'parseRequestResult',
+    input: '',
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Empty string throws RangeError',
+  },
+  {
+    subId: '37',
+    title: 'parseRequestResult: invalid JSON / not base64',
+    target: 'parseRequestResult',
+    input: 'random text not json or base64',
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Invalid format throws RangeError',
+  },
+  {
+    subId: '38',
+    title: 'parseRequestResult: JSON array instead of variant object',
+    target: 'parseRequestResult',
+    input: '[]',
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Expected object variant throws RangeError',
+  },
+  {
+    subId: '39',
+    title: 'parseRequestResult: unknown result variant name',
+    target: 'parseRequestResult',
+    input: '{"UnknownVariant": {"request_id": 1}}',
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Unknown variant throws RangeError',
+  },
+  {
+    subId: '40',
+    title: 'parseRequestResult: multiple variants in single object',
+    target: 'parseRequestResult',
+    input: '{"Reserved": {"request_id": 1}, "Settled": {"request_id": 2}}',
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Expected exactly one variant',
+  },
+  {
+    subId: '41',
+    title: 'parseRequestResult: unknown reject code in Rejected variant',
+    target: 'parseRequestResult',
+    input: '{"Rejected": {"code": "UNKNOWN_REJECT_REASON"}}',
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Unknown reject code throws RangeError',
+  },
+  {
+    subId: '42',
+    title: 'parseRequestResult: request_id negative in Reserved variant',
+    target: 'parseRequestResult',
+    input: '{"Reserved": {"request_id": -1}}',
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'Negative request_id throws RangeError',
+  },
+  {
+    subId: '43',
+    title: 'parseRequestResult: request_id out of u64 range',
+    target: 'parseRequestResult',
+    input: `{"Reserved": {"request_id": ${U64_MAX_PLUS_1}}}`,
+    expectedLabel: 'BLOCKED',
+    expectedCode: 'RangeError',
+    reason: 'request_id > 2^64-1 throws RangeError',
+  },
+  {
+    subId: '44',
+    title: 'parseRequestResult: valid Reserved variant',
+    target: 'parseRequestResult',
+    input: '{"Reserved": {"request_id": 42}}',
+    expectedLabel: 'INERT',
+    expectedCode: null,
+    reason: 'Valid Reserved variant parses successfully',
+  },
+  {
+    subId: '45',
+    title: 'parseRequestResult: valid Rejected variant with standard code',
+    target: 'parseRequestResult',
+    input: '{"Rejected": {"code": "OVER_BUDGET"}}',
+    expectedLabel: 'INERT',
+    expectedCode: null,
+    reason: 'Valid Rejected variant parses successfully',
+  },
+];
+
+/**
+ * Parametric generator: builds Category 6 test cases from variation vectors.
+ *
+ * @param {Array<object>} [variations]
+ * @returns {Array<object>}
+ */
+export function generateCategory6Cases(variations = DELEGATE_VARIATIONS) {
+  return variations.map((v) => {
+    const expected = {
+      label: v.expectedLabel || 'BLOCKED',
+    };
+    if (v.expectedCode) {
+      expected.code = v.expectedCode;
+    }
+    return {
+      id: `KAT-C-06-${v.subId}`,
+      category: 6,
+      layer: 'C',
+      title: v.title,
+      params: {
+        target: v.target,
+        params: v.params,
+        input: v.input,
+        tamperType: v.tamperType,
+      },
+      expected,
+    };
+  });
+}
