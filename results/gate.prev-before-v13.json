@@ -1,0 +1,101 @@
+{
+  "network": "testnet",
+  "startedAt": "2026-10-28T20:21:29.654Z",
+  "steps": {
+    "funded": {
+      "deposited": "1250000",
+      "contractUsdc": "1250000"
+    },
+    "validPayment": {
+      "http": 200,
+      "events": [
+        "reserved",
+        "ft_transfer",
+        "settled"
+      ],
+      "spent": "500000",
+      "reserved": "0",
+      "merchantGained": "500000"
+    },
+    "attacks": {
+      "recipientNotAllowed": {
+        "http": 200,
+        "tx": "7xpa79ixi7C3vnmC6hesZLz6KbwNj8VPQjpR33tZQZv5",
+        "rejected": [
+          "RECIPIENT_NOT_ALLOWED"
+        ]
+      },
+      "overCap": {
+        "http": 200,
+        "tx": "C1u2JX5kiWVkD3fQhrjmrX7sjgiRjV1hemycHUnzrvK9",
+        "rejected": [
+          "OVER_PER_PAYMENT_CAP"
+        ]
+      },
+      "guardianMethodViaRelay": {
+        "http": 400,
+        "code": "METHOD_NOT_ALLOWED"
+      },
+      "lowGas": {
+        "http": 400,
+        "code": "GAS_TOO_LOW"
+      },
+      "forgedKey": {
+        "http": 400,
+        "code": "KEY_NOT_ALLOWED"
+      }
+    },
+    "budget": {
+      "second": 200,
+      "thirdRejected": [
+        "OVER_BUDGET"
+      ],
+      "spent": "1000000",
+      "reserved": "0",
+      "budget": "1250000"
+    },
+    "exit": {
+      "revoked": "Revoked",
+      "freeRemainder": "250000",
+      "funderUsdcGain": "250000",
+      "withdrawn": "250000",
+      "spent": "1000000",
+      "reserved": "0",
+      "contractUsdcLeft": "0"
+    }
+  },
+  "txs": {
+    "deploy": "7VjVW5u2zyvBvELD4NWu5Yu7bE9VEQuVNm3QJpZPNPWs",
+    "init": "44xguX3be4ZAxNSHhHwYSvFAL2MVtkyX97NnfTn831q2",
+    "createMandate": "mVxMUic3VNtfKjHCv5HajjGcpPDGtrvRLBwVVsprQwL",
+    "fund": "DKbL7y52y4gTSFawiXFkyEGQQTofvFNV8EoUC65d7G16",
+    "validPayment": "13vwYd6bsjQqSkCWGXJEw9H7qF7UcmZRLF1L8wb9utbZ",
+    "revoke": "CeVR1vdSzZBkazRz2iXNH6WJTrjArDcb7AKbJNJsiN3t",
+    "withdraw": "J8REk2HeLZRW47uhA6QCsFSu56s8L7xCHPopWDjMYRQf"
+  },
+  "before": {
+    "funderNear": "6.546448359586906899999846",
+    "funderUsdc": "6000000",
+    "relayerNear": "5.973822185182381499999951"
+  },
+  "wasmBytes": 279108,
+  "facilitatorLog": [
+    "facilitator listening on :8791 (testnet, rpc rpc.testnet.fastnear.com)",
+    "{\"t\":\"2026-10-28T20:22:04.537Z\",\"code\":\"OK\",\"agent\":\"ama89655.envtest-theo-1747.testnet\",\"tx\":\"13vwYd6bsjQqSkCWGXJEw9H7qF7UcmZRLF1L8wb9utbZ\"}",
+    "{\"t\":\"2026-10-28T20:22:17.000Z\",\"code\":\"OK\",\"agent\":\"ama89655.envtest-theo-1747.testnet\",\"tx\":\"7xpa79ixi7C3vnmC6hesZLz6KbwNj8VPQjpR33tZQZv5\"}",
+    "{\"t\":\"2026-10-28T20:22:28.253Z\",\"code\":\"OK\",\"agent\":\"ama89655.envtest-theo-1747.testnet\",\"tx\":\"C1u2JX5kiWVkD3fQhrjmrX7sjgiRjV1hemycHUnzrvK9\"}",
+    "{\"t\":\"2026-10-28T20:22:35.940Z\",\"code\":\"METHOD_NOT_ALLOWED\"}",
+    "{\"t\":\"2026-10-28T20:22:36.173Z\",\"code\":\"GAS_TOO_LOW\"}",
+    "{\"t\":\"2026-10-28T20:22:37.162Z\",\"code\":\"KEY_NOT_ALLOWED\",\"agent\":\"ama89655.envtest-theo-1747.testnet\"}",
+    "{\"t\":\"2026-10-28T20:22:41.462Z\",\"code\":\"OK\",\"agent\":\"ama89655.envtest-theo-1747.testnet\",\"tx\":\"2tXYKjLG2V451ii2aUDKJ9jFj7k4gok3eqeSuwRgcFLS\"}",
+    "{\"t\":\"2026-10-28T20:22:52.112Z\",\"code\":\"OK\",\"agent\":\"ama89655.envtest-theo-1747.testnet\",\"tx\":\"5cH8yUHzSjhsM5heoXGtgFEasdxoCgd5WMjQSzM2hCSz\"}"
+  ],
+  "ok": true,
+  "after": {
+    "funderNear": "6.509532036880109299999841",
+    "funderUsdc": "6000000",
+    "relayerNear": "5.971377135669827799999951"
+  },
+  "leftoverAccounts": [],
+  "finishedAt": "2026-10-28T20:23:25.647Z"
+}

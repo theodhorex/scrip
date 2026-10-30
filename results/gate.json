@@ -1,0 +1,101 @@
+{
+  "network": "testnet",
+  "startedAt": "2026-10-30T04:40:03.646Z",
+  "steps": {
+    "funded": {
+      "deposited": "1250000",
+      "contractUsdc": "1250000"
+    },
+    "validPayment": {
+      "http": 200,
+      "events": [
+        "reserved",
+        "ft_transfer",
+        "settled"
+      ],
+      "spent": "500000",
+      "reserved": "0",
+      "merchantGained": "500000"
+    },
+    "attacks": {
+      "recipientNotAllowed": {
+        "http": 200,
+        "tx": "BvbcY9CVG8ubdUhF9aeAhHvz8za81b1beGWZQuaZuEZY",
+        "rejected": [
+          "RECIPIENT_NOT_ALLOWED"
+        ]
+      },
+      "overCap": {
+        "http": 200,
+        "tx": "B6nZaNQvnLFXCxmCFSmhP32oB3TZ1BcUMXxorvRZrQQp",
+        "rejected": [
+          "OVER_PER_PAYMENT_CAP"
+        ]
+      },
+      "guardianMethodViaRelay": {
+        "http": 400,
+        "code": "METHOD_NOT_ALLOWED"
+      },
+      "lowGas": {
+        "http": 400,
+        "code": "GAS_TOO_LOW"
+      },
+      "forgedKey": {
+        "http": 400,
+        "code": "KEY_NOT_ALLOWED"
+      }
+    },
+    "budget": {
+      "second": 200,
+      "thirdRejected": [
+        "OVER_BUDGET"
+      ],
+      "spent": "1000000",
+      "reserved": "0",
+      "budget": "1250000"
+    },
+    "exit": {
+      "revoked": "Revoked",
+      "freeRemainder": "250000",
+      "funderUsdcGain": "250000",
+      "withdrawn": "250000",
+      "spent": "1000000",
+      "reserved": "0",
+      "contractUsdcLeft": "0"
+    }
+  },
+  "txs": {
+    "deploy": "899GzQvLu126QBdZ5AiNderaddEaNTNPWttJcnFCrm5c",
+    "init": "7gPKpK7fGrnAeVsQcuMXF9J8xHsykCp5BnQBpSQ1nxUU",
+    "createMandate": "3eL6MnQ6Nxa5mscJVFKW8HsUPCgu6KfSfB94QyjRu4pQ",
+    "fund": "9TjQGXFTwucnngHtkhapSebzbPqdk1byfN11oUYCep2K",
+    "validPayment": "HLaUwwtihuG1zUpABeA1Xgo3tAseFBrAukWbGaxSZ4kH",
+    "revoke": "ELpjaqsTgkTtVgsrVKGA1SQaSc1izfBJBv5LNURGP9FS",
+    "withdraw": "EhFQpi33PnqGZA65C1z5t2Jjcf8Z7Pxo9m1VPuvaybvn"
+  },
+  "before": {
+    "funderNear": "6.509532036880109299999841",
+    "funderUsdc": "6000000",
+    "relayerNear": "5.971377135669827799999951"
+  },
+  "wasmBytes": 280136,
+  "facilitatorLog": [
+    "facilitator listening on :8791 (testnet, rpc rpc.testnet.fastnear.com)",
+    "{\"t\":\"2026-10-30T04:40:40.613Z\",\"request_id\":\"f92d9062-2b58-4672-8e1d-e4f10e2c55db\",\"path\":\"/relay\",\"code\":\"OK\",\"agent\":\"ama3647.envtest-theo-1747.testnet\",\"tx\":\"HLaUwwtihuG1zUpABeA1Xgo3tAseFBrAukWbGa",
+    "{\"t\":\"2026-10-30T04:40:53.388Z\",\"request_id\":\"fecfa2e7-e2c4-434b-ba0a-f1724137bba7\",\"path\":\"/relay\",\"code\":\"OK\",\"agent\":\"ama3647.envtest-theo-1747.testnet\",\"tx\":\"BvbcY9CVG8ubdUhF9aeAhHvz8za81b1beGWZQu",
+    "{\"t\":\"2026-10-30T04:41:04.436Z\",\"request_id\":\"108a1855-704a-4c8c-ab70-11b92f0149f5\",\"path\":\"/relay\",\"code\":\"OK\",\"agent\":\"ama3647.envtest-theo-1747.testnet\",\"tx\":\"B6nZaNQvnLFXCxmCFSmhP32oB3TZ1BcUMXxorv",
+    "{\"t\":\"2026-10-30T04:41:12.083Z\",\"request_id\":\"d9b683b3-2ecd-4f13-b4fc-a79926218548\",\"path\":\"/relay\",\"code\":\"METHOD_NOT_ALLOWED\"}",
+    "{\"t\":\"2026-10-30T04:41:12.312Z\",\"request_id\":\"af89eb1f-6b6c-4ead-b9bd-4d7bf3cb0531\",\"path\":\"/relay\",\"code\":\"GAS_TOO_LOW\"}",
+    "{\"t\":\"2026-10-30T04:41:13.170Z\",\"request_id\":\"867aa56d-6c21-43d8-8bea-eca1cb95ae37\",\"path\":\"/relay\",\"code\":\"KEY_NOT_ALLOWED\",\"agent\":\"ama3647.envtest-theo-1747.testnet\"}",
+    "{\"t\":\"2026-10-30T04:41:17.665Z\",\"request_id\":\"0bdcf6cf-6e93-47cc-82b7-95fd2990d460\",\"path\":\"/relay\",\"code\":\"OK\",\"agent\":\"ama3647.envtest-theo-1747.testnet\",\"tx\":\"6SL5xcjsLNu4wGSnyMyK1aQa3nZE3rm61R9FWz",
+    "{\"t\":\"2026-10-30T04:41:27.890Z\",\"request_id\":\"6e561085-18f0-4b65-89a3-34d40a870d29\",\"path\":\"/relay\",\"code\":\"OK\",\"agent\":\"ama3647.envtest-theo-1747.testnet\",\"tx\":\"126NWSBjPe8TZNNkHpzYMGWsPkXbHjqeH6hGAH"
+  ],
+  "ok": true,
+  "after": {
+    "funderNear": "6.472610470244910799999836",
+    "funderUsdc": "6000000",
+    "relayerNear": "5.968933710022963699999951"
+  },
+  "leftoverAccounts": [],
+  "finishedAt": "2026-10-30T04:42:03.048Z"
+}
