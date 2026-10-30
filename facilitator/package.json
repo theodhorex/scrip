@@ -1,0 +1,18 @@
+{
+  "name": "amanat-facilitator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/",
+    "start": "node src/main.mjs",
+    "mutate": "bash ../scripts/mutants-js.sh"
+  },
+  "dependencies": {
+    "borsh": "2.0.0",
+    "near-api-js": "7.4.0"
+  },
+  "devDependencies": {
+    "@stryker-mutator/core": "10.1.1"
+  }
+}
