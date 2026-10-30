@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-10-30T08:25:45.950Z",
+  "wave": 1,
+  "totalWaves": 1,
+  "processedCount": 1,
+  "totalCases": 1,
+  "cases": [
+    {
+      "id": "KAT-E-PROHIBIT-01",
+      "category": 1,
+      "layer": "E",
+      "title": "Prohibited write",
+      "params": {},
+      "expected": {
+        "label": "INERT"
+      },
+      "actual": {
+        "label": "INERT",
+        "txHash": "TX_E_DRY_KAT-E-PROHIBIT-01_1793348745950",
+        "note": "Mock Layer E execution for KAT-E-PROHIBIT-01"
+      },
+      "verdict": "PASS"
+    }
+  ]
+}
