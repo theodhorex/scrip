@@ -1,0 +1,16 @@
+{
+  "name": "amanat-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure client library for Amanat: intent hash, NEP-297 event parser, stats reducer",
+  "scripts": {
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "near-api-js": "7.4.0"
+  },
+  "devDependencies": {
+    "@stryker-mutator/core": "10.1.1"
+  }
+}
