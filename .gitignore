@@ -1,0 +1,43 @@
+node_modules/
+target/
+.next/
+.env*
+priv_key*
+*.key
+.agy/
+*.wasm
+.recovery*
+.policy-*
+.throwaway-keys*
+*.pem
+.near-credentials/
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.facilitator*
+.DS_Store
+
+# Catatan kerja internal (web)
+web/docs/
+
+# Stryker mutation testing artefacts
+facilitator/.stryker-out/
+client/.stryker-out/
+.stryker-tmp/
+
+# Internal working notes and generated reports (not part of the product)
+research_notes/
+reports/
+contracts/amanat/mutants.out/
+mutants.out/
+results/guard-demo/
+scripts/attack-catalog/.out/
+*.next.mjs
+.stryker-out/
+# keep the example env file even though .env* is ignored
+!.env.example
+!web/.env.example
+
+# cargo-mutants scratch workspace and unverified WIP
+contracts/.mutant/
