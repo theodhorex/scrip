@@ -9,7 +9,7 @@ const USDC_BASE = BigInt(10) ** BigInt(USDC_DECIMALS);
 const DECIMAL_UINT = /^(0|[1-9][0-9]*)$/;
 
 export type RaceContractCase = {
-  contract: "naive" | "amanat";
+  contract: "naive" | "scrip";
   attempts: number;
   acceptedByRpc: number;
   burstMs: number;
@@ -35,7 +35,7 @@ export type LandingRaceData = {
   fundedUnits: string;
   fundedUsdc: string;
   naive: RaceContractCase;
-  amanat: RaceContractCase;
+  scrip: RaceContractCase;
 };
 
 export type LandingHeroDemoData = {
@@ -59,23 +59,23 @@ export type LandingHeroDemoData = {
     amountUnits: string;
     amountUsdc: string;
     paidByNaive: boolean;
-    paidByAmanat: boolean;
+    paidByScrip: boolean;
     rejectionCode: string;
     txHash: string;
   };
   overcharge: {
     amountUnits: string;
     amountUsdc: string;
-    paidByAmanat: boolean;
+    paidByScrip: boolean;
     rejectionCode: string;
     txHash: string;
   };
   naiveAttackerGainedUnits: string;
   naiveAttackerGainedUsdc: string;
-  amanatAttackerGainedUnits: string;
-  amanatAttackerGainedUsdc: string;
-  amanatRemainingUnits: string;
-  amanatRemainingUsdc: string;
+  scripAttackerGainedUnits: string;
+  scripAttackerGainedUsdc: string;
+  scripRemainingUnits: string;
+  scripRemainingUsdc: string;
 };
 
 function asObject(value: unknown, label: string): Record<string, unknown> {
@@ -150,7 +150,7 @@ export function shortenAccount(accountId: string): string {
 
 function mapRaceCase(
   rawCase: unknown,
-  expectedContract: "naive" | "amanat",
+  expectedContract: "naive" | "scrip",
 ): RaceContractCase {
   const c = asObject(rawCase, `attack.json case(${expectedContract})`);
   const contract = asString(c, "contract", "attack.json case");
@@ -209,14 +209,14 @@ export function mapAttackData(raw: unknown): LandingRaceData {
       item !== null &&
       (item as Record<string, unknown>).contract === "naive",
   );
-  const amanatRaw = cases.find(
+  const scripRaw = cases.find(
     (item) =>
       typeof item === "object" &&
       item !== null &&
-      (item as Record<string, unknown>).contract === "amanat",
+      (item as Record<string, unknown>).contract === "scrip",
   );
-  if (!naiveRaw || !amanatRaw) {
-    throw new Error("Invalid attack.json: missing naive or amanat case");
+  if (!naiveRaw || !scripRaw) {
+    throw new Error("Invalid attack.json: missing naive or scrip case");
   }
 
   const paymentUnits = asAmountString(params, "amount", "attack.json params");
@@ -236,7 +236,7 @@ export function mapAttackData(raw: unknown): LandingRaceData {
     fundedUnits,
     fundedUsdc: formatUsdcFixed(fundedUnits),
     naive: mapRaceCase(naiveRaw, "naive"),
-    amanat: mapRaceCase(amanatRaw, "amanat"),
+    scrip: mapRaceCase(scripRaw, "scrip"),
   };
 }
 
@@ -264,23 +264,23 @@ export function mapDemoData(raw: unknown): LandingHeroDemoData {
   const root = asObject(raw, "demo.json");
   const agents = asObject(root.agents, "demo.json.agents");
   const naive = asObject(agents.naive, "demo.json.agents.naive");
-  const amanat = asObject(agents.amanat, "demo.json.agents.amanat");
+  const scrip = asObject(agents.scrip, "demo.json.agents.scrip");
   const mandateFinal = asObject(root.mandateFinal, "demo.json.mandateFinal");
 
-  const amanatHonest = findInvoice(
-    amanat.invoices,
+  const scripHonest = findInvoice(
+    scrip.invoices,
     "honest",
-    "demo.json.agents.amanat.invoices",
+    "demo.json.agents.scrip.invoices",
   );
-  const amanatInjected = findInvoice(
-    amanat.invoices,
+  const scripInjected = findInvoice(
+    scrip.invoices,
     "injected",
-    "demo.json.agents.amanat.invoices",
+    "demo.json.agents.scrip.invoices",
   );
-  const amanatOvercharge = findInvoice(
-    amanat.invoices,
+  const scripOvercharge = findInvoice(
+    scrip.invoices,
     "overcharge",
-    "demo.json.agents.amanat.invoices",
+    "demo.json.agents.scrip.invoices",
   );
   const naiveInjected = findInvoice(
     naive.invoices,
@@ -294,44 +294,44 @@ export function mapDemoData(raw: unknown): LandingHeroDemoData {
     "demo.json.mandateFinal",
   );
   const merchantAccount = asString(
-    amanatHonest,
+    scripHonest,
     "payTo",
-    "demo.json.amanat.honest",
+    "demo.json.scrip.honest",
   );
   const attackerAccount = asString(
-    amanatInjected,
+    scripInjected,
     "payTo",
-    "demo.json.amanat.injected",
+    "demo.json.scrip.injected",
   );
   const honestUnits = asAmountString(
-    amanatHonest,
+    scripHonest,
     "amount",
-    "demo.json.amanat.honest",
+    "demo.json.scrip.honest",
   );
   const injectedUnits = asAmountString(
-    amanatInjected,
+    scripInjected,
     "amount",
-    "demo.json.amanat.injected",
+    "demo.json.scrip.injected",
   );
   const overchargeUnits = asAmountString(
-    amanatOvercharge,
+    scripOvercharge,
     "amount",
-    "demo.json.amanat.overcharge",
+    "demo.json.scrip.overcharge",
   );
   const naiveGainedUnits = asAmountString(
     naive,
     "attackerGained",
     "demo.json.agents.naive",
   );
-  const amanatGainedUnits = asAmountString(
-    amanat,
+  const scripGainedUnits = asAmountString(
+    scrip,
     "attackerGained",
-    "demo.json.agents.amanat",
+    "demo.json.agents.scrip",
   );
-  const amanatRemainingUnits = asAmountString(
-    amanat,
+  const scripRemainingUnits = asAmountString(
+    scrip,
     "after",
-    "demo.json.agents.amanat",
+    "demo.json.agents.scrip",
   );
 
   return {
@@ -348,46 +348,46 @@ export function mapDemoData(raw: unknown): LandingHeroDemoData {
     honest: {
       amountUnits: honestUnits,
       amountUsdc: formatUsdcFixed(honestUnits),
-      paid: asBool(amanatHonest, "paid", "demo.json.amanat.honest"),
-      txHash: asString(amanatHonest, "txHash", "demo.json.amanat.honest"),
+      paid: asBool(scripHonest, "paid", "demo.json.scrip.honest"),
+      txHash: asString(scripHonest, "txHash", "demo.json.scrip.honest"),
     },
     injected: {
       amountUnits: injectedUnits,
       amountUsdc: formatUsdcFixed(injectedUnits),
       paidByNaive: asBool(naiveInjected, "paid", "demo.json.naive.injected"),
-      paidByAmanat: asBool(amanatInjected, "paid", "demo.json.amanat.injected"),
+      paidByScrip: asBool(scripInjected, "paid", "demo.json.scrip.injected"),
       rejectionCode: asString(
-        amanatInjected,
+        scripInjected,
         "rejectionCode",
-        "demo.json.amanat.injected",
+        "demo.json.scrip.injected",
       ),
-      txHash: asString(amanatInjected, "txHash", "demo.json.amanat.injected"),
+      txHash: asString(scripInjected, "txHash", "demo.json.scrip.injected"),
     },
     overcharge: {
       amountUnits: overchargeUnits,
       amountUsdc: formatUsdcFixed(overchargeUnits),
-      paidByAmanat: asBool(
-        amanatOvercharge,
+      paidByScrip: asBool(
+        scripOvercharge,
         "paid",
-        "demo.json.amanat.overcharge",
+        "demo.json.scrip.overcharge",
       ),
       rejectionCode: asString(
-        amanatOvercharge,
+        scripOvercharge,
         "rejectionCode",
-        "demo.json.amanat.overcharge",
+        "demo.json.scrip.overcharge",
       ),
       txHash: asString(
-        amanatOvercharge,
+        scripOvercharge,
         "txHash",
-        "demo.json.amanat.overcharge",
+        "demo.json.scrip.overcharge",
       ),
     },
     naiveAttackerGainedUnits: naiveGainedUnits,
     naiveAttackerGainedUsdc: formatUsdcFixed(naiveGainedUnits),
-    amanatAttackerGainedUnits: amanatGainedUnits,
-    amanatAttackerGainedUsdc: formatUsdcFixed(amanatGainedUnits),
-    amanatRemainingUnits,
-    amanatRemainingUsdc: formatUsdcFixed(amanatRemainingUnits),
+    scripAttackerGainedUnits: scripGainedUnits,
+    scripAttackerGainedUsdc: formatUsdcFixed(scripGainedUnits),
+    scripRemainingUnits,
+    scripRemainingUsdc: formatUsdcFixed(scripRemainingUnits),
   };
 }
 

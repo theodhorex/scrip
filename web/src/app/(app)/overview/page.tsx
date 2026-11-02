@@ -37,7 +37,7 @@ export default function Home() {
 
       <section aria-labelledby="enforce-heading">
         <h2 id="enforce-heading" className="bp-app-section-title">
-          What the Amanat mandate is designed to enforce on-chain
+          What the Scrip mandate is designed to enforce on-chain
         </h2>
         <ul role="list" className="bp-app-grid3">
           {GUARANTEES.map((g, i) => (

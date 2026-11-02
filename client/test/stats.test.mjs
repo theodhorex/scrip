@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { reduceEvents, checkBudget, InvariantError } from '../src/stats.mjs';
 
 const e = (event, amount, extra = {}, id = 1) => ({
-  standard: 'amanat', version: '1.0.0', event,
+  standard: 'scrip', version: '1.0.0', event,
   data: [{ mandate_id: id, recipient: 'shop.testnet', amount: String(amount), ...extra }],
 });
 

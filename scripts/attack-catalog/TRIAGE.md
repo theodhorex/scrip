@@ -1,6 +1,6 @@
 # Triase Kasus FAIL Katalog Serangan (Lapis B dan Lapis C)
 
-Dokumen ini menyajikan analisis triase objektif dan menyeluruh terhadap seluruh **68 kasus FAIL** (64 kasus di Lapis B dan 4 kasus di Lapis C) yang teridentifikasi dalam kerangka katalog serangan protokol Amanat, sesuai spesifikasi `.agy/BRIEF_BACKEND.md` dan `scripts/attack-catalog/README.md`.
+Dokumen ini menyajikan analisis triase objektif dan menyeluruh terhadap seluruh **68 kasus FAIL** (64 kasus di Lapis B dan 4 kasus di Lapis C) yang teridentifikasi dalam kerangka katalog serangan protokol Scrip, sesuai spesifikasi `.agy/BRIEF_BACKEND.md` dan `scripts/attack-catalog/README.md`.
 
 Setiap kasus dinilai tanpa mengubah file pengujian maupun kode produksi, dan diklasifikasikan ke dalam 3 kelas standar:
 - **A. SAFE_MISMATCH**: Sistem tetap aman dan menolak serangan (fail-closed), namun kode galat atau format status yang dikembalikan berbeda dari ekspektasi pengujian.
@@ -29,7 +29,7 @@ Setiap kasus dinilai tanpa mengubah file pengujian maupun kode produksi, dan dik
 Dua kasus dalam Kategori 9 diidentifikasi sebagai **REAL_DEFECT**:
 
 ### `KAT-B-09-123` & `KAT-B-09-124`: Malformed RPC Block Height Dianggap Valid
-- **Jalur Berkas & Baris**: [`facilitator/src/relay.mjs:169-170`](file:///home/theo/Documents/dev/hackathon/amanat/facilitator/src/relay.mjs#L169-L170)
+- **Jalur Berkas & Baris**: [`facilitator/src/relay.mjs:169-170`](file:///home/theo/Documents/dev/hackathon/scrip/facilitator/src/relay.mjs#L169-L170)
 - **Kode Bermasalah**:
   ```javascript
   const block = await withTimeout(provider.viewBlock({ finality: 'final' }), rpcTimeoutMs);

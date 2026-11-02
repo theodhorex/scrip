@@ -11,30 +11,30 @@ test: contract-test demo-test script-test
 	cd facilitator && node --test test/
 
 contract-test:
-	cd contracts/amanat && cargo test --lib
+	cd contracts/scrip && cargo test --lib
 
 demo-test:
 	node --test demo/test/
 
 contract-build:
-	cd contracts/amanat && cargo build --release --target wasm32-unknown-unknown
+	cd contracts/scrip && cargo build --release --target wasm32-unknown-unknown
 
 # Sandbox integration tests. NOT part of `make test` (needs network for the
-# sandbox binary download + builds the ft_mock wasm and the real amanat.wasm).
+# sandbox binary download + builds the ft_mock wasm and the real scrip.wasm).
 .PHONY: contract-it
 contract-it:
-	cd contracts/amanat && cargo build --release --target wasm32-unknown-unknown
-	cd contracts/amanat/tests/ft_mock && cargo build --release --target wasm32-unknown-unknown
-	cd contracts/amanat && cargo test --test integration -- --test-threads=1
+	cd contracts/scrip && cargo build --release --target wasm32-unknown-unknown
+	cd contracts/scrip/tests/ft_mock && cargo build --release --target wasm32-unknown-unknown
+	cd contracts/scrip && cargo test --test integration -- --test-threads=1
 
 script-test:
 	cd scripts && node --test test/
 
 # Static analysis: clippy with warnings denied; cargo audit/deny only if installed.
 static:
-	cd contracts/amanat && cargo clippy --target wasm32-unknown-unknown -- -D warnings
-	@if command -v cargo-audit >/dev/null 2>&1; then cd contracts/amanat && (cargo audit || echo "cargo audit reported advisories: dev/test-only ones are triaged in contracts/amanat/STATIC.md; review any new runtime advisory"); else echo "cargo-audit not installed: skipped"; fi
-	@if command -v cargo-deny >/dev/null 2>&1; then cd contracts/amanat && cargo deny check; else echo "cargo-deny not installed: skipped"; fi
+	cd contracts/scrip && cargo clippy --target wasm32-unknown-unknown -- -D warnings
+	@if command -v cargo-audit >/dev/null 2>&1; then cd contracts/scrip && (cargo audit || echo "cargo audit reported advisories: dev/test-only ones are triaged in contracts/scrip/STATIC.md; review any new runtime advisory"); else echo "cargo-audit not installed: skipped"; fi
+	@if command -v cargo-deny >/dev/null 2>&1; then cd contracts/scrip && cargo deny check; else echo "cargo-deny not installed: skipped"; fi
 
 # Mutation check, only if the script exists in the repo.
 mutants:

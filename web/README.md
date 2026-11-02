@@ -22,8 +22,8 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 
 ## Data source
 
-Without `AMANAT_CONTRACT_ID` the pages show sample data (`src/lib/mock.ts`) under a "Sample data" banner. With it set, mandates are read server-side from NEAR **testnet** via a JSON-RPC `call_function` view call (`src/lib/chain.ts`, no wallet or SDK); the response is strictly validated in `src/lib/mandate-map.ts`.
-On any chain error the pages show an error state, never sample data. Events stay empty until an indexer exists. See `.env.example` (`AMANAT_RPC_URL`, `AMANAT_CONTRACT_ID`; server-side, testnet only).
+Without `SCRIP_CONTRACT_ID` the pages show sample data (`src/lib/mock.ts`) under a "Sample data" banner. With it set, mandates are read server-side from NEAR **testnet** via a JSON-RPC `call_function` view call (`src/lib/chain.ts`, no wallet or SDK); the response is strictly validated in `src/lib/mandate-map.ts`.
+On any chain error the pages show an error state, never sample data. Events stay empty until an indexer exists. See `.env.example` (`SCRIP_RPC_URL`, `SCRIP_CONTRACT_ID`; server-side, testnet only).
 Test the mapper: `node --test src/lib/mandate-map.test.mjs`.
 
 ## Learn More

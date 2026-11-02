@@ -20,7 +20,7 @@ const BASE_PARAMS = {
   amount: '1000',
   nonce: 1n,
   expiresAtMs: 1700000000000n,
-  contractId: 'amanat.testnet',
+  contractId: 'scrip.testnet',
 };
 
 // =============================================================================
@@ -49,7 +49,7 @@ export const CAT1_VARIATIONS = [
   { subId: '20', title: '64-hex implicit account ID (valid length & charset)', recipient: '0123456789abcdef'.repeat(4), expectedLabel: 'INERT', expectedCode: null },
   { subId: '21', title: 'Invalid punctuation @ in recipient', recipient: 'alice@near', expectedLabel: 'BLOCKED', expectedCode: 'RangeError' },
   { subId: '22', title: 'Slash directory traversal attempt in recipient', recipient: 'alice/../../bob', expectedLabel: 'BLOCKED', expectedCode: 'RangeError' },
-  { subId: '23', title: 'Recipient identical to contract account itself', recipient: 'amanat.testnet', expectedLabel: 'INERT', expectedCode: null },
+  { subId: '23', title: 'Recipient identical to contract account itself', recipient: 'scrip.testnet', expectedLabel: 'INERT', expectedCode: null },
   { subId: '24', title: 'Recipient identical to agent account itself', recipient: 'agent.testnet', expectedLabel: 'INERT', expectedCode: null },
   { subId: '25', title: 'Recipient as non-string Number type', recipient: 123456, expectedLabel: 'BLOCKED', expectedCode: 'TypeError' },
   { subId: '26', title: 'Recipient as boolean false type', recipient: false, expectedLabel: 'BLOCKED', expectedCode: 'TypeError' },
@@ -175,7 +175,7 @@ export function generateC2Category4Cases(variations = CAT4_VARIATIONS) {
 
 const VALID_SIGN_PARAMS = {
   agentId: 'agent.testnet',
-  contractId: 'amanat.testnet',
+  contractId: 'scrip.testnet',
   nonce: 1n,
   maxBlockHeight: 1000n,
 };
@@ -218,11 +218,11 @@ export const CAT6_VARIATIONS = [
   { subId: '27', title: 'signDelegate: action string literal', target: 'signDelegate', params: { ...VALID_SIGN_PARAMS, action: 'request_payment' }, expectedLabel: 'BLOCKED', expectedCode: 'TypeError' },
 
   // buildRequestPayment gas validations
-  { subId: '28', title: 'buildRequestPayment: prepaid gas 0n (refused)', target: 'buildRequestPayment', params: { contractId: 'amanat.testnet', mandateId: 1n, recipient: 'bob.near', amount: '1000', nonce: 1n, gas: 0n }, expectedLabel: 'BLOCKED', expectedCode: 'RangeError' },
-  { subId: '29', title: 'buildRequestPayment: prepaid gas 59 Tgas (below 60 Tgas)', target: 'buildRequestPayment', params: { contractId: 'amanat.testnet', mandateId: 1n, recipient: 'bob.near', amount: '1000', nonce: 1n, gas: 59n * TGAS }, expectedLabel: 'BLOCKED', expectedCode: 'RangeError' },
-  { subId: '30', title: 'buildRequestPayment: prepaid gas u64::MAX + 1n', target: 'buildRequestPayment', params: { contractId: 'amanat.testnet', mandateId: 1n, recipient: 'bob.near', amount: '1000', nonce: 1n, gas: U64_MAX_PLUS_1 }, expectedLabel: 'BLOCKED', expectedCode: 'RangeError' },
-  { subId: '31', title: 'buildRequestPayment: prepaid gas as Number instead of BigInt', target: 'buildRequestPayment', params: { contractId: 'amanat.testnet', mandateId: 1n, recipient: 'bob.near', amount: '1000', nonce: 1n, gas: 100000000000000 }, expectedLabel: 'BLOCKED', expectedCode: 'TypeError' },
-  { subId: '32', title: 'buildRequestPayment: prepaid gas exactly 60 Tgas (MIN_GAS boundary)', target: 'buildRequestPayment', params: { contractId: 'amanat.testnet', mandateId: 1n, recipient: 'bob.near', amount: '1000', nonce: 1n, gas: 60n * TGAS }, expectedLabel: 'INERT', expectedCode: null },
+  { subId: '28', title: 'buildRequestPayment: prepaid gas 0n (refused)', target: 'buildRequestPayment', params: { contractId: 'scrip.testnet', mandateId: 1n, recipient: 'bob.near', amount: '1000', nonce: 1n, gas: 0n }, expectedLabel: 'BLOCKED', expectedCode: 'RangeError' },
+  { subId: '29', title: 'buildRequestPayment: prepaid gas 59 Tgas (below 60 Tgas)', target: 'buildRequestPayment', params: { contractId: 'scrip.testnet', mandateId: 1n, recipient: 'bob.near', amount: '1000', nonce: 1n, gas: 59n * TGAS }, expectedLabel: 'BLOCKED', expectedCode: 'RangeError' },
+  { subId: '30', title: 'buildRequestPayment: prepaid gas u64::MAX + 1n', target: 'buildRequestPayment', params: { contractId: 'scrip.testnet', mandateId: 1n, recipient: 'bob.near', amount: '1000', nonce: 1n, gas: U64_MAX_PLUS_1 }, expectedLabel: 'BLOCKED', expectedCode: 'RangeError' },
+  { subId: '31', title: 'buildRequestPayment: prepaid gas as Number instead of BigInt', target: 'buildRequestPayment', params: { contractId: 'scrip.testnet', mandateId: 1n, recipient: 'bob.near', amount: '1000', nonce: 1n, gas: 100000000000000 }, expectedLabel: 'BLOCKED', expectedCode: 'TypeError' },
+  { subId: '32', title: 'buildRequestPayment: prepaid gas exactly 60 Tgas (MIN_GAS boundary)', target: 'buildRequestPayment', params: { contractId: 'scrip.testnet', mandateId: 1n, recipient: 'bob.near', amount: '1000', nonce: 1n, gas: 60n * TGAS }, expectedLabel: 'INERT', expectedCode: null },
 ];
 
 export function generateC2Category6Cases(variations = CAT6_VARIATIONS) {

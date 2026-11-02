@@ -1,4 +1,4 @@
-import { IS_SAMPLE_DATA } from "@/lib/amanat";
+import { IS_SAMPLE_DATA } from "@/lib/scrip";
 
 export function SampleDataBanner() {
   if (!IS_SAMPLE_DATA) return null;

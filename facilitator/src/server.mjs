@@ -187,7 +187,7 @@ export function createServer({ relayer, log = () => {}, ipLimiter = createRateLi
       isValid: true,
       payer: v.agentId,
       network: 'near:testnet',
-      scheme: 'amanat',
+      scheme: 'scrip',
       call: {
         mandate_id: String(v.call.mandateId),
         recipient: v.call.recipient,
@@ -320,7 +320,7 @@ export function createServer({ relayer, log = () => {}, ipLimiter = createRateLi
           : {};
         return send(res, 200, {
           ok: true,
-          kinds: [{ x402Version: 2, scheme: 'amanat', network: 'near:testnet', extra }],
+          kinds: [{ x402Version: 2, scheme: 'scrip', network: 'near:testnet', extra }],
         });
       }
       if (path === '/metrics') {

@@ -207,8 +207,8 @@ function validateRequirementsObj(reqs) {
   if (reqs === null || reqs === undefined || typeof reqs !== 'object' || Array.isArray(reqs)) {
     return no('BAD_PAYMENT_REQUIREMENTS', 'paymentRequirements must be a JSON object');
   }
-  if (reqs.scheme !== undefined && reqs.scheme !== 'amanat') {
-    return no('UNSUPPORTED_SCHEME', 'scheme must be amanat');
+  if (reqs.scheme !== undefined && reqs.scheme !== 'scrip') {
+    return no('UNSUPPORTED_SCHEME', 'scheme must be scrip');
   }
   if (reqs.network !== undefined && reqs.network !== 'near:testnet' && reqs.network !== 'testnet') {
     return no('UNSUPPORTED_NETWORK', 'network must be near:testnet');
@@ -274,8 +274,8 @@ export function parsePaymentSignatureHeader(headerValue, bodyRequirements) {
   if (sigObj.x402Version !== undefined && sigObj.x402Version !== 2) {
     return no('BAD_PAYMENT_SIGNATURE', 'x402Version must be 2');
   }
-  if (sigObj.scheme !== undefined && sigObj.scheme !== 'amanat') {
-    return no('UNSUPPORTED_SCHEME', 'scheme must be amanat');
+  if (sigObj.scheme !== undefined && sigObj.scheme !== 'scrip') {
+    return no('UNSUPPORTED_SCHEME', 'scheme must be scrip');
   }
   if (sigObj.network !== undefined && sigObj.network !== 'near:testnet' && sigObj.network !== 'testnet') {
     return no('UNSUPPORTED_NETWORK', 'network must be near:testnet');

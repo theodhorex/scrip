@@ -29,7 +29,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '../../..');
 const SCRIPTS_DIR = resolve(ROOT, 'scripts');
 const DEFAULT_USDC = '3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af';
-const DEFAULT_WASM = join(ROOT, 'contracts/amanat/target/wasm32-unknown-unknown/release/amanat.wasm');
+const DEFAULT_WASM = join(ROOT, 'contracts/scrip/target/wasm32-unknown-unknown/release/scrip.wasm');
 const T = (n) => BigInt(n) * 1_000_000_000_000n; // Tgas
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -1016,7 +1016,7 @@ export async function executeLayerE(c, session) {
               try { return JSON.parse(l.slice(11)); } catch { return null; }
             })
             .find((e) => e && e.event === 'rejected');
-          const errLog = logs.find((l) => l.startsWith('AMANAT_ERR:'));
+          const errLog = logs.find((l) => l.startsWith('SCRIP_ERR:'));
 
           if (rejectedEvent) {
             const code = rejectedEvent.data?.[0]?.code || 'REJECTED';
@@ -1027,12 +1027,12 @@ export async function executeLayerE(c, session) {
               note: `Contract rejected: ${code}`,
             };
           } else if (errLog) {
-            const code = errLog.slice('AMANAT_ERR:'.length).trim();
+            const code = errLog.slice('SCRIP_ERR:'.length).trim();
             actual = {
               label: 'BLOCKED',
               code,
               txHash,
-              note: `AMANAT_ERR: ${code}`,
+              note: `SCRIP_ERR: ${code}`,
             };
           } else {
             actual = {

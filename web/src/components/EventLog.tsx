@@ -1,7 +1,7 @@
 import { formatTime, formatUsdc } from "@/lib/format";
-import type { AmanatEvent } from "@/lib/types";
+import type { ScripEvent } from "@/lib/types";
 
-export function EventLog({ events }: { events: AmanatEvent[] }) {
+export function EventLog({ events }: { events: ScripEvent[] }) {
   if (events.length === 0) {
     return (
       <div role="status" className="bp-plate bp-app-empty">

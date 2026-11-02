@@ -1,6 +1,6 @@
-# PROPERTIES: Invarian Kontrak dan Temuan Audit Amanat
+# PROPERTIES: Invarian Kontrak dan Temuan Audit Scrip
 
-Dokumen ini memetakan seluruh invarian formal (P1..P10 per PRD v1.3 s4 / T-A) serta temuan audit (`AUDIT_1.md` dan `AUDIT_2.md` per T-E) ke nama fungsi tes NYATA di `contracts/amanat/src/tests.rs` dan `contracts/amanat/src/property_tests.rs`.
+Dokumen ini memetakan seluruh invarian formal (P1..P10 per PRD v1.3 s4 / T-A) serta temuan audit (`AUDIT_1.md` dan `AUDIT_2.md` per T-E) ke nama fungsi tes NYATA di `contracts/scrip/src/tests.rs` dan `contracts/scrip/src/property_tests.rs`.
 
 ---
 

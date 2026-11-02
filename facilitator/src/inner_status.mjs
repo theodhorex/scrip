@@ -1,5 +1,5 @@
 // Helper to extract inner contract status from transaction receipts outcome and logs.
-// Looks for EVENT_JSON (settled, refunded, rejected, reserved) and AMANAT_ERR:<code_name>.
+// Looks for EVENT_JSON (settled, refunded, rejected, reserved) and SCRIP_ERR:<code_name>.
 
 /**
  * Extracts all log lines from a transaction outcome object.
@@ -36,13 +36,13 @@ export function extractInnerStatus(outcome) {
 
   for (const log of logs) {
     if (typeof log !== 'string') continue;
-    if (log.startsWith('AMANAT_ERR:')) {
-      errCode = log.slice('AMANAT_ERR:'.length).trim();
+    if (log.startsWith('SCRIP_ERR:')) {
+      errCode = log.slice('SCRIP_ERR:'.length).trim();
     }
     if (log.startsWith('EVENT_JSON:')) {
       try {
         const ev = JSON.parse(log.slice('EVENT_JSON:'.length));
-        if (ev?.standard === 'amanat') {
+        if (ev?.standard === 'scrip') {
           if (ev.event === 'settled') settled = true;
           else if (ev.event === 'refunded') refunded = true;
           else if (ev.event === 'rejected') {

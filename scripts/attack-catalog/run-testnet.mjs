@@ -59,7 +59,7 @@ export function parseCliArgs(argv = process.argv.slice(2)) {
 
 export function printHelp() {
   console.log(`
-Amanat Attack Catalog - Layer E (Testnet) Runner
+Scrip Attack Catalog - Layer E (Testnet) Runner
 Usage: node scripts/attack-catalog/run-testnet.mjs [options]
 
 Options:

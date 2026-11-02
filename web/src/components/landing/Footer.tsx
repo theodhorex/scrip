@@ -8,7 +8,7 @@ export function Footer() {
       <div className="bp-container">
         <div className={styles.fRow}>
           <span>
-            <span className={styles.fName}>Amanat</span> · NEAR testnet
+            <span className={styles.fName}>Scrip</span> · NEAR testnet
           </span>
           <a
             className={styles.fLink}

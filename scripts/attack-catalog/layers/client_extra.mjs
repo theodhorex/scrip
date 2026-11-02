@@ -101,7 +101,7 @@ export async function executeLayerCExtra(c) {
     if (c.category === 6 && c.params?.target === 'tamperedSignatureCustom') {
       const keyPair = KeyPair.fromRandom('ed25519');
       const action = buildRequestPayment({
-        contractId: 'amanat.testnet',
+        contractId: 'scrip.testnet',
         mandateId: 1n,
         recipient: 'bob.near',
         amount: '1000',
@@ -109,7 +109,7 @@ export async function executeLayerCExtra(c) {
       });
       const r = await signDelegate({
         agentId: 'agent.testnet',
-        contractId: 'amanat.testnet',
+        contractId: 'scrip.testnet',
         action,
         nonce: 1n,
         maxBlockHeight: 1000n,

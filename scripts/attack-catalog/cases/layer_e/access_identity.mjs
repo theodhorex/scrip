@@ -1,5 +1,5 @@
 // Layer E (Testnet) Generator: Step 3 - Access and Identity (Category 5)
-// Conforms strictly to contracts/amanat/README.md specification:
+// Conforms strictly to contracts/scrip/README.md specification:
 // - Authorization matrix: predecessor_account_id checks on each method
 // - Prohibited identity combinations: owner == agent, guardian == owner
 // - Payable vs non-payable guards (rejecting deposits on non-payable methods)

@@ -13,7 +13,7 @@ export default function AttackPage() {
   const catalog = loadAttackCatalog();
 
   const naive = results?.naive ?? null;
-  const amanat = results?.amanat ?? null;
+  const scrip = results?.scrip ?? null;
 
   const catalogMatrix = catalog ? buildCategoryMatrix(catalog.cases) : [];
   const outOfScopeCases = catalog ? getOutOfScopeCases(catalog.cases) : [];
@@ -23,7 +23,7 @@ export default function AttackPage() {
       <header className="bp-app-head" style={{ marginBottom: 0 }}>
         <div>
           <span className="bp-chapter-label">Attack demo</span>
-          <h1 className="bp-app-title">Naive contract vs Amanat</h1>
+          <h1 className="bp-app-title">Naive contract vs Scrip</h1>
           <p className="bp-app-lede">
             Concurrency stress test evaluating race condition defense under parallel payment requests.
           </p>
@@ -51,7 +51,7 @@ export default function AttackPage() {
 
       <section aria-labelledby="comparison-heading">
         <h2 id="comparison-heading" className="bp-app-section-title">
-          Benchmark comparison: Naive vs Amanat
+          Benchmark comparison: Naive vs Scrip
         </h2>
         <div className="bp-plate bp-app-table-wrap">
           <table className="bp-app-table">
@@ -65,7 +65,7 @@ export default function AttackPage() {
                   </span>
                 </th>
                 <th scope="col">
-                  Amanat contract
+                  Scrip contract
                   <span className="block text-[11px] font-normal normal-case tracking-normal text-bp-pass">
                     Pre-transfer reservation lock
                   </span>
@@ -79,7 +79,7 @@ export default function AttackPage() {
                   {naive ? `${naive.broadcast.n} broadcast (${naive.broadcast.burstMs} ms)` : <span className="text-bp-muted">&ndash;</span>}
                 </td>
                 <td className="bp-app-mono">
-                  {amanat ? `${amanat.broadcast.n} broadcast (${amanat.broadcast.burstMs} ms)` : <span className="text-bp-muted">&ndash;</span>}
+                  {scrip ? `${scrip.broadcast.n} broadcast (${scrip.broadcast.burstMs} ms)` : <span className="text-bp-muted">&ndash;</span>}
                 </td>
               </tr>
               <tr>
@@ -88,7 +88,7 @@ export default function AttackPage() {
                   {naive ? formatUsdcUnits(naive.budget) : <span className="text-bp-muted">&ndash;</span>}
                 </td>
                 <td className="bp-app-mono">
-                  {amanat ? formatUsdcUnits(amanat.budget) : <span className="text-bp-muted">&ndash;</span>}
+                  {scrip ? formatUsdcUnits(scrip.budget) : <span className="text-bp-muted">&ndash;</span>}
                 </td>
               </tr>
               <tr>
@@ -103,9 +103,9 @@ export default function AttackPage() {
                   )}
                 </td>
                 <td className="bp-app-mono">
-                  {amanat ? (
+                  {scrip ? (
                     <span className="text-bp-pass font-semibold">
-                      {formatUsdcUnits(amanat.merchantReceived)}
+                      {formatUsdcUnits(scrip.merchantReceived)}
                     </span>
                   ) : (
                     <span className="text-bp-muted">&ndash;</span>
@@ -124,9 +124,9 @@ export default function AttackPage() {
                   )}
                 </td>
                 <td className="bp-app-mono">
-                  {amanat ? (
+                  {scrip ? (
                     <span>
-                      {formatUsdcUnits(amanat.spent)} / {formatUsdcUnits(amanat.budget)}
+                      {formatUsdcUnits(scrip.spent)} / {formatUsdcUnits(scrip.budget)}
                     </span>
                   ) : (
                     <span className="text-bp-muted">&ndash;</span>
@@ -145,9 +145,9 @@ export default function AttackPage() {
                   )}
                 </td>
                 <td className="bp-app-mono">
-                  {amanat ? (
+                  {scrip ? (
                     <span className="bp-app-chip bp-app-chip-pass">
-                      +{formatUsdcUnits(amanat.overBudgetBy)} (0 overdraw)
+                      +{formatUsdcUnits(scrip.overBudgetBy)} (0 overdraw)
                     </span>
                   ) : (
                     <span className="text-bp-muted">&ndash;</span>
@@ -166,9 +166,9 @@ export default function AttackPage() {
                   )}
                 </td>
                 <td className="bp-app-mono">
-                  {amanat ? (
+                  {scrip ? (
                     <span>
-                      {amanat.paymentsPaid} diterima / {amanat.broadcast.n - Number(amanat.paymentsPaid)} ditolak
+                      {scrip.paymentsPaid} diterima / {scrip.broadcast.n - Number(scrip.paymentsPaid)} ditolak
                     </span>
                   ) : (
                     <span className="text-bp-muted">&ndash;</span>
@@ -187,7 +187,7 @@ export default function AttackPage() {
                   )}
                 </td>
                 <td>
-                  {amanat ? (
+                  {scrip ? (
                     <span className="bp-app-chip bp-app-chip-pass">
                       PRESERVED
                     </span>
@@ -280,7 +280,7 @@ export default function AttackPage() {
               Di luar jaminan
             </h3>
             <p className="text-xs text-bp-muted mt-1 max-w-2xl leading-relaxed">
-              Skenario di luar model ancaman Amanat (misal: kunci full-access owner bocor, kontrak token berbahaya, RPC berbohong). Kasus-kasus ini tidak diklaim dapat dicegah oleh protokol dan sengaja dicatat secara jujur sebagai batasan yang diakui.
+              Skenario di luar model ancaman Scrip (misal: kunci full-access owner bocor, kontrak token berbahaya, RPC berbohong). Kasus-kasus ini tidak diklaim dapat dicegah oleh protokol dan sengaja dicatat secara jujur sebagai batasan yang diakui.
             </p>
           </div>
 

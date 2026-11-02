@@ -1,4 +1,4 @@
-// Schema definition and validation for Amanat Attack Catalog
+// Schema definition and validation for Scrip Attack Catalog
 // Conforms to .agy/BRIEF_BACKEND.md and web/docs/RENCANA_ATTACK_2500.md
 
 export const VALID_CATEGORIES = Object.freeze([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);

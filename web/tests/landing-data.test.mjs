@@ -27,7 +27,7 @@ test("shortens long NEAR testnet accounts cleanly", () => {
   assert.equal(shortenAccount("shop.testnet"), "shop.testnet");
 });
 
-test("verifies real attack.json facts: 30 x 0.10 USDC, budget 1.00, naive 1.40 (+0.40), Amanat 1.00", () => {
+test("verifies real attack.json facts: 30 x 0.10 USDC, budget 1.00, naive 1.40 (+0.40), Scrip 1.00", () => {
   assert.equal(RACE_DATA.network, "testnet");
   assert.equal(RACE_DATA.totalAttempts, 30);
   assert.equal(RACE_DATA.paymentUsdc, "0.10");
@@ -39,13 +39,13 @@ test("verifies real attack.json facts: 30 x 0.10 USDC, budget 1.00, naive 1.40 (
   assert.equal(RACE_DATA.naive.exceededBudget, true);
   assert.equal(RACE_DATA.naive.burstSeconds, "10.1");
 
-  assert.equal(RACE_DATA.amanat.spentUsdc, "1.00");
-  assert.equal(RACE_DATA.amanat.overBudgetUsdc, "0.00");
-  assert.equal(RACE_DATA.amanat.paymentsPaid, 10);
-  assert.equal(RACE_DATA.amanat.exceededBudget, false);
+  assert.equal(RACE_DATA.scrip.spentUsdc, "1.00");
+  assert.equal(RACE_DATA.scrip.overBudgetUsdc, "0.00");
+  assert.equal(RACE_DATA.scrip.paymentsPaid, 10);
+  assert.equal(RACE_DATA.scrip.exceededBudget, false);
 });
 
-test("verifies real demo.json facts: naive loses 0.80 to attacker, Amanat rejects injection & overcharge, attacker +0.00", () => {
+test("verifies real demo.json facts: naive loses 0.80 to attacker, Scrip rejects injection & overcharge, attacker +0.00", () => {
   assert.equal(HERO_DEMO_DATA.network, "testnet");
   assert.equal(HERO_DEMO_DATA.fundedUsdc, "1.00");
 
@@ -54,17 +54,17 @@ test("verifies real demo.json facts: naive loses 0.80 to attacker, Amanat reject
 
   assert.equal(HERO_DEMO_DATA.injected.amountUsdc, "0.80");
   assert.equal(HERO_DEMO_DATA.injected.paidByNaive, true);
-  assert.equal(HERO_DEMO_DATA.injected.paidByAmanat, false);
+  assert.equal(HERO_DEMO_DATA.injected.paidByScrip, false);
   assert.equal(HERO_DEMO_DATA.injected.rejectionCode, "RECIPIENT_NOT_ALLOWED");
   assert.ok(HERO_DEMO_DATA.attackerAccount.startsWith("dmx"));
 
   assert.equal(HERO_DEMO_DATA.overcharge.amountUsdc, "0.60");
-  assert.equal(HERO_DEMO_DATA.overcharge.paidByAmanat, false);
+  assert.equal(HERO_DEMO_DATA.overcharge.paidByScrip, false);
   assert.equal(HERO_DEMO_DATA.overcharge.rejectionCode, "OVER_PER_PAYMENT_CAP");
 
   assert.equal(HERO_DEMO_DATA.naiveAttackerGainedUsdc, "0.80");
-  assert.equal(HERO_DEMO_DATA.amanatAttackerGainedUsdc, "0.00");
-  assert.equal(HERO_DEMO_DATA.amanatRemainingUsdc, "0.80");
+  assert.equal(HERO_DEMO_DATA.scripAttackerGainedUsdc, "0.00");
+  assert.equal(HERO_DEMO_DATA.scripRemainingUsdc, "0.80");
 });
 
 test("rejects malformed JSON inputs in mapAttackData and mapDemoData", () => {

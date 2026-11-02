@@ -1,6 +1,6 @@
-// Layer E (Testnet) Generator: Step 6 - Naive Comparison Cases (amanat_naive)
-// 20 key budget comparison cases contrasting Amanat protections against a naive contract.
-// Each case is marked with comparison: true and target: 'amanat_naive'.
+// Layer E (Testnet) Generator: Step 6 - Naive Comparison Cases (scrip_naive)
+// 20 key budget comparison cases contrasting Scrip protections against a naive contract.
+// Each case is marked with comparison: true and target: 'scrip_naive'.
 // These cases demonstrate the counter-factual baseline where caps, ceilings, and approvals are absent.
 
 const COMPARISON_CASES = [
@@ -11,7 +11,7 @@ const COMPARISON_CASES = [
     amount: '1000000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (OVER_PER_PAYMENT_CAP)',
+    scripVerdict: 'BLOCKED (OVER_PER_PAYMENT_CAP)',
     naiveBehavior: 'Naive contract executes payment without cap verification; draining 1M units',
   },
   {
@@ -21,7 +21,7 @@ const COMPARISON_CASES = [
     amount: '2500000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (OVER_PER_PAYMENT_CAP)',
+    scripVerdict: 'BLOCKED (OVER_PER_PAYMENT_CAP)',
     naiveBehavior: 'Naive contract allows transaction exceeding intended budget',
   },
   {
@@ -31,7 +31,7 @@ const COMPARISON_CASES = [
     amount: '6250000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (OVER_PER_PAYMENT_CAP)',
+    scripVerdict: 'BLOCKED (OVER_PER_PAYMENT_CAP)',
     naiveBehavior: 'Naive contract drains contract token reserves without cap',
   },
   {
@@ -41,7 +41,7 @@ const COMPARISON_CASES = [
     amount: '500001',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (OVER_PER_PAYMENT_CAP)',
+    scripVerdict: 'BLOCKED (OVER_PER_PAYMENT_CAP)',
     naiveBehavior: 'Naive contract lacks cap boundary check',
   },
   {
@@ -51,7 +51,7 @@ const COMPARISON_CASES = [
     amount: '510000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (OVER_PER_PAYMENT_CAP)',
+    scripVerdict: 'BLOCKED (OVER_PER_PAYMENT_CAP)',
     naiveBehavior: 'Naive contract ignores cap constraint',
   },
   {
@@ -61,7 +61,7 @@ const COMPARISON_CASES = [
     amount: '1300000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (OVER_BUDGET)',
+    scripVerdict: 'BLOCKED (OVER_BUDGET)',
     naiveBehavior: 'Naive contract has no cumulative budget accounting',
   },
   {
@@ -71,7 +71,7 @@ const COMPARISON_CASES = [
     amount: '20000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (OVER_BUDGET after budget ceiling reached)',
+    scripVerdict: 'BLOCKED (OVER_BUDGET after budget ceiling reached)',
     naiveBehavior: 'Naive contract continues processing micro-flood until vault is empty',
   },
   {
@@ -81,7 +81,7 @@ const COMPARISON_CASES = [
     amount: '400000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (OVER_BUDGET on subsequent tranches)',
+    scripVerdict: 'BLOCKED (OVER_BUDGET on subsequent tranches)',
     naiveBehavior: 'Naive contract allows unlimited split payments',
   },
   {
@@ -91,7 +91,7 @@ const COMPARISON_CASES = [
     amount: '10000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (TOO_MANY_OPEN at 33 requests)',
+    scripVerdict: 'BLOCKED (TOO_MANY_OPEN at 33 requests)',
     naiveBehavior: 'Naive contract allows unbounded pending requests, risking state bloat',
   },
   {
@@ -101,7 +101,7 @@ const COMPARISON_CASES = [
     amount: '50000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (OVER_BUDGET)',
+    scripVerdict: 'BLOCKED (OVER_BUDGET)',
     naiveBehavior: 'Naive contract executes overdraw',
   },
   {
@@ -111,7 +111,7 @@ const COMPARISON_CASES = [
     amount: '500001',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (NEEDS_APPROVAL)',
+    scripVerdict: 'BLOCKED (NEEDS_APPROVAL)',
     naiveBehavior: 'Naive contract has no guardian approval requirement',
   },
   {
@@ -121,7 +121,7 @@ const COMPARISON_CASES = [
     amount: '1250000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (NEEDS_APPROVAL / OVER_PER_PAYMENT_CAP)',
+    scripVerdict: 'BLOCKED (NEEDS_APPROVAL / OVER_PER_PAYMENT_CAP)',
     naiveBehavior: 'Naive contract transfers entire balance without dual-key authorization',
   },
   {
@@ -131,7 +131,7 @@ const COMPARISON_CASES = [
     amount: '500000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (APPROVAL_USED)',
+    scripVerdict: 'BLOCKED (APPROVAL_USED)',
     naiveBehavior: 'Naive contract lacks replay protection for approvals',
   },
   {
@@ -141,7 +141,7 @@ const COMPARISON_CASES = [
     amount: '100000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (RECIPIENT_NOT_ALLOWED)',
+    scripVerdict: 'BLOCKED (RECIPIENT_NOT_ALLOWED)',
     naiveBehavior: 'Naive contract sends funds to any recipient passed by caller',
   },
   {
@@ -151,7 +151,7 @@ const COMPARISON_CASES = [
     amount: '100000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (RECIPIENT_NOT_ALLOWED)',
+    scripVerdict: 'BLOCKED (RECIPIENT_NOT_ALLOWED)',
     naiveBehavior: 'Naive contract allows self-dealing transfers to the agent',
   },
   {
@@ -161,7 +161,7 @@ const COMPARISON_CASES = [
     amount: '100000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (NOT_ACTIVE)',
+    scripVerdict: 'BLOCKED (NOT_ACTIVE)',
     naiveBehavior: 'Naive contract has no revocation state machine',
   },
   {
@@ -171,7 +171,7 @@ const COMPARISON_CASES = [
     amount: '2000000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (NOT_LOOSER / UNAUTHORIZED_GUARDIAN)',
+    scripVerdict: 'BLOCKED (NOT_LOOSER / UNAUTHORIZED_GUARDIAN)',
     naiveBehavior: 'Naive contract allows arbitrary budget increases',
   },
   {
@@ -181,7 +181,7 @@ const COMPARISON_CASES = [
     amount: '100000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (UNAUTHORIZED_AGENT)',
+    scripVerdict: 'BLOCKED (UNAUTHORIZED_AGENT)',
     naiveBehavior: 'Naive contract does not authenticate agent ownership of mandate',
   },
   {
@@ -191,7 +191,7 @@ const COMPARISON_CASES = [
     amount: '100000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (INSUFFICIENT_GAS < 60 Tgas)',
+    scripVerdict: 'BLOCKED (INSUFFICIENT_GAS < 60 Tgas)',
     naiveBehavior: 'Naive contract proceeds with low gas, causing dangling state',
   },
   {
@@ -201,13 +201,13 @@ const COMPARISON_CASES = [
     amount: '100000',
     expectedLabel: 'INERT',
     expectedCode: null,
-    amanatVerdict: 'BLOCKED (INVALID_TOKEN)',
+    scripVerdict: 'BLOCKED (INVALID_TOKEN)',
     naiveBehavior: 'Naive contract accepts arbitrary token deposits',
   },
 ];
 
 /**
- * Generates 20 naive comparison cases (amanat_naive).
+ * Generates 20 naive comparison cases (scrip_naive).
  * Each case is marked with comparison: true and reported separately.
  *
  * @returns {Array<object>}
@@ -219,16 +219,16 @@ export function generateComparisonCases() {
     layer: 'E',
     title: c.title,
     comparison: true,
-    target: 'amanat_naive',
+    target: 'scrip_naive',
     params: {
-      targetContract: 'amanat_naive.testnet',
+      targetContract: 'scrip_naive.testnet',
       method: 'request_payment',
       args: {
         recipient: 'merchant.testnet',
         amount: c.amount,
         nonce: Number(c.subId),
       },
-      amanatVerdict: c.amanatVerdict,
+      scripVerdict: c.scripVerdict,
       naiveBehavior: c.naiveBehavior,
     },
     expected: {

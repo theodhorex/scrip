@@ -1,4 +1,4 @@
-// Runner for Amanat Attack Catalog
+// Runner for Scrip Attack Catalog
 // Executes cases sequentially with per-case timeout and evaluates verdicts
 
 import { mkdirSync, writeFileSync } from 'node:fs';

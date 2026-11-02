@@ -11,7 +11,7 @@ import { basePolicy } from '../../facilitator/test/helpers.mjs';
 // controls no account or funds.
 const TEST_KEY = KeyPair.fromString('ed25519:2wy9q8uUbNV8ob41pL9Gf7Lz7kR2PzWkQk3vV5z5M8rBqYvR2wy9q8uUbNV8ob41pL9Gf7Lz7kR2PzWkQk3vV5z5M8rB');
 const AGENT = 'agent.testnet';
-const CONTRACT = 'amanat.testnet';
+const CONTRACT = 'scrip.testnet';
 
 const FIXED_REQUIREMENTS = Object.freeze({
   payTo: 'merchant.testnet',

@@ -42,7 +42,7 @@ const REJECT = "var(--bp-reject)";
 const FLOOR_W = 500;
 const FLOOR_D = 344;
 const NAIVE_Y = 48;
-const AMANAT_Y = 224;
+const SCRIP_Y = 224;
 const BELT_X0 = 96;
 const BELT_X1 = 396;
 const PORTAL_X = 244;
@@ -56,7 +56,7 @@ export function deriveBudgetPackets(data: LandingRaceData): number {
   const budget = BigInt(data.budgetUnits);
   return payment > BigInt(0)
     ? Number(budget / payment)
-    : data.amanat.paymentsPaid;
+    : data.scrip.paymentsPaid;
 }
 
 type PacketVisual = {
@@ -557,10 +557,10 @@ const StaticFloorAndBelts = memo(function StaticFloorAndBelts() {
         strokeDasharray="6 7"
       />
 
-      {/* LANE 2: Amanat diagonal conveyor belt + deflect notch into OVER_BUDGET bin */}
+      {/* LANE 2: Scrip diagonal conveyor belt + deflect notch into OVER_BUDGET bin */}
       <IsoBox
         x={BELT_X0}
-        y={AMANAT_Y - 18}
+        y={SCRIP_Y - 18}
         z={0}
         w={BELT_X1 - BELT_X0}
         d={36}
@@ -570,7 +570,7 @@ const StaticFloorAndBelts = memo(function StaticFloorAndBelts() {
       />
       <IsoBox
         x={BELT_X0}
-        y={AMANAT_Y - 21}
+        y={SCRIP_Y - 21}
         z={0}
         w={BELT_X1 - BELT_X0}
         d={3}
@@ -578,12 +578,12 @@ const StaticFloorAndBelts = memo(function StaticFloorAndBelts() {
         color={STEEL}
       />
       {/* Front rail split at x=196..238 so bounced coins deflect into OVER_BUDGET bin */}
-      <IsoBox x={BELT_X0} y={AMANAT_Y + 18} z={0} w={100} d={3} h={11} color={STEEL} />
-      <IsoBox x={238} y={AMANAT_Y + 18} z={0} w={158} d={3} h={11} color={STEEL} />
+      <IsoBox x={BELT_X0} y={SCRIP_Y + 18} z={0} w={100} d={3} h={11} color={STEEL} />
+      <IsoBox x={238} y={SCRIP_Y + 18} z={0} w={158} d={3} h={11} color={STEEL} />
       <IsoLine
         points={[
-          [BELT_X0 + 8, AMANAT_Y, 8.5],
-          [BELT_X1 - 6, AMANAT_Y, 8.5],
+          [BELT_X0 + 8, SCRIP_Y, 8.5],
+          [BELT_X1 - 6, SCRIP_Y, 8.5],
         ]}
         stroke="var(--bp-line-strong)"
         strokeWidth={1.3}
@@ -638,7 +638,7 @@ function StaticLabels({
         y={190}
         z={2}
         width={116}
-        text="Amanat vault"
+        text="Scrip vault"
         accent={PASS}
       />
       <g aria-hidden="true" {...legendFont} textAnchor="start">
@@ -674,8 +674,8 @@ export function RaceScene({
   const paymentUnits = BigInt(data.paymentUnits);
   const budgetPackets = deriveBudgetPackets(data);
   const naivePaidMax = data.naive.paymentsPaid;
-  const amanatPaidMax = data.amanat.paymentsPaid;
-  const maxGaugeSlots = Math.max(naivePaidMax, amanatPaidMax, budgetPackets);
+  const scripPaidMax = data.scrip.paymentsPaid;
+  const maxGaugeSlots = Math.max(naivePaidMax, scripPaidMax, budgetPackets);
 
   const dispatched = Math.min(total, Math.max(0, tick));
 
@@ -692,20 +692,20 @@ export function RaceScene({
     }
   }
 
-  let amanatPaidCount = 0;
-  for (let i = 0; i < amanatPaidMax; i += 1) {
+  let scripPaidCount = 0;
+  for (let i = 0; i < scripPaidMax; i += 1) {
     const age = tick - (i + 1);
-    if (age >= PACKET_PORTAL_TICKS) amanatPaidCount += 1;
+    if (age >= PACKET_PORTAL_TICKS) scripPaidCount += 1;
   }
 
-  let amanatBouncedCount = 0;
-  for (let i = amanatPaidMax; i < total; i += 1) {
+  let scripBouncedCount = 0;
+  for (let i = scripPaidMax; i < total; i += 1) {
     const age = tick - (i + 1);
-    if (age >= PACKET_PORTAL_TICKS) amanatBouncedCount += 1;
+    if (age >= PACKET_PORTAL_TICKS) scripBouncedCount += 1;
   }
 
   const gateClosed =
-    amanatPaidMax > 0 && tick >= amanatPaidMax + PACKET_PORTAL_TICKS;
+    scripPaidMax > 0 && tick >= scripPaidMax + PACKET_PORTAL_TICKS;
   const naiveExceeded = naivePaidCount > budgetPackets;
 
   const naiveSpentUsdc =
@@ -716,12 +716,12 @@ export function RaceScene({
     naivePaidCount === naivePaidMax
       ? data.naive.overBudgetUsdc
       : formatUsdcFixed(BigInt(naiveLeakedCount) * paymentUnits);
-  const amanatSpentUsdc =
-    amanatPaidCount === amanatPaidMax
-      ? data.amanat.spentUsdc
-      : formatUsdcFixed(BigInt(amanatPaidCount) * paymentUnits);
-  const amanatOverUsdc =
-    amanatPaidCount === amanatPaidMax ? data.amanat.overBudgetUsdc : "0.00";
+  const scripSpentUsdc =
+    scripPaidCount === scripPaidMax
+      ? data.scrip.spentUsdc
+      : formatUsdcFixed(BigInt(scripPaidCount) * paymentUnits);
+  const scripOverUsdc =
+    scripPaidCount === scripPaidMax ? data.scrip.overBudgetUsdc : "0.00";
 
   // Keyboard activation per W3C WAI-ARIA APG Button & Switch patterns:
   // Source: https://www.w3.org/WAI/ARIA/apg/patterns/button/
@@ -744,14 +744,14 @@ export function RaceScene({
     NAIVE_Y,
     92,
   ]);
-  const [amanatPortalLampX, amanatPortalLampY] = isoProject([
+  const [scripPortalLampX, scripPortalLampY] = isoProject([
     PORTAL_X + 6,
-    AMANAT_Y,
+    SCRIP_Y,
     80,
   ]);
-  const [amanatPortalBadgeX, amanatPortalBadgeY] = isoProject([
+  const [scripPortalBadgeX, scripPortalBadgeY] = isoProject([
     PORTAL_X + 6,
-    AMANAT_Y,
+    SCRIP_Y,
     98,
   ]);
   const [binCoralLampX, binCoralLampY] = isoProject([230, 302, 26]);
@@ -774,7 +774,7 @@ export function RaceScene({
     <svg
       viewBox="-310 -26 766 474"
       role="group"
-      aria-label={`Isometric race rig comparing Naive contract and Amanat vault across ${total} payments of ${data.paymentUsdc} USDC against a ${data.budgetUsdc} USDC budget`}
+      aria-label={`Isometric race rig comparing Naive contract and Scrip vault across ${total} payments of ${data.paymentUsdc} USDC against a ${data.budgetUsdc} USDC budget`}
       className={styles.sceneSvg}
       style={sceneVars}
     >
@@ -941,31 +941,31 @@ export function RaceScene({
         textFill={REJECT}
       />
 
-      {/* 5. Synchronous reservation cable from Amanat Vault to Amanat Portal */}
+      {/* 5. Synchronous reservation cable from Scrip Vault to Scrip Portal */}
       <IsoLine
         points={[
-          [VAULT_X, AMANAT_Y - 26, 4.5],
-          [PORTAL_X + 10, AMANAT_Y - 26, 4.5],
+          [VAULT_X, SCRIP_Y - 26, 4.5],
+          [PORTAL_X + 10, SCRIP_Y - 26, 4.5],
         ]}
         stroke={PASS}
         strokeWidth={2.2}
         opacity={gateClosed ? 1 : 0.72}
       />
 
-      {/* 6. Amanat Shooter + Amanat Portal (with slamming blast bar) + Amanat Vault */}
+      {/* 6. Scrip Shooter + Scrip Portal (with slamming blast bar) + Scrip Vault */}
       <ShooterMachine
-        laneY={AMANAT_Y}
+        laneY={SCRIP_Y}
         dispatched={dispatched}
         totalAttempts={total}
         paymentUsdc={data.paymentUsdc}
         firing={isRunning && dispatched < total}
       />
 
-      {/* Amanat Portal back pillar */}
-      <IsoShadow x={PORTAL_X} y={AMANAT_Y - 30} w={14} d={60} />
+      {/* Scrip Portal back pillar */}
+      <IsoShadow x={PORTAL_X} y={SCRIP_Y - 30} w={14} d={60} />
       <IsoBox
         x={PORTAL_X}
-        y={AMANAT_Y - 30}
+        y={SCRIP_Y - 30}
         z={0}
         w={12}
         d={10}
@@ -981,7 +981,7 @@ export function RaceScene({
       >
         <IsoBox
           x={PORTAL_X + 2}
-          y={AMANAT_Y - 18}
+          y={SCRIP_Y - 18}
           z={8}
           w={7}
           d={36}
@@ -991,22 +991,22 @@ export function RaceScene({
         />
       </g>
 
-      {/* Amanat Vault */}
+      {/* Scrip Vault */}
       <VaultUnit
-        laneY={AMANAT_Y}
-        paidCount={amanatPaidCount}
+        laneY={SCRIP_Y}
+        paidCount={scripPaidCount}
         budgetPackets={budgetPackets}
         maxGaugeSlots={maxGaugeSlots}
-        spentUsdc={amanatSpentUsdc}
-        overBudgetUsdc={amanatOverUsdc}
+        spentUsdc={scripSpentUsdc}
+        overBudgetUsdc={scripOverUsdc}
         totalAttempts={total}
         exceeded={false}
       />
 
-      {/* Amanat Portal front pillar + fortified lintel housing */}
+      {/* Scrip Portal front pillar + fortified lintel housing */}
       <IsoBox
         x={PORTAL_X}
-        y={AMANAT_Y + 20}
+        y={SCRIP_Y + 20}
         z={0}
         w={12}
         d={10}
@@ -1015,7 +1015,7 @@ export function RaceScene({
       />
       <IsoBox
         x={PORTAL_X - 2}
-        y={AMANAT_Y - 30}
+        y={SCRIP_Y - 30}
         z={62}
         w={16}
         d={60}
@@ -1023,11 +1023,11 @@ export function RaceScene({
         color={NAVY_RAISED}
         edge={PASS}
       />
-      <Rivets x={PORTAL_X - 2} y={AMANAT_Y - 30} z={75} w={16} d={60} inset={3} />
-      <circle cx={amanatPortalLampX} cy={amanatPortalLampY} r={5.5} fill={PASS} />
+      <Rivets x={PORTAL_X - 2} y={SCRIP_Y - 30} z={75} w={16} d={60} inset={3} />
+      <circle cx={scripPortalLampX} cy={scripPortalLampY} r={5.5} fill={PASS} />
       <text
-        x={amanatPortalBadgeX}
-        y={amanatPortalBadgeY}
+        x={scripPortalBadgeX}
+        y={scripPortalBadgeY}
         textAnchor="middle"
         fontFamily="var(--font-geist-mono), ui-monospace, monospace"
         fontSize={11}
@@ -1037,7 +1037,7 @@ export function RaceScene({
         {gateClosed ? `${data.budgetUsdc} · LOCKED` : `${data.budgetUsdc} · reserve`}
       </text>
 
-      {/* 7. Amanat "OVER_BUDGET x20" catch bin + small coral lamp */}
+      {/* 7. Scrip "OVER_BUDGET x20" catch bin + small coral lamp */}
       <IsoShadow x={168} y={260} w={70} d={48} />
       <IsoBox
         x={168}
@@ -1047,7 +1047,7 @@ export function RaceScene({
         d={48}
         h={17}
         color="#1e1726"
-        edge={amanatBouncedCount > 0 ? REJECT : "var(--bp-line-strong)"}
+        edge={scripBouncedCount > 0 ? REJECT : "var(--bp-line-strong)"}
       />
       <IsoBox
         x={173}
@@ -1065,9 +1065,9 @@ export function RaceScene({
         cx={binCoralLampX}
         cy={binCoralLampY}
         r={4.2}
-        fill={amanatBouncedCount > 0 ? REJECT : "#3a232b"}
+        fill={scripBouncedCount > 0 ? REJECT : "#3a232b"}
         className={
-          amanatBouncedCount > 0
+          scripBouncedCount > 0
             ? `${styles.pulseLamp} ${!isViewportActive ? styles.paused : ""}`
             : undefined
         }
@@ -1077,9 +1077,9 @@ export function RaceScene({
         y={316}
         z={4}
         width={142}
-        text={`OVER_BUDGET x${amanatBouncedCount}`}
+        text={`OVER_BUDGET x${scripBouncedCount}`}
         accent={REJECT}
-        textFill={amanatBouncedCount > 0 ? REJECT : "var(--bp-muted)"}
+        textFill={scripBouncedCount > 0 ? REJECT : "var(--bp-muted)"}
       />
 
       {/* 8. Foreground Master Firing Console (the physical object IS the control) */}

@@ -8,7 +8,7 @@ const BASE_PARAMS = {
   recipient: 'bob.near',
   nonce: 1n,
   expiresAtMs: 1700000000000n,
-  contractId: 'amanat.testnet',
+  contractId: 'scrip.testnet',
 };
 
 /**

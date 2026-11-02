@@ -23,9 +23,9 @@ export function LandingNav() {
   return (
     <header className="bp-nav-wrap">
       <div className="bp-nav-pill flex h-12 items-center justify-between gap-4">
-        <Link href="#top" className="flex items-center gap-2.5 text-bp-ink" aria-label="Amanat, top of page">
+        <Link href="#top" className="flex items-center gap-2.5 text-bp-ink" aria-label="Scrip, top of page">
           <Mark />
-          <span className="font-serif text-xl tracking-tight">Amanat</span>
+          <span className="font-serif text-xl tracking-tight">Scrip</span>
         </Link>
         <nav aria-label="Sections" className="hidden md:flex items-center gap-6">
           {LINKS.map((l) => (

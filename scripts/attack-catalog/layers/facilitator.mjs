@@ -282,7 +282,7 @@ export async function executeLayerB(c) {
     return {
       label: 'OUT_OF_SCOPE',
       code: c.expected?.code || 'OUT_OF_SCOPE',
-      note: c.params?.reason || 'Threat model boundary: scenario outside Amanat protocol guarantees',
+      note: c.params?.reason || 'Threat model boundary: scenario outside Scrip protocol guarantees',
     };
   }
 
@@ -358,7 +358,7 @@ export async function executeLayerB(c) {
   // mandate lookup instead of failing early on a missing header.
   if (c.params?.paymentSignature === true) {
     const requirements = {
-      scheme: 'amanat',
+      scheme: 'scrip',
       network: 'near:testnet',
       payTo: 'bob.testnet',
       amount: '1',
@@ -369,7 +369,7 @@ export async function executeLayerB(c) {
     const signed = await makeSigned({ nonce: 7n });
     headers['payment-signature'] = Buffer.from(JSON.stringify({
       x402Version: 2,
-      scheme: 'amanat',
+      scheme: 'scrip',
       network: 'near:testnet',
       payload: { signedDelegateAction: signed.b64 },
       paymentRequirements: requirements,

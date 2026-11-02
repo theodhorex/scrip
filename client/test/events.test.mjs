@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { parseEventLogs, toBig, EventParseError } from '../src/events.mjs';
 
 const line = (obj) => 'EVENT_JSON:' + JSON.stringify(obj);
-const ev = (event, data, over = {}) => ({ standard: 'amanat', version: '1.0.0', event, data, ...over });
+const ev = (event, data, over = {}) => ({ standard: 'scrip', version: '1.0.0', event, data, ...over });
 const base = { mandate_id: 1, recipient: 'shop.testnet', amount: '100' };
 
 test('parses valid events and keeps amounts as strings', () => {

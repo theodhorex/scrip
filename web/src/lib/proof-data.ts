@@ -132,7 +132,7 @@ export function mapProofData(raw: unknown): ProofLandingData {
       hash: asString(txs, "deploy", "gate.json.txs"),
       shortHash: shortenHash(asString(txs, "deploy", "gate.json.txs")),
       explorerUrl: explorerTxUrl(asString(txs, "deploy", "gate.json.txs")),
-      explanation: "Deploy Amanat smart contract wasm binary to NEAR testnet",
+      explanation: "Deploy Scrip smart contract wasm binary to NEAR testnet",
       resultSummary: wasmBytes > 0 ? `${Math.round(wasmBytes / 1024)} KB wasm bytecode` : null,
     },
     {

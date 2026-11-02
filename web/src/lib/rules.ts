@@ -1,4 +1,4 @@
-// Pure mirror of `request_payment` policy checks in `contracts/amanat/src/lib.rs` (steps 2 to 7).
+// Pure mirror of `request_payment` policy checks in `contracts/scrip/src/lib.rs` (steps 2 to 7).
 // Order is strict: first failing check wins and returns `{ ok: false, code }`.
 // Uses only erasable TypeScript syntax so `node --test` executes it natively.
 

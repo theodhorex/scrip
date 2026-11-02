@@ -146,7 +146,7 @@ function generateCategory5Extra() {
     },
     {
       title: 'Spoofed X-Forwarded-Host header',
-      headers: { 'x-forwarded-host': 'phishing.amanat.org' },
+      headers: { 'x-forwarded-host': 'phishing.scrip.org' },
       expectedCode: 'BAD_ENCODING',
     },
     {
@@ -171,7 +171,7 @@ function generateCategory5Extra() {
     },
     {
       title: 'X-Request-ID containing URL-encoded Unicode characters',
-      headers: { 'x-request-id': 'req-id-amanat-%E2%9A%A1-2026' },
+      headers: { 'x-request-id': 'req-id-scrip-%E2%9A%A1-2026' },
       expectedCode: 'BAD_ENCODING',
     },
     {
@@ -230,7 +230,7 @@ function generateCategory5Extra() {
       expectedCode: 'AGENT_NOT_ALLOWED',
     },
     {
-      title: 'Receiver is foreign token contract (usdc.testnet instead of amanat.testnet)',
+      title: 'Receiver is foreign token contract (usdc.testnet instead of scrip.testnet)',
       delegate: { receiverId: 'usdc.testnet', nonce: 515n },
       expectedCode: 'WRONG_RECEIVER',
     },
@@ -240,8 +240,8 @@ function generateCategory5Extra() {
       expectedCode: 'WRONG_RECEIVER',
     },
     {
-      title: 'Receiver contains uppercase characters (AMANAT.testnet)',
-      delegate: { receiverId: 'AMANAT.testnet', nonce: 517n },
+      title: 'Receiver contains uppercase characters (SCRIP.testnet)',
+      delegate: { receiverId: 'SCRIP.testnet', nonce: 517n },
       expectedCode: 'WRONG_RECEIVER',
     },
     {
@@ -754,7 +754,7 @@ function generateCategory9Extra() {
     },
     {
       title: 'Mock RPC key permission allowance is string "0"',
-      keyPermission: { FunctionCall: { allowance: '0', receiver_id: 'amanat.testnet', method_names: ['request_payment'] } },
+      keyPermission: { FunctionCall: { allowance: '0', receiver_id: 'scrip.testnet', method_names: ['request_payment'] } },
       expectedCode: 'KEY_NOT_ALLOWED',
     },
   ];

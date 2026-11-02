@@ -1,5 +1,5 @@
 // Layer E (Testnet) Generator: Step 5 - Token and Recipient (Categories 1 and 11)
-// Conforms strictly to contracts/amanat/README.md specification:
+// Conforms strictly to contracts/scrip/README.md specification:
 // - Category 1: Recipient allowlist, homoglyphs, subaccounts, implicit 64-hex (~35 cases)
 // - Category 11: Token isolation, ft_on_transfer validation, zero amounts, wrong tokens (~25 cases)
 // Total cases: 60
@@ -84,8 +84,8 @@ export function generateCategory1Cases() {
     note: 'Agent is not an allowed recipient',
   });
   pushCase({
-    title: 'Payment to contract self-address (amanat.testnet)',
-    recipient: 'amanat.testnet',
+    title: 'Payment to contract self-address (scrip.testnet)',
+    recipient: 'scrip.testnet',
     expectedLabel: 'BLOCKED',
     expectedCode: 'RECIPIENT_NOT_ALLOWED',
     note: 'Contract itself is not an allowed recipient',

@@ -12,7 +12,7 @@ import { createServer } from '../src/server.mjs';
 import { basePolicy, makeSigned, fakeProvider } from './helpers.mjs';
 
 function mkDbPath(name) {
-  return join(tmpdir(), `amanat-test-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
+  return join(tmpdir(), `scrip-test-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}.db`);
 }
 
 test('F-A: replay dedupe survives restart with persistent sqlite db', async () => {
@@ -24,7 +24,7 @@ test('F-A: replay dedupe survives restart with persistent sqlite db', async () =
     relayMetaTransaction: async () => ({
       transaction: { hash: 'HASH_PERSIST_1' },
       status: { SuccessValue: '' },
-      receipts_outcome: [{ outcome: { logs: ['EVENT_JSON:{"standard":"amanat","version":"1.0.0","event":"settled","data":[]}'] } }],
+      receipts_outcome: [{ outcome: { logs: ['EVENT_JSON:{"standard":"scrip","version":"1.0.0","event":"settled","data":[]}'] } }],
     }),
   };
 
@@ -79,7 +79,7 @@ test('F-A: GET /status/:hash reconciles chain status for pending tx', async () =
       return {
         transaction: { hash: args.txHash },
         status: { SuccessValue: '' },
-        receipts_outcome: [{ outcome: { logs: ['EVENT_JSON:{"standard":"amanat","version":"1.0.0","event":"settled","data":[]}'] } }],
+        receipts_outcome: [{ outcome: { logs: ['EVENT_JSON:{"standard":"scrip","version":"1.0.0","event":"settled","data":[]}'] } }],
       };
     },
   };
@@ -128,7 +128,7 @@ test('F-A: HTTP GET /status/:hash returns 200 with inner_status', async () => {
     viewTransactionStatusWithReceipts: async ({ txHash }) => ({
       transaction: { hash: txHash },
       status: { SuccessValue: '' },
-      receipts_outcome: [{ outcome: { logs: ['AMANAT_ERR:OVER_BUDGET'] } }],
+      receipts_outcome: [{ outcome: { logs: ['SCRIP_ERR:OVER_BUDGET'] } }],
     }),
   };
 

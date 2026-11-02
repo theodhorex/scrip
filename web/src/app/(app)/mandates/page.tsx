@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
-import { listMandates } from "@/lib/amanat";
+import { listMandates } from "@/lib/scrip";
 import { formatTime, formatUsdc } from "@/lib/format";
 import { BudgetBar } from "@/components/BudgetBar";
 import { ChainError } from "@/components/ChainError";

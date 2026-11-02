@@ -9,7 +9,7 @@ import {
 import { validateSignedDelegate, decodeSignedDelegate } from '../../facilitator/src/validate.mjs';
 import { loadPolicy } from '../../facilitator/src/policy.mjs';
 
-const CONTRACT = 'amanat.testnet';
+const CONTRACT = 'scrip.testnet';
 const AGENT = 'agent1.testnet';
 const TGAS = 10n ** 12n;
 const policy = loadPolicy({

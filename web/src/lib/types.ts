@@ -1,4 +1,4 @@
-// Mirrors the Mandate model in AMANAT_PRD_dan_Rencana_Eksekusi.md section 3.1.
+// Mirrors the Mandate model in SCRIP_PRD_dan_Rencana_Eksekusi.md section 3.1.
 // All amounts are U128 JSON strings (token base units).
 export type U128 = string;
 
@@ -23,8 +23,8 @@ export type Mandate = {
   recipients: string[];
 };
 
-// Event names from the NEP-297 standard `amanat` v1.0.0 (PRD section 3.5).
-export type AmanatEventName =
+// Event names from the NEP-297 standard `scrip` v1.0.0 (PRD section 3.5).
+export type ScripEventName =
   | "mandate_created"
   | "deposited"
   | "reserved"
@@ -50,8 +50,8 @@ export type RejectCode =
   | "APPROVAL_USED"
   | "APPROVAL_EXPIRED";
 
-export type AmanatEvent = {
-  name: AmanatEventName;
+export type ScripEvent = {
+  name: ScripEventName;
   mandateId: number;
   requestId?: number;
   recipient?: string;

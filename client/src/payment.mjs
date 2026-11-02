@@ -1,4 +1,4 @@
-// x402-style client payment helpers for Amanat.
+// x402-style client payment helpers for Scrip.
 // Source: https://github.com/x402-foundation/x402/blob/2aa22d3e6a38547a8232737599d9f519c9ac5533/specs/schemes/exact/scheme_exact_near.md
 import { buildRequestPayment, signDelegate, DEFAULT_GAS } from './delegate.mjs';
 import { checkRecipient, toU128, toU64 } from './intent.mjs';
@@ -29,7 +29,7 @@ function decodeB64OrJson(input) {
 }
 
 /**
- * Builds and signs an x402-style PAYMENT-SIGNATURE payload containing an Amanat NEP-366 DelegateAction.
+ * Builds and signs an x402-style PAYMENT-SIGNATURE payload containing an Scrip NEP-366 DelegateAction.
  *
  * @param {object} requirements - paymentRequirements ({ payTo, amount, asset, mandate, maxTimeoutSeconds, extra })
  * @param {object} options - { agentId, keyPair, nonce, maxBlockHeight, contractId?, requestNonce?, gas?, network?, scheme? }
@@ -107,7 +107,7 @@ export async function buildPaymentSignature(requirements, options = {}) {
     keyPair,
   });
 
-  const scheme = options.scheme ?? requirements.scheme ?? 'amanat';
+  const scheme = options.scheme ?? requirements.scheme ?? 'scrip';
   const network = options.network ?? requirements.network ?? 'near:testnet';
 
   const payload = {

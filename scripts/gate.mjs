@@ -1,5 +1,5 @@
 // Gate (B5): one real end-to-end cycle on TESTNET through our own facilitator.
-//   create accounts -> deploy final amanat.wasm -> create mandate -> fund (USDC) ->
+//   create accounts -> deploy final scrip.wasm -> create mandate -> fund (USDC) ->
 //   agent FC key signs NEP-366 delegates -> POST /relay (facilitator pays gas) ->
 //   valid payment settles, attacks are rejected -> revoke + withdraw -> sweep + delete accounts.
 // Result: results/gate.json. Keys come only from files (env), never printed. Testnet only.
@@ -22,7 +22,7 @@ const NEAR_DIR = process.env.KEY_DIR ?? '/home/theo/Documents/dev/hackathon/NEAR
 const FUNDER_KEY_FILE = process.env.FUNDER_KEY_FILE ?? join(NEAR_DIR, 'priv_key.txt');
 const RELAYER_KEY_FILE = process.env.RELAYER_KEY_FILE ?? join(NEAR_DIR, 'priv_key_relayer.txt');
 const USDC = '3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af';
-const WASM = join(ROOT, 'contracts/amanat/target/wasm32-unknown-unknown/release/amanat.wasm');
+const WASM = join(ROOT, 'contracts/scrip/target/wasm32-unknown-unknown/release/scrip.wasm');
 const PORT = Number(process.env.PORT ?? 8791);
 
 const T = (n) => BigInt(n) * 1_000_000_000_000n; // Tgas
@@ -70,7 +70,7 @@ async function txEvents(txHash, sender) {
         return {
           logs, failed: Boolean(failure),
           events: logs.filter((l) => l.startsWith('EVENT_JSON:')).map((l) => JSON.parse(l.slice(11))),
-          errors: logs.filter((l) => l.startsWith('AMANAT_ERR:')),
+          errors: logs.filter((l) => l.startsWith('SCRIP_ERR:')),
         };
       }
     } catch { /* retry */ } finally { clearTimeout(timer); }

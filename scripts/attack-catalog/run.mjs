@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// CLI runner for Amanat Attack Catalog
+// CLI runner for Scrip Attack Catalog
 // Usage: node scripts/attack-catalog/run.mjs [--layers C] [--out <path>] [--timeout <ms>]
 
 import { parseArgs } from 'node:util';
@@ -15,7 +15,7 @@ const options = {
 
 function printHelp() {
   console.log(`
-Amanat Attack Catalog Runner
+Scrip Attack Catalog Runner
 Usage: node scripts/attack-catalog/run.mjs [options]
 
 Options:

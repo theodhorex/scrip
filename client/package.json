@@ -1,9 +1,9 @@
 {
-  "name": "amanat-client",
+  "name": "scrip-client",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Pure client library for Amanat: intent hash, NEP-297 event parser, stats reducer",
+  "description": "Pure client library for Scrip: intent hash, NEP-297 event parser, stats reducer",
   "scripts": {
     "test": "node --test test/"
   },

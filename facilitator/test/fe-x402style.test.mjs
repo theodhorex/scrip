@@ -14,8 +14,8 @@ function makeEnv({
   height = 1000,
   keyNonce = 0n,
   outcomeLogs = [
-    'EVENT_JSON:{"standard":"amanat","version":"1.0.0","event":"reserved","data":[{"mandate_id":1,"recipient":"bob.testnet","amount":"200000"}]}',
-    'EVENT_JSON:{"standard":"amanat","version":"1.0.0","event":"settled","data":[{"mandate_id":1,"recipient":"bob.testnet","amount":"200000"}]}',
+    'EVENT_JSON:{"standard":"scrip","version":"1.0.0","event":"reserved","data":[{"mandate_id":1,"recipient":"bob.testnet","amount":"200000"}]}',
+    'EVENT_JSON:{"standard":"scrip","version":"1.0.0","event":"settled","data":[{"mandate_id":1,"recipient":"bob.testnet","amount":"200000"}]}',
   ],
   onRelay,
   mandate = { id: 1, token: 'usdc.testnet' },
@@ -84,7 +84,7 @@ async function withEnv(opts, fn) {
   }
 }
 
-test('F-E: GET /supported returns x402Version 2 amanat scheme on near:testnet and 405 on POST', async () => {
+test('F-E: GET /supported returns x402Version 2 scrip scheme on near:testnet and 405 on POST', async () => {
   await withEnv({}, async (baseUrl) => {
     const res = await fetch(`${baseUrl}/supported`);
     assert.equal(res.status, 200);
@@ -95,7 +95,7 @@ test('F-E: GET /supported returns x402Version 2 amanat scheme on near:testnet an
     assert.equal(body.kinds.length, 1);
     assert.deepEqual(body.kinds[0], {
       x402Version: 2,
-      scheme: 'amanat',
+      scheme: 'scrip',
       network: 'near:testnet',
       extra: {
         contractId: CONTRACT,
@@ -112,7 +112,7 @@ test('F-E: GET /supported returns x402Version 2 amanat scheme on near:testnet an
 function mkPaymentHeader(signedDelegateBase64, paymentRequirements, extraTop = {}) {
   const payload = {
     x402Version: 2,
-    scheme: 'amanat',
+    scheme: 'scrip',
     network: 'near:testnet',
     payload: { signedDelegateAction: signedDelegateBase64 },
     paymentRequirements,
@@ -168,7 +168,7 @@ test('F-E: POST /verify succeeds for valid signature + matching requirements wit
     assert.equal(body.isValid, true);
     assert.equal(body.payer, AGENT);
     assert.equal(body.network, 'near:testnet');
-    assert.equal(body.scheme, 'amanat');
+    assert.equal(body.scheme, 'scrip');
     assert.deepEqual(body.call, {
       mandate_id: '1',
       recipient: 'bob.testnet',
@@ -351,8 +351,8 @@ test('F-E: POST /settle rejects recipient/amount mismatch without broadcasting',
 test('F-E: POST /settle handles inner status Rejected from contract', async () => {
   const envOpts = {
     outcomeLogs: [
-      'EVENT_JSON:{"standard":"amanat","version":"1.0.0","event":"rejected","data":[{"code":"OVER_PER_PAYMENT_CAP"}]}',
-      'AMANAT_ERR:OVER_PER_PAYMENT_CAP',
+      'EVENT_JSON:{"standard":"scrip","version":"1.0.0","event":"rejected","data":[{"code":"OVER_PER_PAYMENT_CAP"}]}',
+      'SCRIP_ERR:OVER_PER_PAYMENT_CAP',
     ],
   };
   await withEnv(envOpts, async (baseUrl, env) => {

@@ -51,7 +51,7 @@ export function parseCliArgs(argv = process.argv.slice(2)) {
 
 export function printHelp() {
   console.log(`
-Amanat Attack Catalog - Layer Output Merger
+Scrip Attack Catalog - Layer Output Merger
 Usage: node scripts/attack-catalog/merge.mjs [options]
 
 Options:

@@ -1,4 +1,4 @@
-# amanat-client (pure library)
+# scrip-client (pure library)
 
 Node ESM, no network, no keys held. One dependency: `near-api-js` 7.4.0 (pinned, for `delegate.mjs`; run `npm install` once). Run: `make -C .. test` or `cd client && npm test`.
 
@@ -6,7 +6,7 @@ Node ESM, no network, no keys held. One dependency: `near-api-js` 7.4.0 (pinned,
 - `intentHash({mandateId, recipient, amount, nonce, expiresAtMs})` → `Uint8Array(32)`; `intentHashHex(...)` → hex.
   `mandateId/nonce/expiresAtMs`: BigInt or safe-integer Number. `amount`: canonical decimal string.
   Throws `TypeError` (wrong type, non-integer Number) / `RangeError` (range, non-canonical, bad recipient).
-- `parseEventLogs(logs)` → validated `EVENT_JSON:` events of standard `amanat`/`1.0.0`; foreign standards ignored;
+- `parseEventLogs(logs)` → validated `EVENT_JSON:` events of standard `scrip`/`1.0.0`; foreign standards ignored;
   malformed lines throw `EventParseError` (`.lineNumber`, 1-based). `toBig(amountString)` → BigInt.
 - `reduceEvents(events)` → `Map<mandate_id, {deposited, reserved, spent, refunded, withdrawn, rejectedByCode, open}>`;
   throws `InvariantError`. `checkBudget(state, budget)` → `{ok, overBy}` (ok iff spent+reserved <= budget).

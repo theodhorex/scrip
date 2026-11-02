@@ -93,14 +93,14 @@ export function RaceSection({ data }: Props) {
   };
 
   const dispatched = Math.min(data.totalAttempts, effectiveTick);
-  const amanatRejected = Math.max(
+  const scripRejected = Math.max(
     0,
-    data.totalAttempts - data.amanat.paymentsPaid,
+    data.totalAttempts - data.scrip.paymentsPaid,
   );
   const burstSecondsRounded = Math.round(Number(data.naive.burstSeconds));
 
   const liveAnnouncement = isComplete
-    ? `Result: Naive contract paid ${data.naive.paymentsPaid} of ${data.totalAttempts} (${data.naive.spentUsdc} USDC, leaked ${data.naive.overBudgetUsdc} USDC). Amanat vault locked at ${data.amanat.paymentsPaid} of ${data.totalAttempts} (${data.amanat.spentUsdc} USDC) and bounced ${amanatRejected} excess calls with OVER_BUDGET.`
+    ? `Result: Naive contract paid ${data.naive.paymentsPaid} of ${data.totalAttempts} (${data.naive.spentUsdc} USDC, leaked ${data.naive.overBudgetUsdc} USDC). Scrip vault locked at ${data.scrip.paymentsPaid} of ${data.totalAttempts} (${data.scrip.spentUsdc} USDC) and bounced ${scripRejected} excess calls with OVER_BUDGET.`
     : paused
       ? `Burst paused at ${dispatched} of ${data.totalAttempts} requests.`
       : `Firing ${data.totalAttempts} parallel ${data.paymentUsdc} USDC requests against a ${data.budgetUsdc} USDC budget.`;
@@ -124,8 +124,8 @@ export function RaceSection({ data }: Props) {
             {data.totalAttempts} parallel {data.paymentUsdc} USDC requests hit a{" "}
             {data.budgetUsdc} USDC mandate in a ~{burstSecondsRounded}s burst.
             The naive contract checks balance inside an async callback and leaks{" "}
-            {data.naive.overBudgetUsdc} USDC. Amanat reserves atomically up
-            front and drops the blast bar at {data.amanat.spentUsdc} USDC.
+            {data.naive.overBudgetUsdc} USDC. Scrip reserves atomically up
+            front and drops the blast bar at {data.scrip.spentUsdc} USDC.
           </p>
 
           <p className="mt-5 text-[13px] font-mono text-bp-muted max-w-[52ch] leading-relaxed">
@@ -183,12 +183,12 @@ export function RaceSection({ data }: Props) {
                 <strong className="text-bp-reject">
                   {data.naive.spentUsdc}
                 </strong>{" "}
-                (+{data.naive.overBudgetUsdc}) · Amanat{" "}
+                (+{data.naive.overBudgetUsdc}) · Scrip{" "}
                 <strong className="text-bp-pass">
-                  {data.amanat.spentUsdc}
+                  {data.scrip.spentUsdc}
                 </strong>{" "}
                 (<code className="text-bp-reject">OVER_BUDGET</code> ×
-                {amanatRejected})
+                {scripRejected})
               </span>
             </div>
 
@@ -227,13 +227,13 @@ export function RaceSection({ data }: Props) {
             </div>
             <div>
               <span className="bp-display bp-tabular block text-[clamp(3.5rem,8vw,6rem)] leading-none text-bp-pass">
-                {data.amanat.spentUsdc}
+                {data.scrip.spentUsdc}
               </span>
               <span className="mt-2 block text-[13px] font-mono text-bp-muted leading-relaxed">
                 <span className="text-bp-pass mr-1.5" aria-hidden="true">
                   ✓
                 </span>
-                Amanat held the line; {amanatRejected} calls got OVER_BUDGET.
+                Scrip held the line; {scripRejected} calls got OVER_BUDGET.
               </span>
             </div>
           </div>

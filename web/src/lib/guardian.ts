@@ -1,4 +1,4 @@
-// Pure mirror of `tighten` and `loosen` policy checks in `contracts/amanat/src/lib.rs`.
+// Pure mirror of `tighten` and `loosen` policy checks in `contracts/scrip/src/lib.rs`.
 // Order of checks, bound conditions, and error codes match lib.rs identically.
 // Uses only erasable TypeScript syntax so `node --test` executes it natively.
 

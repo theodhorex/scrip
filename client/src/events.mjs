@@ -1,6 +1,6 @@
-// NEP-297 event parser for the `amanat` standard (PRD 3.5). Pure: no I/O.
+// NEP-297 event parser for the `scrip` standard (PRD 3.5). Pure: no I/O.
 
-export const STANDARD = 'amanat';
+export const STANDARD = 'scrip';
 export const VERSION = '1.0.0';
 export const EVENT_NAMES = Object.freeze([
   'mandate_created', 'deposited', 'reserved', 'rejected', 'settled', 'refunded',
@@ -27,7 +27,7 @@ export class EventParseError extends Error {
  * @property {string} amount     canonical decimal string
  * @property {string} [code]     required for `rejected`
  * @property {boolean} [transferred] required for `stale_resolved`
- * @typedef {{standard: 'amanat', version: '1.0.0', event: string, data: EventData[]}} AmanatEvent
+ * @typedef {{standard: 'scrip', version: '1.0.0', event: string, data: EventData[]}} ScripEvent
  */
 
 /** Convert a canonical decimal amount string to BigInt. */
@@ -63,10 +63,10 @@ function validateData(event, d, n, i) {
 }
 
 /**
- * Extract and validate amanat events from contract logs.
+ * Extract and validate scrip events from contract logs.
  * @param {string[]} logs
- * @returns {AmanatEvent[]}
- * @throws {EventParseError} on a malformed amanat line
+ * @returns {ScripEvent[]}
+ * @throws {EventParseError} on a malformed scrip line
  */
 export function parseEventLogs(logs) {
   const out = [];

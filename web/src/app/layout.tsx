@@ -25,17 +25,17 @@ const DESCRIPTION =
   "Capped spending mandates for AI agents on NEAR testnet: keys can be stolen, funds can't.";
 
 export const metadata: Metadata = {
-  title: "Amanat | Agent spending mandates",
+  title: "Scrip | Agent spending mandates",
   description: DESCRIPTION,
   openGraph: {
-    title: "Amanat | Agent spending mandates",
+    title: "Scrip | Agent spending mandates",
     description: DESCRIPTION,
     type: "website",
-    siteName: "Amanat",
+    siteName: "Scrip",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Amanat | Agent spending mandates",
+    title: "Scrip | Agent spending mandates",
     description: DESCRIPTION,
   },
 };

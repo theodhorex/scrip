@@ -13,7 +13,7 @@ import {
   getOutOfScopeCases,
 } from "../src/lib/attack-data.ts";
 
-const tempDir = join(tmpdir(), "amanat-test-" + Date.now());
+const tempDir = join(tmpdir(), "scrip-test-" + Date.now());
 mkdirSync(tempDir, { recursive: true });
 
 test("formatUsdcUnits formats raw 6-decimal units to clean display string", () => {
@@ -39,14 +39,14 @@ test("loadAttackResults: berkas ada (real results/attack.json)", () => {
   assert.equal(result.naive.overBudgetBy, "400000");
   assert.equal(result.naive.paymentsPaid, "14");
 
-  assert.ok(result.amanat !== null);
-  assert.equal(result.amanat.contract, "amanat");
-  assert.equal(result.amanat.budget, "1000000");
-  assert.equal(result.amanat.merchantReceived, "1000000");
-  assert.equal(result.amanat.spent, "1000000");
-  assert.equal(result.amanat.exceededBudget, false);
-  assert.equal(result.amanat.overBudgetBy, "0");
-  assert.equal(result.amanat.paymentsPaid, "10");
+  assert.ok(result.scrip !== null);
+  assert.equal(result.scrip.contract, "scrip");
+  assert.equal(result.scrip.budget, "1000000");
+  assert.equal(result.scrip.merchantReceived, "1000000");
+  assert.equal(result.scrip.spent, "1000000");
+  assert.equal(result.scrip.exceededBudget, false);
+  assert.equal(result.scrip.overBudgetBy, "0");
+  assert.equal(result.scrip.paymentsPaid, "10");
 });
 
 test("loadAttackResults: berkas hilang mengembalikan null tanpa melempar", () => {

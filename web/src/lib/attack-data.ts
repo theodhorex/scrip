@@ -10,7 +10,7 @@ export type AttackBroadcast = {
 };
 
 export type AttackCaseResult = {
-  contract: "naive" | "amanat";
+  contract: "naive" | "scrip";
   broadcast: AttackBroadcast;
   budget: string;
   merchantReceived: string;
@@ -38,7 +38,7 @@ export type AttackRunResult = {
   params: AttackParams;
   cases: AttackCaseResult[];
   naive: AttackCaseResult | null;
-  amanat: AttackCaseResult | null;
+  scrip: AttackCaseResult | null;
 };
 
 export type AttackCatalogCase = {
@@ -214,13 +214,13 @@ export function parseAttackResults(raw: unknown): AttackRunResult | null {
 
   const cases: AttackCaseResult[] = [];
   let naiveCase: AttackCaseResult | null = null;
-  let amanatCase: AttackCaseResult | null = null;
+  let scripCase: AttackCaseResult | null = null;
 
   for (const item of run.cases) {
     if (!item || typeof item !== "object") return null;
     const c = item as Record<string, unknown>;
 
-    if (c.contract !== "naive" && c.contract !== "amanat") return null;
+    if (c.contract !== "naive" && c.contract !== "scrip") return null;
     if (typeof c.budget !== "string" || typeof c.merchantReceived !== "string") return null;
     if (typeof c.exceededBudget !== "boolean" || typeof c.overBudgetBy !== "string") return null;
     if (typeof c.paymentsPaid !== "string" && typeof c.paymentsPaid !== "number") return null;
@@ -253,7 +253,7 @@ export function parseAttackResults(raw: unknown): AttackRunResult | null {
 
     cases.push(parsedCase);
     if (parsedCase.contract === "naive") naiveCase = parsedCase;
-    if (parsedCase.contract === "amanat") amanatCase = parsedCase;
+    if (parsedCase.contract === "scrip") scripCase = parsedCase;
   }
 
   return {
@@ -264,7 +264,7 @@ export function parseAttackResults(raw: unknown): AttackRunResult | null {
     params,
     cases,
     naive: naiveCase,
-    amanat: amanatCase,
+    scrip: scripCase,
   };
 }
 

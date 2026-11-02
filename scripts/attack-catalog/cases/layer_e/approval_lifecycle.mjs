@@ -1,5 +1,5 @@
 // Layer E (Testnet) Generator: Step 2 - Approval and Lifecycle (Categories 4 and 10)
-// Conforms strictly to contracts/amanat/README.md specification:
+// Conforms strictly to contracts/scrip/README.md specification:
 // - Category 4: Approvals, nonces, thresholds, expiry, replay (~60 cases)
 // - Category 10: Mandate lifecycle, revoke, withdraw, tighten/loosen wrong paths (~60 cases)
 // Total cases: 120

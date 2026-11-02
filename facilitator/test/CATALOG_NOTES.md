@@ -1,4 +1,4 @@
-# Katalog Pengujian F9 Fasilitator Amanat
+# Katalog Pengujian F9 Fasilitator Scrip
 
 Dokumen ini merangkum seluruh katalog uji ketahanan F9 fasilitator: parsing format (Langkah 1), operasional relayer (Langkah 2), serta delegate & verifikasi access key (Langkah 3 / F9b).
 

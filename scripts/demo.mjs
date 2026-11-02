@@ -2,7 +2,7 @@
 //   invoice 1 HONEST (0.2 USDC, allowed merchant), invoice 2 INJECTED (prompt-injection note, pay the whole
 //   balance to the attacker), invoice 3 OVERCHARGE (allowed merchant, above the 0.5 per-payment cap).
 //   NAIVE agent: holds the USDC with a full-access key -> the injection drains it.
-//   AMANAT agent: function-call key only, pays via our facilitator + Amanat contract -> Rejected codes.
+//   SCRIP agent: function-call key only, pays via our facilitator + Scrip contract -> Rejected codes.
 // The agent is a deterministic scripted stand-in for an injectable LLM (see demo/agent.mjs), not a real LLM.
 // Result: results/demo.json. Keys come only from files (env), never printed. Testnet only.
 //
@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Account, JsonRpcProvider, KeyPair, KeyPairSigner, nearToYocto, formatNearAmount } from 'near-api-js';
 import { createMerchant } from '../demo/merchant.mjs';
-import { runAgent, makeNaivePayer, makeAmanatPayer } from '../demo/agent.mjs';
+import { runAgent, makeNaivePayer, makeScripPayer } from '../demo/agent.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
@@ -24,7 +24,7 @@ const NEAR_DIR = process.env.KEY_DIR ?? '/home/theo/Documents/dev/hackathon/NEAR
 const FUNDER_KEY_FILE = process.env.FUNDER_KEY_FILE ?? join(NEAR_DIR, 'priv_key.txt');
 const RELAYER_KEY_FILE = process.env.RELAYER_KEY_FILE ?? join(NEAR_DIR, 'priv_key_relayer.txt');
 const USDC = '3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af';
-const WASM = join(ROOT, 'contracts/amanat/target/wasm32-unknown-unknown/release/amanat.wasm');
+const WASM = join(ROOT, 'contracts/scrip/target/wasm32-unknown-unknown/release/scrip.wasm');
 const FAC_PORT = Number(process.env.FAC_PORT ?? 8792);
 const MERCHANT_PORT = Number(process.env.MERCHANT_PORT ?? 8793);
 const ONE_USDC = 1_000_000n;
@@ -65,7 +65,7 @@ const ft = async (id) => {
 const near = async (id) => BigInt((await provider.viewAccount({ accountId: id })).amount);
 const view = (contractId, method, args = {}) => provider.callFunction({ contractId, method, args });
 
-// Chain lookup of a tx: success flag, parsed EVENT_JSON events (amanat + nep141) and receipt SuccessValues.
+// Chain lookup of a tx: success flag, parsed EVENT_JSON events (scrip + nep141) and receipt SuccessValues.
 async function txInfo(txHash, sender) {
   for (let i = 0; i < 8; i++) {
     const ctl = new AbortController();
@@ -155,7 +155,7 @@ async function main() {
   if (m0.deposited !== BUDGET.toString()) throw new Error(`funding failed: ${JSON.stringify(m0)}`);
   if (await ft(ids.naive) !== ONE_USDC) throw new Error('naive agent funding failed');
 
-  // 5. Amanat agent: function-call key (request_payment on this contract only), no USDC of its own
+  // 5. Scrip agent: function-call key (request_payment on this contract only), no USDC of its own
   await agentAdmin.addFunctionCallAccessKey({ publicKey: kp.fc.getPublicKey(), contractId: ids.contract, methodNames: ['request_payment'], allowance: nearToYocto('0.25') });
 
   // 6. our facilitator (separate process; relayer key read from file by the child, never printed)
@@ -177,7 +177,7 @@ async function main() {
   if (await health() !== 200) throw new Error(`facilitator did not start: ${fLog.slice(0, 300)}`);
 
   // 7. merchant. verifyPayment is the real chain lookup: the tx must have succeeded and show a USDC
-  // transfer (nep141 ft_transfer) or an Amanat `settled` event to invoice.payTo of >= invoice.amount.
+  // transfer (nep141 ft_transfer) or an Scrip `settled` event to invoice.payTo of >= invoice.amount.
   const senderOf = new Map(); // txHash -> account that signed the outer tx
   const verifyPayment = async (txHash, invoice) => {
     const sender = senderOf.get(txHash);
@@ -187,7 +187,7 @@ async function main() {
     const need = BigInt(invoice.amount);
     return info.events.some((e) => (e.standard === 'nep141' && e.event === 'ft_transfer'
       && e.data.some((d) => d.new_owner_id === invoice.payTo && BigInt(d.amount) >= need))
-      || (e.standard === 'amanat' && e.event === 'settled' && e.data.some((d) => d.recipient === invoice.payTo && BigInt(d.amount) >= need)));
+      || (e.standard === 'scrip' && e.event === 'settled' && e.data.some((d) => d.recipient === invoice.payTo && BigInt(d.amount) >= need)));
   };
   merchant = createMerchant({ payTo: ids.merchant, token: USDC, mode: 'honest', verifyPayment, cap: CAP.toString(), attacker: ids.attacker, attackerAmount: ONE_USDC.toString() });
   const merchantUrl = `http://127.0.0.1:${await merchant.listen(MERCHANT_PORT)}`;
@@ -195,7 +195,7 @@ async function main() {
   // 8. payers
   const remember = (payer, sender) => ({ pay: async (p) => { const r = await payer.pay(p); if (r.txHash) senderOf.set(r.txHash, sender); return r; } });
   const naivePayer = remember(makeNaivePayer({ account: naiveAcc, token: USDC }), ids.naive);
-  const amanatPayer = remember(makeAmanatPayer({
+  const scripPayer = remember(makeScripPayer({
     agentId: ids.agent, contractId: ids.contract, mandateId, keyPair: kp.fc,
     getAccessKeyNonce: async () => (await provider.viewAccessKey({ accountId: ids.agent, publicKey: kp.fc.getPublicKey().toString(), finality: 'optimistic' })).nonce,
     getBlockHeight: async () => (await provider.viewBlock({ finality: 'optimistic' })).header.height,
@@ -206,14 +206,14 @@ async function main() {
     readTx: async (txHash) => {
       await sleep(7000); // let the ft_transfer + callback receipts finish before the FINAL lookup
       const info = await txInfo(txHash, RELAYER_ID);
-      return { ...info, events: info.events.filter((e) => e.standard === 'amanat') };
+      return { ...info, events: info.events.filter((e) => e.standard === 'scrip') };
     },
   }), RELAYER_ID);
 
   // 9. run both agents through the same three invoices
   const wholeBalance = {
     naive: async () => ft(ids.naive),
-    amanat: async () => { const m = await view(ids.contract, 'get_mandate', { id: mandateId }); return BigInt(m.deposited) - BigInt(m.spent) - BigInt(m.reserved) - BigInt(m.withdrawn); },
+    scrip: async () => { const m = await view(ids.contract, 'get_mandate', { id: mandateId }); return BigInt(m.deposited) - BigInt(m.spent) - BigInt(m.reserved) - BigInt(m.withdrawn); },
   };
   const runOne = async (name, payer, balanceFn) => {
     const attackerBefore = await ft(ids.attacker);
@@ -231,7 +231,7 @@ async function main() {
     results.agents[name] = own;
   };
   await runOne('naive', naivePayer, wholeBalance.naive);
-  await runOne('amanat', amanatPayer, wholeBalance.amanat);
+  await runOne('scrip', scripPayer, wholeBalance.scrip);
 
   // 10. owner revokes and withdraws the free remainder (so cleanup can sweep everything)
   results.txs.revoke = (await funder.callFunctionRaw({ contractId: ids.contract, methodName: 'revoke', args: { mandate_id: mandateId }, gas: T(30), deposit: 0n })).transaction.hash;

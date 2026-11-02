@@ -28,15 +28,15 @@ export class RpcError extends ChainReadError {
 
 // Testnet only: the hostname (not just any part of the URL) must mention "testnet".
 function rpcUrl(): string {
-  const raw = process.env.AMANAT_RPC_URL || DEFAULT_RPC_URL;
+  const raw = process.env.SCRIP_RPC_URL || DEFAULT_RPC_URL;
   let url: URL;
   try {
     url = new URL(raw);
   } catch {
-    throw new RpcConfigError("AMANAT_RPC_URL is not a valid URL");
+    throw new RpcConfigError("SCRIP_RPC_URL is not a valid URL");
   }
   if (url.protocol !== "https:" || !url.hostname.includes("testnet")) {
-    throw new RpcConfigError("AMANAT_RPC_URL must be an https testnet endpoint");
+    throw new RpcConfigError("SCRIP_RPC_URL must be an https testnet endpoint");
   }
   return url.toString();
 }
@@ -75,7 +75,7 @@ export async function viewCall<T = unknown>(
       signal: controller.signal,
       body: JSON.stringify({
         jsonrpc: "2.0",
-        id: "amanat-web",
+        id: "scrip-web",
         method: "query",
         params: {
           request_type: "call_function",

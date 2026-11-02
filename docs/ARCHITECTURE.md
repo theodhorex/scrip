@@ -1,22 +1,22 @@
-# Amanat: Architecture and System Specification
+# Scrip: Architecture and System Specification
 
 ## 1. System Overview
 
-Amanat enforces on-chain spending mandates for autonomous AI agents on NEAR Protocol.
+Scrip enforces on-chain spending mandates for autonomous AI agents on NEAR Protocol.
 
 ### Core Premise
-In traditional agent architectures, agents hold full-access keys or funded wallets. If the agent's prompt is hijacked or its key compromised, an attacker can drain the entire balance. Amanat decouples custody from spending authority:
-- **Custody:** Funds are locked in the Amanat contract vault under an owner-defined mandate.
-- **Spending Authority:** The agent holds only a scoped `FunctionCall` access key restricted exclusively to `request_payment` on the Amanat contract.
+In traditional agent architectures, agents hold full-access keys or funded wallets. If the agent's prompt is hijacked or its key compromised, an attacker can drain the entire balance. Scrip decouples custody from spending authority:
+- **Custody:** Funds are locked in the Scrip contract vault under an owner-defined mandate.
+- **Spending Authority:** The agent holds only a scoped `FunctionCall` access key restricted exclusively to `request_payment` on the Scrip contract.
 - **Enforcement:** The contract atomically validates rules (budget, per-payment cap, recipient allowlist, expiration, guardian approvals) and reserves funds *before* initiating NEP-141 token transfers.
 - **Gasless for Agents:** Payments are packaged as NEP-366 `DelegateAction` payloads and relayed by a lightweight facilitator that sponsors NEAR gas.
 
 ```
 +-----------------------------------------------------------------------------------+
-|                                 AMANAT SYSTEM                                     |
+|                                 SCRIP SYSTEM                                     |
 |                                                                                   |
 |  +--------+        1. Create & Fund         +----------------------------------+  |
-|  | Owner  | ------------------------------> |      Amanat Contract Vault       |  |
+|  | Owner  | ------------------------------> |      Scrip Contract Vault       |  |
 |  +--------+                                 |                                  |  |
 |                                             |  - Mandates (Rules & Balances)   |  |
 |  +----------+       2. HTTP 402             |  - Atomic Fund Reservation       |  |
@@ -47,8 +47,8 @@ sequenceDiagram
     autonumber
     actor Agent as AI Agent (FC Key)
     actor Merchant as Merchant Service
-    actor Facilitator as Amanat Facilitator
-    actor Contract as Amanat Contract
+    actor Facilitator as Scrip Facilitator
+    actor Contract as Scrip Contract
     actor Token as NEP-141 Token (USDC)
 
     Merchant->>Agent: HTTP 402 Payment Required (payTo, amount, mandate, asset)
@@ -90,7 +90,7 @@ sequenceDiagram
     actor Owner as Mandate Owner
     actor Guardian as Guardian
     actor Agent as AI Agent
-    actor Contract as Amanat Contract
+    actor Contract as Scrip Contract
 
     Note over Agent: Invoice amount > approval_threshold
     Agent->>Guardian: Propose Intent (mandate_id, recipient, amount, nonce, expiry)
@@ -109,12 +109,12 @@ sequenceDiagram
 
 | Boundary | Actor / Component | Trust Level | Mitigations & Invariants |
 |---|---|---|---|
-| **Agent Key** | AI Agent | Untrusted / Adversarial | Holds `FunctionCall` key strictly limited to method `request_payment` on the Amanat contract with 0 allowance to attach deposits. Cannot call `approve_intent`, `tighten`, `loosen`, or `withdraw`. Injections cannot exceed `per_payment_cap` or `budget`. |
+| **Agent Key** | AI Agent | Untrusted / Adversarial | Holds `FunctionCall` key strictly limited to method `request_payment` on the Scrip contract with 0 allowance to attach deposits. Cannot call `approve_intent`, `tighten`, `loosen`, or `withdraw`. Injections cannot exceed `per_payment_cap` or `budget`. |
 | **Relayer / Facilitator** | Facilitator Service | Semi-Trusted | Verifies delegate signature off-chain before broadcast. Validates that signer key is a valid FC key on the contract. Rate-limits requests per IP and per agent. Cannot forge signatures or alter delegate parameters. Replays prevented by on-chain nonces and off-chain cache. |
-| **Contract Vault** | Amanat Smart Contract | Fully Trusted Core | Enforces two-phase commit: reserves funds *before* external token transfer promise. If promise fails or times out, callback refunds reserved balance. Contract state is immutable (keys burnt on testnet deploy; no `migrate` entrypoint). |
+| **Contract Vault** | Scrip Smart Contract | Fully Trusted Core | Enforces two-phase commit: reserves funds *before* external token transfer promise. If promise fails or times out, callback refunds reserved balance. Contract state is immutable (keys burnt on testnet deploy; no `migrate` entrypoint). |
 | **Guardian** | Guardian Role | Trusted Sentinel | Can `tighten` limits (shrink budget, lower cap, remove recipients, shorten expiry) at any time. Can `loosen` limits only up to deposited funds. Can `resolve_stale` requests after `STALE_TIMEOUT_BLOCKS`. Kept on separate key from owner and agent. |
 | **Owner** | Mandate Creator | Full Vault Authority | Can revoke mandate and withdraw unspent remainder (`deposited - spent - reserved`). Cannot withdraw funds currently locked in active reservations until callback or `resolve_stale` settles them. |
-| **Token Contract (K-3)** | NEP-141 Token Pool | External Dependency | **Acknowledged limitation (K-3):** All mandates for a token share the contract's NEP-141 balance. A malfunctioning token or stuck external callback could affect aggregate accounting. **Mitigation:** Recommended deployment model is one Amanat contract per owner/tenant. |
+| **Token Contract (K-3)** | NEP-141 Token Pool | External Dependency | **Acknowledged limitation (K-3):** All mandates for a token share the contract's NEP-141 balance. A malfunctioning token or stuck external callback could affect aggregate accounting. **Mitigation:** Recommended deployment model is one Scrip contract per owner/tenant. |
 
 ---
 
@@ -126,7 +126,7 @@ sequenceDiagram
 - **Intent Hash:** Deterministic 32-byte SHA-256 digest binding `(mandate_id, recipient, amount, nonce, mandate_expiry)`. Ensures guardian approvals cannot be replayed or redirected to other recipients or amounts.
 - **Reservation (`reserved`):** Atomic hold placed on mandate funds immediately upon `request_payment` execution to guarantee that concurrent requests cannot exceed the cumulative budget.
 - **Stale Resolution (`resolve_stale`):** Fallback mechanism allowing the guardian to clear a pending reservation if an external token transfer callback does not finalize within a predefined block threshold.
-- **x402-style:** HTTP 402 payment flow utilizing Amanat's custom headers and endpoints (`/verify`, `/settle`, `/supported`) tailored for function-call keys and delegate actions, rather than the standard x402 `exact` scheme.
+- **x402-style:** HTTP 402 payment flow utilizing Scrip's custom headers and endpoints (`/verify`, `/settle`, `/supported`) tailored for function-call keys and delegate actions, rather than the standard x402 `exact` scheme.
 
 ---
 
@@ -137,10 +137,10 @@ sequenceDiagram
 - **Status:** Accepted
 - **Date:** 2026-10-30
 - **Context:** The standard x402 specification for NEAR (`scheme_exact_near.md`) mandates that payments consist of a single `ft_transfer` transaction signed by the payer with an attached deposit of 1 yoctoNEAR. This specification explicitly forbids `FunctionCall` access keys because function-call keys cannot attach arbitrary deposits to external token contracts. Furthermore, `@x402/core` client controls only evaluate individual payments, lacking cumulative budget enforcement.
-- **Decision:** Amanat implements an **x402-style** HTTP 402 interface (`/verify`, `/settle`, `/supported`, `PAYMENT-SIGNATURE` headers) where the payment payload is an NEP-366 `DelegateAction` executing `request_payment` via an authorized facilitator.
+- **Decision:** Scrip implements an **x402-style** HTTP 402 interface (`/verify`, `/settle`, `/supported`, `PAYMENT-SIGNATURE` headers) where the payment payload is an NEP-366 `DelegateAction` executing `request_payment` via an authorized facilitator.
 - **Consequences:** 
-  - Standard x402 client libraries cannot pay Amanat merchants without our client adapter.
-  - Amanat provides genuine security for AI agents: agents cannot be exploited beyond mandate constraints because custody remains in the vault and keys are structurally restricted.
+  - Standard x402 client libraries cannot pay Scrip merchants without our client adapter.
+  - Scrip provides genuine security for AI agents: agents cannot be exploited beyond mandate constraints because custody remains in the vault and keys are structurally restricted.
   - Transparently documented in README and documentation to prevent misaligned expectations.
 
 ---
@@ -150,7 +150,7 @@ sequenceDiagram
 - **Status:** Accepted
 - **Date:** 2026-10-30
 - **Context:** Smart contract upgradeability (`migrate` methods or upgrade keys) introduces central points of failure, governance risk, and vulnerability to unauthorized logic modification during or after the hackathon.
-- **Decision:** The Amanat smart contract is completely **immutable**. No `migrate` method or self-upgrade mechanism is included in the contract code. During deployment, the contract's full-access key is deleted after initialization.
+- **Decision:** The Scrip smart contract is completely **immutable**. No `migrate` method or self-upgrade mechanism is included in the contract code. During deployment, the contract's full-access key is deleted after initialization.
 - **Consequences:**
   - Contract logic cannot be modified once deployed.
   - Bug fixes or parameter overhauls require deploying a new contract and migrating funds via the standard `revoke` -> `withdraw` path.

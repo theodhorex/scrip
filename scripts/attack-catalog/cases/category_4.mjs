@@ -13,7 +13,7 @@ const BASE_PARAMS = {
   amount: '1000',
   nonce: 1n,
   expiresAtMs: 1700000000000n,
-  contractId: 'amanat.testnet',
+  contractId: 'scrip.testnet',
 };
 
 /**

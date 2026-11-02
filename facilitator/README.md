@@ -1,4 +1,4 @@
-# Amanat facilitator (testnet relayer)
+# Scrip facilitator (testnet relayer)
 
 Validates an agent-signed NEP-366 delegate action against a policy, verifies the signing key on chain, rate-limits per agent and globally, and submits it paying the gas.
 

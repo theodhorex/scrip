@@ -44,7 +44,7 @@ export function deriveHeroStep(
     case 0:
       return {
         step,
-        caption: `1/3 Owner funds the Amanat vault with ${data.fundedUsdc} USDC.`,
+        caption: `1/3 Owner funds the Scrip vault with ${data.fundedUsdc} USDC.`,
         vaultFilledRatio: 0.5,
         vaultBalanceUsdc: data.fundedUsdc,
         merchantReceivedUsdc: "0.00",
@@ -152,9 +152,9 @@ export function deriveHeroStep(
     case 4:
       return {
         step,
-        caption: `2/3 Allowlisted merchant receives ${data.honest.amountUsdc} USDC; ${data.amanatRemainingUsdc} USDC stays locked.`,
+        caption: `2/3 Allowlisted merchant receives ${data.honest.amountUsdc} USDC; ${data.scripRemainingUsdc} USDC stays locked.`,
         vaultFilledRatio: 0.8,
-        vaultBalanceUsdc: data.amanatRemainingUsdc,
+        vaultBalanceUsdc: data.scripRemainingUsdc,
         merchantReceivedUsdc: data.honest.amountUsdc,
         attackerReceivedUsdc: "0.00",
         agentHijacked: false,
@@ -181,7 +181,7 @@ export function deriveHeroStep(
         step,
         caption: `3/3 Prompt injection ${injectionText} hijacks the agent toward an unlisted address.`,
         vaultFilledRatio: 0.8,
-        vaultBalanceUsdc: data.amanatRemainingUsdc,
+        vaultBalanceUsdc: data.scripRemainingUsdc,
         merchantReceivedUsdc: data.honest.amountUsdc,
         attackerReceivedUsdc: "0.00",
         agentHijacked: true,
@@ -208,11 +208,11 @@ export function deriveHeroStep(
     default:
       return {
         step,
-        caption: `3/3 Blocked at recipient gate with ${data.injected.rejectionCode}. Attacker gets ${data.amanatAttackerGainedUsdc} USDC.`,
+        caption: `3/3 Blocked at recipient gate with ${data.injected.rejectionCode}. Attacker gets ${data.scripAttackerGainedUsdc} USDC.`,
         vaultFilledRatio: 0.8,
-        vaultBalanceUsdc: data.amanatRemainingUsdc,
+        vaultBalanceUsdc: data.scripRemainingUsdc,
         merchantReceivedUsdc: data.honest.amountUsdc,
-        attackerReceivedUsdc: data.amanatAttackerGainedUsdc,
+        attackerReceivedUsdc: data.scripAttackerGainedUsdc,
         agentHijacked: true,
         showInjectionPrompt: true,
         injectionText,

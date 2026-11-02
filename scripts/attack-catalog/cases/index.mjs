@@ -97,7 +97,7 @@ export async function executeLayerC(c) {
 
       // 2. Test request_payment action builder (argument serialization)
       buildRequestPayment({
-        contractId: c.params.contractId || 'amanat.testnet',
+        contractId: c.params.contractId || 'scrip.testnet',
         mandateId: c.params.mandateId,
         recipient: c.params.recipient,
         amount: c.params.amount,
@@ -142,7 +142,7 @@ export async function executeLayerC(c) {
         const p = { ...(params || {}) };
         if (p.action === undefined) {
           p.action = buildRequestPayment({
-            contractId: 'amanat.testnet',
+            contractId: 'scrip.testnet',
             mandateId: 1n,
             recipient: 'bob.near',
             amount: '1000',
@@ -175,7 +175,7 @@ export async function executeLayerC(c) {
       if (target === 'tamperedSignature') {
         const keyPair = KeyPair.fromRandom('ed25519');
         const action = buildRequestPayment({
-          contractId: 'amanat.testnet',
+          contractId: 'scrip.testnet',
           mandateId: 1n,
           recipient: 'bob.near',
           amount: '1000',
@@ -183,7 +183,7 @@ export async function executeLayerC(c) {
         });
         const r = await signDelegate({
           agentId: 'agent.testnet',
-          contractId: 'amanat.testnet',
+          contractId: 'scrip.testnet',
           action,
           nonce: 1n,
           maxBlockHeight: 1000n,

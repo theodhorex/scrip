@@ -1,7 +1,7 @@
 // PLACEHOLDER DATA. Nothing here comes from a chain or from a test run.
-// Replace with RPC reads once the contract is deployed (see lib/amanat.ts).
+// Replace with RPC reads once the contract is deployed (see lib/scrip.ts).
 // Never present these numbers as results; the UI marks them as sample data.
-import type { AmanatEvent, Mandate } from "./types";
+import type { ScripEvent, Mandate } from "./types";
 
 const USDC = (n: number) => String(n * 1_000_000);
 
@@ -44,7 +44,7 @@ export const MOCK_MANDATES: Mandate[] = [
   },
 ];
 
-export const MOCK_EVENTS: AmanatEvent[] = [
+export const MOCK_EVENTS: ScripEvent[] = [
   { name: "mandate_created", mandateId: 1, atMs: Date.UTC(2026, 10, 2, 9, 0) },
   { name: "deposited", mandateId: 1, amount: USDC(50), atMs: Date.UTC(2026, 10, 2, 9, 1) },
   { name: "settled", mandateId: 1, requestId: 1, recipient: "merchant-a.example.testnet", amount: USDC(4), atMs: Date.UTC(2026, 10, 2, 9, 30) },

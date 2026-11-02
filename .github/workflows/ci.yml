@@ -22,7 +22,7 @@ jobs:
           node-version: '22'
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: contracts/amanat
+          workspaces: contracts/scrip
       - name: Install JS dependencies
         run: make setup
       - name: Tests (offline)

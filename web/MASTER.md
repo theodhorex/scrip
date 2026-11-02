@@ -1,4 +1,4 @@
-# Amanat Frontend Design Rules (MASTER)
+# Scrip Frontend Design Rules (MASTER)
 
 ## 1. Typography
 - **Display / Headlines**: Fraunces (`font-serif`) for hero and chapter titles.

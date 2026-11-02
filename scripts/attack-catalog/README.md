@@ -1,6 +1,6 @@
-# Amanat Attack Catalog
+# Scrip Attack Catalog
 
-Kerangka katalog serangan terstruktur untuk membuktikan ketahanan protokol Amanat di berbagai skenario eksekusi (lapis A-E) sesuai `web/docs/RENCANA_ATTACK_2500.md` dan `.agy/BRIEF_BACKEND.md`.
+Kerangka katalog serangan terstruktur untuk membuktikan ketahanan protokol Scrip di berbagai skenario eksekusi (lapis A-E) sesuai `web/docs/RENCANA_ATTACK_2500.md` dan `.agy/BRIEF_BACKEND.md`.
 
 ## Definisi Label Hasil
 

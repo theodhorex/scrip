@@ -1,7 +1,7 @@
 // Test helpers: build real signed delegates offline with random ed25519 keys.
 import { KeyPair, KeyPairSigner, buildDelegateAction, actions, encodeSignedDelegate } from 'near-api-js';
 
-export const CONTRACT = 'amanat.testnet';
+export const CONTRACT = 'scrip.testnet';
 export const AGENT = 'agent1.testnet';
 
 export const basePolicy = {

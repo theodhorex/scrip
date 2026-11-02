@@ -13,7 +13,7 @@ test('valid policy loads, is frozen, maxGas becomes bigint', () => {
 
 test('rejects mainnet network, non-.testnet ids and mainnet RPC urls', () => {
   assert.throws(() => loadPolicy({ ...basePolicy, network: 'mainnet' }), /testnet/);
-  assert.throws(() => loadPolicy({ ...basePolicy, contractId: 'amanat.near' }), /testnet/);
+  assert.throws(() => loadPolicy({ ...basePolicy, contractId: 'scrip.near' }), /testnet/);
   assert.throws(() => loadPolicy({ ...basePolicy, allowedAgents: ['a.near'] }), /testnet/);
   assert.throws(() => loadPolicy({ ...basePolicy, rpcUrl: 'https://rpc.mainnet.near.org' }), /rpc/i);
   assert.throws(() => loadPolicy({ ...basePolicy, rpcUrl: 'https://rpc.example.com' }), /rpc/i);

@@ -1,4 +1,4 @@
-# Amanat demo: prompt injection vs. a mandate (testnet)
+# Scrip demo: prompt injection vs. a mandate (testnet)
 
 A merchant serves a paid resource over HTTP 402. Two agents face the same three invoices:
 1. HONEST: 0.2 USDC to the allowed merchant.
@@ -6,13 +6,13 @@ A merchant serves a paid resource over HTTP 402. Two agents face the same three 
 3. OVERCHARGE: allowed merchant, 0.6 USDC (above the 0.5 per-payment cap).
 
 - NAIVE agent holds 1.0 USDC itself with a full-access key and pays what the invoice says: the injection drains it.
-- AMANAT agent only has a function-call key; it pays through our facilitator and the Amanat contract: (1) settles, (2) `Rejected{RECIPIENT_NOT_ALLOWED}`, (3) `Rejected{OVER_PER_PAYMENT_CAP}`.
+- SCRIP agent only has a function-call key; it pays through our facilitator and the Scrip contract: (1) settles, (2) `Rejected{RECIPIENT_NOT_ALLOWED}`, (3) `Rejected{OVER_PER_PAYMENT_CAP}`.
 
 Everything is real on testnet (accounts, USDC, contract, facilitator, tx hashes); balances are read with `ft_balance_of` before and after. Output: `results/demo.json`.
 
 ## Honest limits
 - The agent (`demo/agent.mjs`) is a deterministic SCRIPT standing in for an injectable LLM, NOT a real LLM. It always obeys the injection. The demo shows what the contract enforces when an agent is compromised, not how robust any model is.
-- Testnet only. The merchant verifies payment by reading the transaction from chain (USDC `ft_transfer` event or Amanat `settled` event to the invoiced account).
+- Testnet only. The merchant verifies payment by reading the transaction from chain (USDC `ft_transfer` event or Scrip `settled` event to the invoiced account).
 - Needs a funder with >= 2.0 testnet USDC and the relayer account (see `scripts/gate.mjs`).
 
 ## Alur HTTP 402 (x402-style)
@@ -25,7 +25,7 @@ Merchant dan agent mendukung alur x402-style di samping alur invoice klasik:
 ## Run
 ```
 make demo-test            # offline unit tests (node --test demo/test/)
-make contract-build       # once, builds amanat.wasm
+make contract-build       # once, builds scrip.wasm
 node scripts/demo.mjs     # real testnet run, cleans up its accounts
 ```
 

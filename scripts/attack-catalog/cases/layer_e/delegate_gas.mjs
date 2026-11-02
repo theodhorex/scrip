@@ -1,5 +1,5 @@
 // Layer E (Testnet) Generator: Step 4 - Delegate, Keys, Gas (Categories 6 and 7)
-// Conforms strictly to contracts/amanat/README.md and facilitator policy:
+// Conforms strictly to contracts/scrip/README.md and facilitator policy:
 // - Category 6: NEP-366 DelegateAction, FunctionCall keys, receiver allowlist, nonces (~45 cases)
 // - Category 7: Gas limits: 30 / 59 / 60 Tgas boundaries, relay maxGas (~35 cases)
 // Total cases: 80

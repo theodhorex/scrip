@@ -1,7 +1,7 @@
 // Parametric generator for Category 5: Access and Identity (Layer B - Facilitator HTTP)
 // Based on PRD v1.3, facilitator/README.md, and policy.mjs specification:
 // - senderId must be in policy.allowedAgents (default: ['agent1.testnet'])
-// - receiverId must be policy.contractId (default: 'amanat.testnet')
+// - receiverId must be policy.contractId (default: 'scrip.testnet')
 // - fc.methodName must be in policy.allowedMethods (default: ['request_payment'])
 // - exactly one FunctionCall action allowed
 // - access key verified on-chain must be restricted FunctionCall key with non-zero allowance
@@ -39,8 +39,8 @@ export const CATEGORY_5_VARIATIONS = [
   },
   {
     subId: '03',
-    title: 'Sender is the contract itself (amanat.testnet)',
-    delegate: { senderId: 'amanat.testnet', nonce: 503n },
+    title: 'Sender is the contract itself (scrip.testnet)',
+    delegate: { senderId: 'scrip.testnet', nonce: 503n },
     expectedLabel: 'BLOCKED',
     expectedCode: 'AGENT_NOT_ALLOWED',
     reason: 'Contract cannot act as an agent without being in allowedAgents',
@@ -140,16 +140,16 @@ export const CATEGORY_5_VARIATIONS = [
   },
   {
     subId: '15',
-    title: 'Receiver is mainnet contract (amanat.near)',
-    delegate: { receiverId: 'amanat.near', nonce: 515n },
+    title: 'Receiver is mainnet contract (scrip.near)',
+    delegate: { receiverId: 'scrip.near', nonce: 515n },
     expectedLabel: 'BLOCKED',
     expectedCode: 'WRONG_RECEIVER',
     reason: 'Mainnet receiver rejected on testnet policy',
   },
   {
     subId: '16',
-    title: 'Receiver is subaccount of contract (sub.amanat.testnet)',
-    delegate: { receiverId: 'sub.amanat.testnet', nonce: 516n },
+    title: 'Receiver is subaccount of contract (sub.scrip.testnet)',
+    delegate: { receiverId: 'sub.scrip.testnet', nonce: 516n },
     expectedLabel: 'BLOCKED',
     expectedCode: 'WRONG_RECEIVER',
     reason: 'Subaccounts do not match contractId',
@@ -359,7 +359,7 @@ export const CATEGORY_5_VARIATIONS = [
     keyPermission: {
       FunctionCall: {
         allowance: '1000000000000000000000000',
-        receiver_id: 'amanat.testnet',
+        receiver_id: 'scrip.testnet',
         method_names: [],
       },
     },
@@ -374,7 +374,7 @@ export const CATEGORY_5_VARIATIONS = [
     keyPermission: {
       FunctionCall: {
         allowance: '1000000000000000000000000',
-        receiver_id: 'amanat.testnet',
+        receiver_id: 'scrip.testnet',
         method_names: ['approve_intent'],
       },
     },
@@ -389,7 +389,7 @@ export const CATEGORY_5_VARIATIONS = [
     keyPermission: {
       FunctionCall: {
         allowance: '1000000000000000000000000',
-        receiver_id: 'amanat.testnet',
+        receiver_id: 'scrip.testnet',
         method_names: ['request_payment', 'drain_mandate'],
       },
     },
@@ -404,7 +404,7 @@ export const CATEGORY_5_VARIATIONS = [
     keyPermission: {
       FunctionCall: {
         allowance: '0',
-        receiver_id: 'amanat.testnet',
+        receiver_id: 'scrip.testnet',
         method_names: ['request_payment'],
       },
     },

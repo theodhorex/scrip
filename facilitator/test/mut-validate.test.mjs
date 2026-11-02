@@ -308,7 +308,7 @@ test('parsePaymentSignatureHeader: requirements shape is validated field by fiel
   }
   for (const reqs of [
     REQ,
-    { ...REQ, scheme: 'amanat', network: 'testnet', maxTimeoutSeconds: 1 },
+    { ...REQ, scheme: 'scrip', network: 'testnet', maxTimeoutSeconds: 1 },
     { ...REQ, network: 'near:testnet' },
   ]) {
     assert.equal(parsePaymentSignatureHeader(hdr(reqs)).ok, true, JSON.stringify(reqs));
@@ -338,7 +338,7 @@ test('paymentRequirements mandate: every accepted spelling resolves to contract/
     assert.equal(r.requirements.expectedContractId, want.cid, JSON.stringify(mandate));
     assert.equal(r.requirements.expectedMandateId, want.id, JSON.stringify(mandate));
   }
-  for (const mandate of [null, {}, [], 'amanat.mainnet', `${CONTRACT}:0:1`, `${CONTRACT}:`, ':1', { contractId: 'amanat.mainnet' }, { mandateId: '01' }, true]) {
+  for (const mandate of [null, {}, [], 'scrip.mainnet', `${CONTRACT}:0:1`, `${CONTRACT}:`, ':1', { contractId: 'scrip.mainnet' }, { mandateId: '01' }, true]) {
     assert.equal(parse(mandate).code, 'BAD_PAYMENT_REQUIREMENTS', JSON.stringify(mandate));
   }
   // top-level extras must agree with the mandate spelling.
@@ -348,7 +348,7 @@ test('paymentRequirements mandate: every accepted spelling resolves to contract/
 });
 
 test('parsePaymentSignatureHeader: header/body mismatches are rejected, matches return the body requirements (kills TBD)', () => {
-  const hdrFor = (reqs) => objB64({ x402Version: 2, scheme: 'amanat', network: 'near:testnet', signedDelegate: 'dGVzdA==', paymentRequirements: reqs });
+  const hdrFor = (reqs) => objB64({ x402Version: 2, scheme: 'scrip', network: 'near:testnet', signedDelegate: 'dGVzdA==', paymentRequirements: reqs });
   const body = { ...REQ, mandate: { contractId: CONTRACT, mandateId: 3 } };
   assert.equal(parsePaymentSignatureHeader(hdrFor({ ...REQ, mandate: 3 }), body).ok, true);
 
@@ -375,7 +375,7 @@ test('parsePaymentSignatureHeader: header envelope gates version, scheme, networ
   }
   for (const v of [1, 3, '2', null]) assert.equal(withHdr({ x402Version: v, signedDelegate: 'dGVzdA==' }).code, 'BAD_PAYMENT_SIGNATURE', String(v));
   assert.equal(withHdr({ x402Version: 2, scheme: 'other', signedDelegate: 'dGVzdA==' }).code, 'UNSUPPORTED_SCHEME');
-  assert.equal(withHdr({ scheme: 'amanat', network: 'mainnet', signedDelegate: 'dGVzdA==' }).code, 'UNSUPPORTED_NETWORK');
+  assert.equal(withHdr({ scheme: 'scrip', network: 'mainnet', signedDelegate: 'dGVzdA==' }).code, 'UNSUPPORTED_NETWORK');
   // All four delegate spellings are honoured; an empty one is missing.
   for (const key of ['signedDelegate', 'signed_delegate', 'signedDelegateAction']) {
     assert.equal(withHdr({ [key]: 'dGVzdA==', paymentRequirements: REQ }).signedDelegateBase64, 'dGVzdA==', key);
@@ -440,13 +440,13 @@ test('every rejection returns its documented code and detail (kills TBD)', async
   add('header missing', () => parsePaymentSignatureHeader(undefined), 'MISSING_PAYMENT_SIGNATURE', 'PAYMENT-SIGNATURE header is required');
   add('header not base64 json', () => parsePaymentSignatureHeader('***'), 'BAD_PAYMENT_SIGNATURE', 'PAYMENT-SIGNATURE must be base64-encoded JSON object');
   add('header version', () => parsePaymentSignatureHeader(objB64({ x402Version: 1, signedDelegate: 'dGVzdA==' })), 'BAD_PAYMENT_SIGNATURE', 'x402Version must be 2');
-  add('header scheme', () => parsePaymentSignatureHeader(objB64({ scheme: 'x', signedDelegate: 'dGVzdA==' })), 'UNSUPPORTED_SCHEME', 'scheme must be amanat');
+  add('header scheme', () => parsePaymentSignatureHeader(objB64({ scheme: 'x', signedDelegate: 'dGVzdA==' })), 'UNSUPPORTED_SCHEME', 'scheme must be scrip');
   add('header network', () => parsePaymentSignatureHeader(objB64({ network: 'near:mainnet', signedDelegate: 'dGVzdA==' })), 'UNSUPPORTED_NETWORK', 'network must be near:testnet');
   add('header delegate', () => parsePaymentSignatureHeader(objB64({ signedDelegate: '' })), 'BAD_PAYMENT_SIGNATURE', 'missing signed delegate in PAYMENT-SIGNATURE');
 
   const hdr = (reqs) => objB64({ signedDelegate: 'dGVzdA==', paymentRequirements: reqs });
   add('reqs object', () => parsePaymentSignatureHeader(hdr([])), 'BAD_PAYMENT_REQUIREMENTS', 'paymentRequirements must be a JSON object');
-  add('reqs scheme', () => parsePaymentSignatureHeader(hdr({ ...REQ, scheme: 'x' })), 'UNSUPPORTED_SCHEME', 'scheme must be amanat');
+  add('reqs scheme', () => parsePaymentSignatureHeader(hdr({ ...REQ, scheme: 'x' })), 'UNSUPPORTED_SCHEME', 'scheme must be scrip');
   add('reqs network', () => parsePaymentSignatureHeader(hdr({ ...REQ, network: 'x' })), 'UNSUPPORTED_NETWORK', 'network must be near:testnet');
   add('reqs payTo', () => parsePaymentSignatureHeader(hdr({ ...REQ, payTo: 'A' })), 'BAD_PAYMENT_REQUIREMENTS', 'payTo must be a valid NEAR account id');
   add('reqs amount', () => parsePaymentSignatureHeader(hdr({ ...REQ, amount: '01' })), 'BAD_PAYMENT_REQUIREMENTS', 'amount must be a canonical u128 decimal string');
@@ -491,8 +491,8 @@ test('paymentRequirements mandate: bigint, unsafe numbers and top-level extras (
   // Top-level contractId/mandateId are merged with the mandate spelling and must agree.
   assert.equal(withReqs({ mandate: 1, contractId: CONTRACT }).requirements.expectedContractId, CONTRACT);
   assert.equal(withReqs({ mandate: 1, mandateId: '1' }).requirements.expectedMandateId, 1n);
-  assert.equal(withReqs({ mandate: 1, contractId: 'amanat.mainnet' }).code, 'BAD_PAYMENT_REQUIREMENTS');
+  assert.equal(withReqs({ mandate: 1, contractId: 'scrip.mainnet' }).code, 'BAD_PAYMENT_REQUIREMENTS');
   assert.equal(withReqs({ mandate: `${CONTRACT}:1`, contractId: 'evil.testnet' }).code, 'BAD_PAYMENT_REQUIREMENTS');
-  assert.equal(withReqs({ mandate: 1, extra: { mandateContract: 'amanat.mainnet' } }).code, 'BAD_PAYMENT_REQUIREMENTS');
+  assert.equal(withReqs({ mandate: 1, extra: { mandateContract: 'scrip.mainnet' } }).code, 'BAD_PAYMENT_REQUIREMENTS');
   assert.equal(withReqs({ mandate: 1, extra: { mandateId: '01' } }).code, 'BAD_PAYMENT_REQUIREMENTS');
 });

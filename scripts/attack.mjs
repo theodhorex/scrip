@@ -1,9 +1,9 @@
-// Parallel-spend attack on TESTNET: the same burst against the naive comparator and against Amanat.
+// Parallel-spend attack on TESTNET: the same burst against the naive comparator and against Scrip.
 // N pre-signed `request_payment` txs of AMOUNT each are broadcast back to back (broadcast_tx_async),
 // against a budget that only allows BUDGET/AMOUNT of them. Measured from on-chain balances, not from tx outcomes.
 // Result appended to results/attack.json. Keys only from files; testnet only; recovery file before any account.
 //
-// usage: node scripts/attack.mjs [naive|amanat|both]   env: N=30 PACE_MS=80
+// usage: node scripts/attack.mjs [naive|scrip|both]   env: N=30 PACE_MS=80
 import { readFileSync, writeFileSync, existsSync, mkdirSync, unlinkSync, chmodSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -19,8 +19,8 @@ const KEY_DIR = process.env.KEY_DIR ?? '/home/theo/Documents/dev/hackathon/NEAR'
 const FUNDER_KEY_FILE = process.env.FUNDER_KEY_FILE ?? join(KEY_DIR, 'priv_key.txt');
 const USDC = '3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af';
 const WASM = {
-  naive: join(ROOT, 'contracts/amanat_naive/target/wasm32-unknown-unknown/release/amanat_naive.wasm'),
-  amanat: join(ROOT, 'contracts/amanat/target/wasm32-unknown-unknown/release/amanat.wasm'),
+  naive: join(ROOT, 'contracts/scrip_naive/target/wasm32-unknown-unknown/release/scrip_naive.wasm'),
+  scrip: join(ROOT, 'contracts/scrip/target/wasm32-unknown-unknown/release/scrip.wasm'),
 };
 const N = Number(process.env.N ?? 30);
 const PACE_MS = Number(process.env.PACE_MS ?? 80);
@@ -31,7 +31,7 @@ const T = (n) => BigInt(n) * 1_000_000_000_000n;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 if (!FUNDER_ID.endsWith('.testnet')) throw new Error('testnet only');
 const kind = process.argv[2] ?? 'both';
-if (!['naive', 'amanat', 'both'].includes(kind)) throw new Error('usage: attack.mjs [naive|amanat|both]');
+if (!['naive', 'scrip', 'both'].includes(kind)) throw new Error('usage: attack.mjs [naive|scrip|both]');
 
 const realFetch = globalThis.fetch;
 globalThis.fetch = async (...a) => { // only 429 is retried, bounded
@@ -151,7 +151,7 @@ async function main() {
   chmodSync(recoveryFile, 0o600);
   out.before = { funderNear: formatNearAmount(await near(FUNDER_ID)), funderUsdc: (await ft(FUNDER_ID)).toString() };
   if (await near(FUNDER_ID) < nearToYocto('5.5')) throw new Error('BLOCKED: funder below 5.5 NEAR');
-  for (const which of kind === 'both' ? ['naive', 'amanat'] : [kind]) {
+  for (const which of kind === 'both' ? ['naive', 'scrip'] : [kind]) {
     await runCase(which, ts);
     await cleanupAccounts(); // return NEAR and USDC before the next case
   }

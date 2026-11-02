@@ -164,11 +164,11 @@ test('F-D: evict revoked key drops positive cache', async () => {
   await keyVerifier.check(signed.signedDelegate.delegateAction.senderId, signed.signedDelegate.delegateAction.publicKey);
   assert.equal(keyVerifier.sizes().pos, 1);
 
-  // Outcome with AMANAT_ERR:REVOKED
+  // Outcome with SCRIP_ERR:REVOKED
   const outcome = {
     transaction: { hash: 'TX_REV' },
     status: { SuccessValue: '' },
-    receipts_outcome: [{ outcome: { logs: ['AMANAT_ERR:REVOKED'] } }],
+    receipts_outcome: [{ outcome: { logs: ['SCRIP_ERR:REVOKED'] } }],
   };
 
   const relayer = makeRelayer({

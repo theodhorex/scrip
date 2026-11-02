@@ -2,7 +2,7 @@
 // Verifies:
 // 1. Unique IDs across all Layer E cases
 // 2. expected is always present with valid label & code
-// 3. Amanat cases count >= 500
+// 3. Scrip cases count >= 500
 // 4. Comparison naive cases count == 20 (marked comparison: true)
 // 5. All cases pass validateCase schema
 // 6. All cases can execute in --dry mode without throwing (offline, mock engine)
@@ -33,9 +33,9 @@ test('Layer E case generators are defined and exported', () => {
   assert.equal(typeof getLayerEComparisonCases, 'function');
 });
 
-test('Layer E Amanat cases meet count >= 500 and schema validation', () => {
+test('Layer E Scrip cases meet count >= 500 and schema validation', () => {
   const cases = getLayerECases();
-  assert.ok(cases.length >= 500, `Expected at least 500 Amanat cases, got ${cases.length}`);
+  assert.ok(cases.length >= 500, `Expected at least 500 Scrip cases, got ${cases.length}`);
 
   // Validate all through schema
   validateCases(cases);

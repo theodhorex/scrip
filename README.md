@@ -2,7 +2,7 @@
 
 > Disposable spending envelopes and cryptographically enforced mandates for autonomous AI agents on NEAR Protocol.
 
-> **Status:** work in progress during the NEAR Hackathon window. The project was renamed from *Amanat* to **Scrip** on 2 Nov 2026; internal identifiers (the `amanat` Rust crate and `contracts/amanat`) are renamed after the code freeze. Numbers marked TBD are not final.
+> **Status:** work in progress during the NEAR Hackathon window. The project was renamed from *Amanat* to **Scrip** on 2 Nov 2026 (crate `scrip`, folders `contracts/scrip`, `contracts/scrip_naive`). Recorded files in `results/` keep the names used when they were produced. Numbers marked TBD are not final.
 
 ## Problem & Solution
 
@@ -91,7 +91,7 @@ Claims in this repository are backed by deterministic test suites and execution 
 | **Layer A (Contract)** | Smart contract unit & invariant tests (`property_tests.rs`, `tests.rs`) | 627 cases across 12 categories | 0 BREACH* |
 | **Layer B (Facilitator)** | HTTP relayer policy, key validation, rate limits (`layer-b.pm.json`) | 385 cases (385 PASS, 0 FAIL) | 0 BREACH* |
 | **Layer C (Client)** | Payload formatting, canonical hashing, counterparty guards (`layer-c.pm.json`) | 317 cases (317 PASS, 0 FAIL) | 0 BREACH* |
-| **Layer D (Sandbox)** | near-workspaces integration against the real wasm and a mock NEP-141 (`contracts/amanat/tests/integration.rs`) | Extended sandbox catalog is in progress; no results claimed yet | TBD |
+| **Layer D (Sandbox)** | near-workspaces integration against the real wasm and a mock NEP-141 (`contracts/scrip/tests/integration.rs`) | Extended sandbox catalog is in progress; no results claimed yet | TBD |
 | **Layer E (Testnet)** | Live testnet attack catalog (REAL transactions) | In progress. Wave 1 (60 cases): 56 PASS, 4 FAIL, 0 BREACH; the 4 FAILs were wrong expectations in the harness (cases shared one mandate), since fixed. Wave 2 triage is open: it contains one flagged BREACH under investigation | TBD (final run pending) |
 | **Prompt Injection Demo** | Deterministic agent vs naive agent under injection (`results/demo.json`) | Naive drained 0.8 USDC; Scrip rejected attack (`RECIPIENT_NOT_ALLOWED`) | Verified on-chain |
 | **Parallel Burst Attack** | 30 concurrent payments of 0.1 USDC against 1.0 USDC budget (`results/attack.json`) | Naive contract: merchant received 1.4 USDC against a 1.0 USDC budget (overspent by 0.4); Scrip paid exactly 1.0 USDC | Verified on-chain |
@@ -115,7 +115,7 @@ Claims in this repository are backed by deterministic test suites and execution 
 ## Repository Structure
 
 - `client/`: Client library for canonical intent hashing, NEP-366 delegate signing, and counterparty risk evaluation.
-- `contracts/`: Rust smart contract (`amanat`) implementing immutable spending mandates on NEAR Protocol.
+- `contracts/`: Rust smart contract (`scrip`) implementing immutable spending mandates on NEAR Protocol.
 - `demo/`: Deterministic prompt injection scenarios, x402-style payment flows, and counterparty guard demos.
 - `docs/`: System architecture specification, formal security invariants (P1-P10), ADRs, and threat models.
 - `facilitator/`: Lightweight Node.js relayer sponsoring gas, rate-limiting, and verifying function-call keys.

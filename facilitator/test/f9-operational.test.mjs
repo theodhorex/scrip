@@ -185,7 +185,7 @@ test('F9 Step 2: Operasional - Hash tx acak ke /status', async (t) => {
       relayer.store.set('delegate_hash_2', 1100n, 'tx_final_1', 'PENDING');
       provider.viewTransactionStatusWithReceipts = async () => ({
         status: { SuccessValue: '' },
-        receipts_outcome: [{ outcome: { logs: ['EVENT_JSON:{"standard":"amanat","version":"1.0.0","event":"settled","data":[{"request_nonce":1,"amount":"1"}]}'] } }],
+        receipts_outcome: [{ outcome: { logs: ['EVENT_JSON:{"standard":"scrip","version":"1.0.0","event":"settled","data":[{"request_nonce":1,"amount":"1"}]}'] } }],
       });
       const res = await fetch(`${base}/status/tx_final_1`);
       assert.equal(res.status, 200);

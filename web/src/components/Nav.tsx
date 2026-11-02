@@ -6,9 +6,9 @@ export function Nav() {
     <header className="bp-app-nav">
       <div className="bp-app-nav-inner">
         <div className="flex flex-wrap items-center gap-x-6 gap-y-1">
-          <Link href="/overview" className="bp-app-brand" aria-label="Amanat dashboard">
+          <Link href="/overview" className="bp-app-brand" aria-label="Scrip dashboard">
             <span className="bp-app-brand-dot" aria-hidden="true" />
-            <span>Amanat</span>
+            <span>Scrip</span>
           </Link>
           <nav aria-label="Main navigation" className="bp-app-links">
             <NavLink href="/overview">Overview</NavLink>

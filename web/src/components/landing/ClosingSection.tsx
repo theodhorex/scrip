@@ -18,13 +18,13 @@ const LINES: ClosingLine[] = [
   },
   {
     call: call(d.attackerAccount, d.injected.amountUnits),
-    ok: d.injected.paidByAmanat,
+    ok: d.injected.paidByScrip,
     result: d.injected.rejectionCode,
     href: tx(d.injected.txHash),
   },
   {
     call: call(d.merchantAccount, d.overcharge.amountUnits),
-    ok: d.overcharge.paidByAmanat,
+    ok: d.overcharge.paidByScrip,
     result: d.overcharge.rejectionCode,
     href: tx(d.overcharge.txHash),
   },

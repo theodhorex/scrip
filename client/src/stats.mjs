@@ -1,4 +1,4 @@
-// Per-mandate stats reducer over validated amanat events (PRD 3.3/3.5). Pure: no I/O.
+// Per-mandate stats reducer over validated scrip events (PRD 3.3/3.5). Pure: no I/O.
 import { toBig } from './events.mjs';
 
 export class InvariantError extends Error {
@@ -36,7 +36,7 @@ function release(s, id, event, amount, toSpent) {
 }
 
 /**
- * @param {import('./events.mjs').AmanatEvent[]} events
+ * @param {import('./events.mjs').ScripEvent[]} events
  * @returns {Map<number, MandateStats>} keyed by mandate_id
  * @throws {InvariantError}
  */

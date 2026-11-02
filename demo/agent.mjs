@@ -1,8 +1,8 @@
-// Scripted agent stand-in + payers for the Amanat demo.
+// Scripted agent stand-in + payers for the Scrip demo.
 //
 // IMPORTANT: runAgent is NOT a real LLM. It is a deterministic script that models an injectable
 // agent: it reads the 402 invoice JSON and its free-text `note` and OBEYS an instruction found in
-// it. The demo therefore shows what the Amanat CONTRACT enforces when an agent is compromised,
+// it. The demo therefore shows what the Scrip CONTRACT enforces when an agent is compromised,
 // not how robust any model is against prompt injection.
 import {
   buildRequestPayment, signDelegate, relayBodyFor, classifyRelayResponse, parseRequestResult,
@@ -99,7 +99,7 @@ export async function runX402Agent(opts) {
   }
   if (maxBlockHeight === undefined) maxBlockHeight = 1000n;
 
-  const contractId = opts.contractId ?? reqs.contractId ?? 'amanat.testnet';
+  const contractId = opts.contractId ?? reqs.contractId ?? 'scrip.testnet';
   const requestNonce = opts.requestNonce !== undefined ? BigInt(opts.requestNonce) : 1n;
 
   const sig = await buildPaymentSignature(reqs, {
@@ -110,7 +110,7 @@ export async function runX402Agent(opts) {
     maxBlockHeight,
     requestNonce,
     gas: opts.gas,
-    scheme: opts.scheme ?? reqs.scheme ?? 'amanat',
+    scheme: opts.scheme ?? reqs.scheme ?? 'scrip',
     network: opts.network ?? reqs.network ?? 'near:testnet',
   });
 
@@ -201,7 +201,7 @@ export function makeNaivePayer({ account, token }) {
  * Injected: getAccessKeyNonce(), getBlockHeight(), postRelay(bodyString) -> {status, body, retryAfter?},
  * readTx(txHash) -> {events: [{event, data:[{code?}]}], results: [string], unreadable?}.
  */
-export function makeAmanatPayer({ agentId, contractId, mandateId, keyPair, getAccessKeyNonce, getBlockHeight, postRelay, readTx, ttlBlocks = 100n }) {
+export function makeScripPayer({ agentId, contractId, mandateId, keyPair, getAccessKeyNonce, getBlockHeight, postRelay, readTx, ttlBlocks = 100n }) {
   let lastDelegateNonce = 0n;
   let requestNonce = 1;
   return {

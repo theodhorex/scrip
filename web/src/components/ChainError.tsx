@@ -28,7 +28,7 @@ function describe(error: unknown): { title: string; detail: string } {
 
 // Shown instead of data whenever a live chain read fails. Never sample data.
 export function ChainError({ error }: { error: unknown }) {
-  console.error("[amanat] chain read failed:", error);
+  console.error("[scrip] chain read failed:", error);
   const { title, detail } = describe(error);
   return (
     <div role="alert" className="bp-plate bp-plate-reject bp-app-notice">

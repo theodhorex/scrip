@@ -4,7 +4,7 @@ import { buildDelegateAction, actions, KeyPairSigner, encodeSignedDelegate } fro
 import { toU64, toU128, checkRecipient } from './intent.mjs';
 
 const TGAS = 10n ** 12n;
-/** Contract requires prepaid gas >= 60 Tgas (MIN_PREPAID_GAS in contracts/amanat/src/lib.rs). */
+/** Contract requires prepaid gas >= 60 Tgas (MIN_PREPAID_GAS in contracts/scrip/src/lib.rs). */
 export const MIN_GAS = 60n * TGAS;
 export const DEFAULT_GAS = 100n * TGAS;
 const U64_MAX = (1n << 64n) - 1n;

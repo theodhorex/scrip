@@ -1,5 +1,5 @@
 // Layer E (Testnet) Generator: Step 1 - Payment and Budget (Categories 2 and 3)
-// Conforms strictly to contracts/amanat/README.md error codes and PRD 3.3/3.6:
+// Conforms strictly to contracts/scrip/README.md error codes and PRD 3.3/3.6:
 // - Category 2: Amounts, per_payment_cap boundaries, overflow checks (~75 cases)
 // - Category 3: Budget depletion, small floods, split payments, MAX_OPEN overflow (~75 cases)
 // Total cases: 150

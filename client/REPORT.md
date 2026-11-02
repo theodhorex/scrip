@@ -1,5 +1,5 @@
 # C1 client lib report
-Result: `make -C /home/theo/Documents/dev/hackathon/amanat test` → 60 tests, 60 pass, 0 fail (intent 32, events 12, stats 16).
+Result: `make -C /home/theo/Documents/dev/hackathon/scrip test` → 60 tests, 60 pass, 0 fail (intent 32, events 12, stats 16).
 TDD: each test file was run red first (module missing; first run 1 fail, then 2 fail with events/stats tests) before implementation.
 Mutation check: switching `le()` to big-endian made 11 intent tests fail (21/32 pass); reverted → green.
 
