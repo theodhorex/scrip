@@ -1,0 +1,15 @@
+{
+  "dmx-attacker.testnet": {
+    "evidence": {
+      "txHash": "7FmibFsaMTCzaTDgK2jLviqTuNtKq3shxNomMn1oa4Lv",
+      "note": "Demo fixture: attacker address from the recorded naive-agent drain (results/demo.json, 2026-10-28); the original accounts were deleted after the run, so this tx is the cited record"
+    },
+    "reportedBy": "scrip-demo",
+    "ts": 1793000000000
+  },
+  "unverified-report.testnet": {
+    "evidence": { "note": "someone says this address is bad" },
+    "reportedBy": "anonymous",
+    "ts": 1793000000000
+  }
+}
