@@ -96,43 +96,43 @@ export function generateCategory1Cases() {
     title: 'Recipient with uppercase letters (MERCHANT.testnet)',
     recipient: 'MERCHANT.testnet',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'RECIPIENT_NOT_ALLOWED',
-    note: 'NEAR account IDs are case-sensitive and must be lowercase',
+    expectedCode: 'BAD_CALL_ARGS',
+    note: 'NEAR account IDs are case-sensitive and must be lowercase; facilitator validate.mjs:50-51 (ACCOUNT_RE: lowercase NEAR account id only) rejects it with BAD_CALL_ARGS (HTTP 400) before the contract allowlist',
   });
   pushCase({
     title: 'Recipient with mixed-case letters (Merchant.testnet)',
     recipient: 'Merchant.testnet',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'RECIPIENT_NOT_ALLOWED',
-    note: 'Case mismatch rejected',
+    expectedCode: 'BAD_CALL_ARGS',
+    note: 'Case mismatch rejected; facilitator validate.mjs:50-51 (ACCOUNT_RE: lowercase NEAR account id only) rejects it with BAD_CALL_ARGS (HTTP 400) before the contract allowlist',
   });
   pushCase({
     title: 'Recipient with leading space ( merchant.testnet)',
     recipient: ' merchant.testnet',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'RECIPIENT_NOT_ALLOWED',
-    note: 'Whitespace in recipient address rejected',
+    expectedCode: 'BAD_CALL_ARGS',
+    note: 'Whitespace in recipient address rejected; facilitator validate.mjs:50-51 (ACCOUNT_RE: lowercase NEAR account id only) rejects it with BAD_CALL_ARGS (HTTP 400) before the contract allowlist',
   });
   pushCase({
     title: 'Recipient with trailing space (merchant.testnet )',
     recipient: 'merchant.testnet ',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'RECIPIENT_NOT_ALLOWED',
-    note: 'Whitespace in recipient address rejected',
+    expectedCode: 'BAD_CALL_ARGS',
+    note: 'Whitespace in recipient address rejected; facilitator validate.mjs:50-51 (ACCOUNT_RE: lowercase NEAR account id only) rejects it with BAD_CALL_ARGS (HTTP 400) before the contract allowlist',
   });
   pushCase({
     title: 'Recipient with tab character in address',
     recipient: 'merchant\t.testnet',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'RECIPIENT_NOT_ALLOWED',
-    note: 'Illegal character in account ID',
+    expectedCode: 'BAD_CALL_ARGS',
+    note: 'Illegal character in account ID; facilitator validate.mjs:50-51 (ACCOUNT_RE: lowercase NEAR account id only) rejects it with BAD_CALL_ARGS (HTTP 400) before the contract allowlist',
   });
   pushCase({
     title: 'Recipient with Cyrillic lookalike homoglyph (a -> Cyrillic а)',
     recipient: 'merch\u0430nt.testnet',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'RECIPIENT_NOT_ALLOWED',
-    note: 'Homoglyph substitution blocked by exact allowlist string matching',
+    expectedCode: 'BAD_CALL_ARGS',
+    note: 'Homoglyph substitution blocked by exact allowlist string matching; facilitator validate.mjs:50-51 (ACCOUNT_RE: lowercase NEAR account id only) rejects it with BAD_CALL_ARGS (HTTP 400) before the contract allowlist',
   });
 
   // 13-18. Subaccounts and implicit 64-hex addresses
@@ -168,8 +168,8 @@ export function generateCategory1Cases() {
     title: 'Empty string recipient ("")',
     recipient: '',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'RECIPIENT_NOT_ALLOWED',
-    note: 'Empty recipient address rejected',
+    expectedCode: 'BAD_CALL_ARGS',
+    note: 'Empty recipient address rejected; facilitator validate.mjs:50-51 (ACCOUNT_RE: lowercase NEAR account id only) rejects it with BAD_CALL_ARGS (HTTP 400) before the contract allowlist',
   });
 
   // 19-35. Property-based seeded variations for unauthorized recipients (19 cases)
@@ -219,6 +219,9 @@ export function generateCategory11Cases() {
         transport: 'rpc',
         method,
         senderId: caller || 'usdc.testnet', // ft_on_transfer caller is the token contract
+        // ft_on_transfer never panics: every refused case returns the FULL amount unused (lib.rs:455-456, 463-473),
+        // so the observable code is FULL_REFUND; the branch that fired is kept here for the Rust tests.
+        ...(expectedLabel === 'BLOCKED' ? { refundReason: expectedCode } : {}),
         args: args || {
           sender_id: 'owner.testnet',
           amount: '1250000',
@@ -228,7 +231,7 @@ export function generateCategory11Cases() {
       },
       expected: {
         label: expectedLabel,
-        code: expectedCode,
+        code: expectedLabel === 'BLOCKED' ? 'FULL_REFUND' : expectedCode,
       },
     });
     index++;

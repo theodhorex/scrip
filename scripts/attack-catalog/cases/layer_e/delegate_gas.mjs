@@ -95,22 +95,22 @@ export function generateCategory6Cases() {
   pushCase({
     title: 'FC access key scoped for other contract receiver (usdc.testnet)',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'RECEIVER_NOT_ALLOWED',
-    note: 'Key receiver mismatch: usdc.testnet != contractId',
+    expectedCode: 'KEY_NOT_ALLOWED',
+    note: 'Key receiver mismatch: usdc.testnet != contractId; keycheck.mjs:11 (fc.receiver_id !== policy.contractId) -> KEY_NOT_ALLOWED',
     extraParams: { keyReceiverId: 'usdc.testnet' },
   });
   pushCase({
     title: 'DelegateAction targeting unauthorized foreign contract (attacker.testnet)',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'RECEIVER_NOT_ALLOWED',
-    note: 'Facilitator relay policy only relays calls to configured contractId',
+    expectedCode: 'WRONG_RECEIVER',
+    note: 'validate.mjs:98 (da.receiverId !== policy.contractId) -> WRONG_RECEIVER',
     extraParams: { delegateReceiverId: 'attacker.testnet' },
   });
   pushCase({
     title: 'DelegateAction targeting relayer itself',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'RECEIVER_NOT_ALLOWED',
-    note: 'Relayer will not relay delegate action targeting itself',
+    expectedCode: 'WRONG_RECEIVER',
+    note: 'validate.mjs:98: receiver must be the policy contract, so the relayer itself is refused too',
     extraParams: { delegateReceiverId: 'relayer.testnet' },
   });
 
@@ -132,15 +132,15 @@ export function generateCategory6Cases() {
   pushCase({
     title: 'Forged cryptographic key signature on DelegateAction',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'INVALID_SIGNATURE',
-    note: 'Cryptographic signature verification on DelegateAction fails',
+    expectedCode: 'KEY_NOT_ALLOWED',
+    note: 'Random key signs a valid delegate; the key is unknown to the agent account: keycheck.mjs:60-66 (AccessKeyDoesNotExist) -> KEY_NOT_ALLOWED, not a signature failure',
     extraParams: { forgedKey: true },
   });
   pushCase({
     title: 'Tampered DelegateAction payload with bit flip in method name',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'INVALID_SIGNATURE',
-    note: 'Payload altered after signature creation',
+    expectedCode: 'BAD_SIGNATURE',
+    note: 'Payload altered after signing: validate.mjs:134 -> BAD_SIGNATURE (a bit flip in the method name would be METHOD_NOT_ALLOWED at validate.mjs:102 first, so the nonce field is altered)',
     extraParams: { invalidSignature: true },
   });
 
@@ -148,36 +148,36 @@ export function generateCategory6Cases() {
   pushCase({
     title: 'DelegateAction with expired maxBlockHeight in past',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'EXPIRED_DELEGATE',
-    note: 'DelegateAction block height expired on chain',
+    expectedCode: 'EXPIRES_TOO_SOON',
+    note: 'validate.mjs:84 (maxBlockHeight < current + margin) -> EXPIRES_TOO_SOON',
     extraParams: { maxBlockHeight: 100 },
   });
   pushCase({
     title: 'DelegateAction with stale access key nonce (nonce collision/replay)',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'INVALID_NONCE',
-    note: 'Delegate nonce <= current access key nonce on-chain',
+    expectedCode: 'NONCE_TOO_LOW',
+    note: 'relay.mjs:224-225 (key nonce >= delegate nonce) -> NONCE_TOO_LOW',
     extraParams: { nonce: 1 },
   });
   pushCase({
     title: 'DelegateAction with nonce zero',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'INVALID_NONCE',
-    note: 'Nonce 0 is invalid / already consumed',
+    expectedCode: 'NONCE_INVALID',
+    note: 'validate.mjs:121 (nonce === 0n) -> NONCE_INVALID',
     extraParams: { nonce: 0 },
   });
   pushCase({
     title: 'DelegateAction containing empty actions array',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'ACTION_NOT_ALLOWED',
-    note: 'DelegateAction must contain exactly one action',
+    expectedCode: 'WRONG_ACTION_COUNT',
+    note: 'validate.mjs:99 (actions.length !== 1) -> WRONG_ACTION_COUNT',
     extraParams: { actionsCount: 0 },
   });
   pushCase({
     title: 'DelegateAction containing multiple actions (bundle attack)',
     expectedLabel: 'BLOCKED',
-    expectedCode: 'ACTION_NOT_ALLOWED',
-    note: 'Facilitator strictly enforces single action rule',
+    expectedCode: 'WRONG_ACTION_COUNT',
+    note: 'validate.mjs:99 (actions.length !== 1) -> WRONG_ACTION_COUNT',
     extraParams: { actionsCount: 2 },
   });
 
@@ -188,18 +188,24 @@ export function generateCategory6Cases() {
     let title;
     let expectedCode;
 
+    let extraParams;
+
     if (r < 0.25) {
       title = `Seeded cross-mandate unauthorized agent request #${i + 1}`;
-      expectedCode = 'UNAUTHORIZED_AGENT';
+      expectedCode = 'UNAUTHORIZED_AGENT'; // contract lib.rs:505, reached through the relay with another mandate's agent
+      extraParams = { mandate_id: 1, agentIndex: 1 + (i % 2) };
     } else if (r < 0.5) {
       title = `Seeded forged signature vector #${i + 1}`;
-      expectedCode = 'INVALID_SIGNATURE';
+      expectedCode = 'BAD_SIGNATURE'; // validate.mjs:134
+      extraParams = { invalidSignature: true };
     } else if (r < 0.75) {
       title = `Seeded expired delegate action block height #${i + 1}`;
-      expectedCode = 'EXPIRED_DELEGATE';
+      expectedCode = 'EXPIRES_TOO_SOON'; // validate.mjs:84
+      extraParams = { maxBlockHeight: 100 };
     } else {
       title = `Seeded invalid delegate nonce variation #${i + 1}`;
-      expectedCode = 'INVALID_NONCE';
+      expectedCode = 'NONCE_TOO_LOW'; // relay.mjs:225
+      extraParams = { nonce: 1 };
     }
 
     pushCase({
@@ -207,6 +213,7 @@ export function generateCategory6Cases() {
       expectedLabel: 'BLOCKED',
       expectedCode,
       note: `Seeded parametric delegate vector (seed: ${SEED_CAT6})`,
+      extraParams,
     });
   }
 
@@ -253,49 +260,49 @@ export function generateCategory7Cases() {
     title: 'request_payment with 0 Tgas',
     gas: 0n,
     expectedLabel: 'BLOCKED',
-    expectedCode: 'INSUFFICIENT_GAS',
-    note: 'Contract Step 0: prepaid gas < 60 Tgas panics INSUFFICIENT_GAS',
+    expectedCode: 'GAS_TOO_LOW',
+    note: 'Relay path: validate.mjs:105 (gas < policy.minGas) -> GAS_TOO_LOW; the contract-level INSUFFICIENT_GAS (lib.rs:497) is only reachable by a direct call',
   });
   pushCase({
     title: 'request_payment with 10 Tgas',
     gas: 10n * TGAS,
     expectedLabel: 'BLOCKED',
-    expectedCode: 'INSUFFICIENT_GAS',
+    expectedCode: 'GAS_TOO_LOW',
     note: 'Prepaid gas well below 60 Tgas threshold',
   });
   pushCase({
     title: 'request_payment with 30 Tgas (half of minimum required)',
     gas: 30n * TGAS,
     expectedLabel: 'BLOCKED',
-    expectedCode: 'INSUFFICIENT_GAS',
+    expectedCode: 'GAS_TOO_LOW',
     note: 'Prepaid gas 30 Tgas rejected',
   });
   pushCase({
     title: 'request_payment with 50 Tgas',
     gas: 50n * TGAS,
     expectedLabel: 'BLOCKED',
-    expectedCode: 'INSUFFICIENT_GAS',
+    expectedCode: 'GAS_TOO_LOW',
     note: 'Prepaid gas 50 Tgas rejected',
   });
   pushCase({
     title: 'request_payment with 58 Tgas',
     gas: 58n * TGAS,
     expectedLabel: 'BLOCKED',
-    expectedCode: 'INSUFFICIENT_GAS',
+    expectedCode: 'GAS_TOO_LOW',
     note: 'Prepaid gas 58 Tgas rejected',
   });
   pushCase({
     title: 'request_payment with 59 Tgas (exact boundary minus 1 Tgas)',
     gas: 59n * TGAS,
     expectedLabel: 'BLOCKED',
-    expectedCode: 'INSUFFICIENT_GAS',
+    expectedCode: 'GAS_TOO_LOW',
     note: 'Boundary: 59 Tgas < 60 Tgas minimum rejected',
   });
   pushCase({
     title: 'request_payment with 59.999 Tgas',
     gas: 59n * TGAS + 999_000_000_000n,
     expectedLabel: 'BLOCKED',
-    expectedCode: 'INSUFFICIENT_GAS',
+    expectedCode: 'GAS_TOO_LOW',
     note: 'Boundary: just below 60 Tgas rejected',
   });
   pushCase({
@@ -337,21 +344,21 @@ export function generateCategory7Cases() {
     title: 'request_payment with 151 Tgas (exceeding facilitator policy maxGas by 1)',
     gas: 151n * TGAS,
     expectedLabel: 'BLOCKED',
-    expectedCode: 'EXCEEDS_MAX_GAS',
+    expectedCode: 'GAS_TOO_HIGH',
     note: 'Facilitator policy rejects gas > 150 Tgas',
   });
   pushCase({
     title: 'request_payment with 200 Tgas',
     gas: 200n * TGAS,
     expectedLabel: 'BLOCKED',
-    expectedCode: 'EXCEEDS_MAX_GAS',
+    expectedCode: 'GAS_TOO_HIGH',
     note: 'Exceeds facilitator maxGas limit',
   });
   pushCase({
     title: 'request_payment with 300 Tgas (maximum block gas limit)',
     gas: 300n * TGAS,
     expectedLabel: 'BLOCKED',
-    expectedCode: 'EXCEEDS_MAX_GAS',
+    expectedCode: 'GAS_TOO_HIGH',
     note: 'Exceeds facilitator maxGas limit',
   });
 
@@ -367,7 +374,7 @@ export function generateCategory7Cases() {
       // Sub-60 Tgas: random between 10 and 59 Tgas
       gas = (10n + BigInt(Math.floor(rng() * 50))) * TGAS;
       expectedLabel = 'BLOCKED';
-      expectedCode = 'INSUFFICIENT_GAS';
+      expectedCode = 'GAS_TOO_LOW';
     } else if (r < 0.8) {
       // Valid gas: between 60 and 150 Tgas
       gas = (60n + BigInt(Math.floor(rng() * 90))) * TGAS;
@@ -377,7 +384,7 @@ export function generateCategory7Cases() {
       // Over maxGas: between 151 and 250 Tgas
       gas = (151n + BigInt(Math.floor(rng() * 100))) * TGAS;
       expectedLabel = 'BLOCKED';
-      expectedCode = 'EXCEEDS_MAX_GAS';
+      expectedCode = 'GAS_TOO_HIGH';
     }
 
     pushCase({

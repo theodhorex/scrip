@@ -12,6 +12,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve, isAbsolute } from 'node:path';
 import * as nearApi from 'near-api-js';
+import { planRelayAttack, buildAttackDelegate, classifyFtOnTransfer, isLegitTokenCaller } from './relay_attack.mjs';
 
 const {
   Account,
@@ -1997,7 +1998,7 @@ export async function executeLayerE(c, session) {
     } else if (p.invalidSignature || p.forgedKey) {
       actual = {
         label: 'BLOCKED',
-        code: 'INVALID_SIGNATURE',
+        code: p.forgedKey ? 'KEY_NOT_ALLOWED' : 'BAD_SIGNATURE',
         txHash,
         note: 'Mock: signature verification rejected',
       };
@@ -2121,6 +2122,11 @@ export async function executeLayerE(c, session) {
       if (c.params?.transport === 'rpc') {
         // Direct RPC transmission using the appropriate caller account
         const callerName = c.params?.senderId || c.params?.caller;
+        // ft_on_transfer must be called by the TOKEN contract (lib.rs:467 predecessor == mandate.token). The legit token
+        // cannot be impersonated from here, so those rows are not run (covered by the Rust tests, never counted as pass).
+        if (method === 'ft_on_transfer' && isLegitTokenCaller(callerName)) {
+          throw Object.assign(new Error('the real token contract must be the predecessor of ft_on_transfer; this row needs the token to call, it is proven by the Rust tests (see CORRECTIONS_E_CAT1_6_7_11.md)'), { skipCode: 'REQUIRES_TOKEN_CALLER' });
+        }
         const callerAcc = getCallerAccount(session, callerName, c.params?.agentIndex ?? 0);
         let mappedArgs = { ...(c.params?.args || {}) };
         if (mappedArgs.mandate_id !== undefined) mappedArgs.mandate_id = mandateId;
@@ -2144,7 +2150,19 @@ export async function executeLayerE(c, session) {
             gas,
             deposit,
           });
-          actual = classifyTxResult(res);
+          if (method === 'ft_on_transfer') {
+            // Non-token account calls ft_on_transfer directly: only a full refund with unchanged state counts as blocked.
+            const snap = (m) => (m ? JSON.stringify(m, (_k, v) => (typeof v === 'bigint' ? v.toString() : v)) : null);
+            await waitForSettlement(session, mandateId);
+            const mandateAfter = await session.viewMandate(mandateId);
+            const stateUnchanged = beforeMandate !== null && snap(beforeMandate) === snap(mandateAfter);
+            actual = {
+              ...classifyFtOnTransfer(res, mappedArgs.amount, { stateUnchanged }),
+              txHash: res?.transaction?.hash ?? res?.transaction_outcome?.id ?? null,
+            };
+          } else {
+            actual = classifyTxResult(res);
+          }
           txHash = actual.txHash;
         } catch (err) {
           actual = await classifyTxError(err, session, callerAcc.accountId, {
@@ -2235,51 +2253,63 @@ export async function executeLayerE(c, session) {
         if (c.params?.signed_delegate) {
           b64 = c.params.signed_delegate;
         } else {
-          const signerKey = c.params?.forgedKey ? KeyPair.fromRandom('ed25519') : agent.fcKey;
-          const signer = new KeyPairSigner(signerKey);
-          const head = await withRetry(() => session.provider.viewBlock({ finality: 'optimistic' }));
-          const delegateSender = c.params?.senderId || agent.id;
-          const delegatePub = await signer.getPublicKey();
-          // NEAR access-key nonces are block-height based, so a literal nonce of 1 is always NONCE_TOO_LOW.
-          // Unless the case sets a nonce on purpose (nonce attacks), use the key's on-chain nonce + 1.
-          let delegateNonce;
-          if (c.params?.nonce !== undefined) {
-            delegateNonce = BigInt(c.params.nonce);
-          } else {
-            let onChain = 0n;
-            try {
-              const k = await withRetry(() => session.provider.viewAccessKey({
-                accountId: delegateSender,
-                publicKey: delegatePub.toString(),
-              }));
-              onChain = BigInt(k?.nonce ?? 0);
-            } catch {
-              onChain = 0n; // missing key (forged/unknown): the facilitator rejects it for another reason
-            }
-            delegateNonce = onChain + 1n;
+          // Every attack parameter (key spec, receiver, nonce, maxBlockHeight, action count, tampering) is applied
+          // for real by planRelayAttack/buildAttackDelegate; the facilitator alone decides the verdict.
+          const skip = (skipCode, note) => Object.assign(new Error(note), { skipCode });
+          let plan;
+          try {
+            plan = planRelayAttack(c.params);
+          } catch (e) {
+            throw skip('BAD_ATTACK_PARAMS', e.message);
           }
-          const delegate = buildDelegateAction({
+          const delegateSender = c.params?.senderId || agent.id;
+          let keyPair = plan.forgedKey ? KeyPair.fromRandom('ed25519') : agent.fcKey;
+          if (plan.keySpec) {
+            // The key under attack is a NEW key on the agent account (restricted differently, full access, ...).
+            keyPair = KeyPair.fromRandom('ed25519');
+            const admin = new Account(delegateSender, session.provider, new KeyPairSigner(agent.key));
+            try {
+              if (plan.keySpec.kind === 'FullAccess') {
+                await withRetry(() => admin.addFullAccessKey(keyPair.getPublicKey()));
+              } else {
+                await withRetry(() => admin.addFunctionCallAccessKey({
+                  publicKey: keyPair.getPublicKey(),
+                  contractId: plan.keySpec.receiverId ?? session.contractId,
+                  methodNames: plan.keySpec.methodNames,
+                  allowance: plan.keySpec.allowance ?? nearToYocto('0.25'),
+                }));
+              }
+            } catch (e) {
+              throw skip('KEY_SETUP_FAILED', `could not add the attacked key on-chain, attack not sent: ${String(e.message).slice(0, 120)}`);
+            }
+          }
+          const head = await withRetry(() => session.provider.viewBlock({ finality: 'optimistic' }));
+          const pub = keyPair.getPublicKey();
+          let onChainNonce = 0n;
+          try {
+            const k = await withRetry(() => session.provider.viewAccessKey({ accountId: delegateSender, publicKey: pub.toString() }));
+            onChainNonce = BigInt(k?.nonce ?? 0);
+          } catch (e) {
+            // A forged key legitimately has no access key; for every other key a failed lookup would fake NONCE_TOO_LOW.
+            if (!plan.forgedKey) throw skip('KEY_NONCE_UNAVAILABLE', `access key nonce lookup failed: ${String(e.message).slice(0, 120)}`);
+          }
+          const built = await buildAttackDelegate({
+            plan,
+            keyPair,
             senderId: delegateSender,
-            receiverId: session.contractId,
-            nonce: delegateNonce,
-            maxBlockHeight: BigInt(head.header.height) + 100n,
-            publicKey: await signer.getPublicKey(),
-            actions: [
-              actions.functionCall(
-                c.params?.method || 'request_payment',
-                c.params?.args || {
-                  mandate_id: mandateId,
-                  recipient: targetRecipient,
-                  amount: c.params?.amount || '100000',
-                  nonce: c.params?.paymentNonce || 1,
-                },
-                c.params?.gas ? BigInt(c.params.gas) : T(100),
-                0n
-              ),
-            ],
+            contractId: session.contractId,
+            onChainNonce,
+            headHeight: head.header.height,
+            method: c.params?.method || 'request_payment',
+            args: c.params?.args || {
+              mandate_id: mandateId,
+              recipient: targetRecipient,
+              amount: c.params?.amount || '100000',
+              nonce: c.params?.paymentNonce || 1,
+            },
+            gas: c.params?.gas ? BigInt(c.params.gas) : T(100),
           });
-          const signed = await signer.signDelegateAction(delegate);
-          b64 = Buffer.from(encodeSignedDelegate(signed.signedDelegate)).toString('base64');
+          b64 = built.b64;
         }
 
         const res = await fetch(url, {
@@ -2314,7 +2344,9 @@ export async function executeLayerE(c, session) {
         }
       }
     } catch (err) {
-      actual = isInfraError(err.message)
+      actual = err.skipCode
+        ? { label: 'SKIPPED', code: err.skipCode, txHash, note: `${err.message}; not a verdict` }
+        : isInfraError(err.message)
         ? { label: 'SKIPPED', code: 'INFRA_ERROR', txHash, note: `RPC/network outage: ${String(err.message).slice(0, 120)}; not a verdict, rerun` }
         : {
         label: 'BLOCKED',
