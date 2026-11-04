@@ -12,7 +12,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve, isAbsolute } from 'node:path';
 import * as nearApi from 'near-api-js';
-import { planRelayAttack, buildAttackDelegate, classifyFtOnTransfer, isLegitTokenCaller } from './relay_attack.mjs';
+import { planRelayAttack, buildAttackDelegate, classifyFtOnTransfer, isLegitTokenCaller, classifyTokenCallerOutcome } from './relay_attack.mjs';
 
 const {
   Account,
@@ -2176,7 +2176,55 @@ export async function executeLayerE(c, session) {
         // ft_on_transfer must be called by the TOKEN contract (lib.rs:467 predecessor == mandate.token). The legit token
         // cannot be impersonated from here, so those rows are not run (covered by the Rust tests, never counted as pass).
         if (method === 'ft_on_transfer' && isLegitTokenCaller(callerName)) {
-          throw Object.assign(new Error('the real token contract must be the predecessor of ft_on_transfer; this row needs the token to call, it is proven by the Rust tests (see CORRECTIONS_E_CAT1_6_7_11.md)'), { skipCode: 'REQUIRES_TOKEN_CALLER' });
+          // REAL token caller: the funder calls ft_transfer_call on the USDC contract, so the token itself is the
+          // predecessor of ft_on_transfer (lib.rs:463-473). The refund is proven from balances, logs and mandate state.
+          const tcArgs = { ...(c.params?.args || {}) };
+          const amountStr = String(tcArgs.amount ?? '0');
+          if (!/^[1-9][0-9]*$/.test(amountStr)) {
+            throw Object.assign(new Error('the USDC token rejects a zero or malformed amount before the contract is reached, so this row cannot prove the contract behaviour; covered by the Rust tests'), { skipCode: 'TOKEN_REJECTS_INPUT' });
+          }
+          const tokenId = session.usdcContractId;
+          const readAll = async () => ({
+            sender: await session.viewFtBalanceStrict(session.funderId),
+            contract: await session.viewFtBalanceStrict(session.contractId),
+            mandate: await session.viewMandateStrict(mandateId),
+          });
+          let before; let after; let txRes;
+          try {
+            await waitForSettlement(session, mandateId);
+            before = await readAll();
+            txRes = await withRetry(() => session.funderAcc.callFunctionRaw({
+              contractId: tokenId,
+              methodName: 'ft_transfer_call',
+              args: { receiver_id: session.contractId, amount: amountStr, msg: String(tcArgs.msg ?? '') },
+              gas: T(150),
+              deposit: 1n,
+            }), { tries: 3 });
+            await new Promise((r) => setTimeout(r, 3000));
+            await waitForSettlement(session, mandateId);
+            after = await readAll();
+          } catch (e) {
+            if (isInfraError(e?.message)) {
+              actual = { label: 'SKIPPED', code: 'INFRA_ERROR', txHash: null, note: `token-caller proof hit RPC/network error: ${String(e?.message ?? e).slice(0, 160)}; not a verdict, rerun` };
+            } else {
+              actual = await classifyTxError(e, session, session.funderId, { method: 'ft_transfer_call', deposit: 1n, contractId: tokenId });
+            }
+            txHash = actual.txHash ?? null;
+          }
+          if (!actual) {
+            const logs = (txRes?.receipts_outcome ?? []).flatMap((o) => o?.outcome?.logs ?? []);
+            actual = {
+              ...classifyTokenCallerOutcome({
+                amount: amountStr,
+                senderBefore: before.sender, senderAfter: after.sender,
+                contractBefore: before.contract, contractAfter: after.contract,
+                logs, mandateBefore: before.mandate, mandateAfter: after.mandate,
+              }),
+              txHash: txRes?.transaction?.hash ?? txRes?.transaction_outcome?.id ?? null,
+            };
+            txHash = actual.txHash;
+          }
+          return actual;
         }
         const callerAcc = getCallerAccount(session, callerName, c.params?.agentIndex ?? 0);
         let mappedArgs = { ...(c.params?.args || {}) };

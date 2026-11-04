@@ -131,3 +131,33 @@ export function classifyFtOnTransfer(txRes, amount, { stateUnchanged }) {
 /** Symbolic name of the real, registered token in the case files; only the token contract itself can be its predecessor. */
 export const LEGIT_TOKEN_SYMBOL = 'usdc.testnet';
 export const isLegitTokenCaller = (name) => name === LEGIT_TOKEN_SYMBOL;
+
+/**
+ * Classifies a REAL token-originated deposit (funder calls ft_transfer_call on the USDC contract, so the token is the
+ * true predecessor of ft_on_transfer). Pure: every reading is passed in; a reading that is missing (null/undefined) means
+ * the proof could not be read, which is infrastructure, never a verdict.
+ *   FULL_REFUND  only when ALL hold: sender USDC unchanged, contract USDC unchanged, no `deposited` event, mandate unchanged.
+ *   accepted     deposit landed consistently (sender -amount, contract +amount, deposited event or mandate change): INERT.
+ *   inconsistent sender and contract deltas that do not mirror each other (funds lost or created): BREACH.
+ */
+export function classifyTokenCallerOutcome({ amount, senderBefore, senderAfter, contractBefore, contractAfter, logs, mandateBefore, mandateAfter }) {
+  const readings = [senderBefore, senderAfter, contractBefore, contractAfter];
+  if (readings.some((v) => v === null || v === undefined) || mandateBefore === undefined || mandateAfter === undefined || !Array.isArray(logs)) {
+    return { label: 'SKIPPED', code: 'INFRA_ERROR', note: 'a refund proof could not be read (RPC/network); not a verdict, rerun' };
+  }
+  const snap = (m) => (m ? JSON.stringify(m, (_k, v) => (typeof v === 'bigint' ? v.toString() : v)) : null);
+  const senderDelta = BigInt(senderAfter) - BigInt(senderBefore);
+  const contractDelta = BigInt(contractAfter) - BigInt(contractBefore);
+  const depositedEvent = logs.some((l) => typeof l === 'string' && l.startsWith('EVENT_JSON:') && l.includes('"deposited"'));
+  const mandateChanged = snap(mandateBefore) !== snap(mandateAfter);
+  if (senderDelta !== -contractDelta) {
+    return { label: 'BREACH', code: 'LEDGER_MISMATCH', note: `sender delta ${senderDelta} and contract delta ${contractDelta} do not mirror each other` };
+  }
+  if (senderDelta === 0n && contractDelta === 0n && !depositedEvent && !mandateChanged) {
+    return { label: 'BLOCKED', code: 'FULL_REFUND', note: `full refund proven: sender USDC unchanged, contract USDC unchanged, no deposited event, mandate unchanged (amount ${amount})` };
+  }
+  if (contractDelta === BigInt(amount) && (depositedEvent || mandateChanged)) {
+    return { label: 'INERT', note: `deposit of ${amount} accepted by the contract (sender -${amount}, contract +${amount})` };
+  }
+  return { label: 'BREACH', code: 'PARTIAL_OR_UNEXPLAINED', note: `unexpected outcome: senderDelta=${senderDelta} contractDelta=${contractDelta} depositedEvent=${depositedEvent} mandateChanged=${mandateChanged}` };
+}

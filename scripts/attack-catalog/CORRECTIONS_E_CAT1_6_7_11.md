@@ -68,9 +68,14 @@ Perbaikan:
   menyatakan BLOCKED/`FULL_REFUND` hanya bila nilai kembali == amount, tidak ada event `deposited`, dan state mandat tidak berubah;
   deposit atau state berubah menjadi INERT/BREACH. Expected semua baris BLOCKED di kategori 11 menjadi `FULL_REFUND`; cabang asli disimpan di
   `params.refundReason` (untuk tes Rust).
-- (ii) Kasus pemanggil `usdc.testnet` (token sah: amount 0, mandat tak ada, revoked, msg rusak, dan KAT-E-11-01 funding sah) tidak bisa
-  dijalankan langsung karena predecessor harus kontrak token. Di lapis E sekarang `SKIPPED` / `REQUIRES_TOKEN_CALLER`, tidak dihitung lulus.
-  Catatan: KAT-E-11-01 sebelumnya "PASS" secara kebetulan (stranger menerima refund, bukan deposit).
+- (ii) Kasus pemanggil `usdc.testnet` (token sah): sekarang dijalankan SUNGGUHAN. Funder memanggil `ft_transfer_call` pada kontrak USDC
+  asli dengan `receiver_id` = kontrak sesi dan `msg` kasus, sehingga token menjadi predecessor `ft_on_transfer` (`lib.rs:463-473`).
+  `classifyTokenCallerOutcome` (`layers/relay_attack.mjs`, tes `test/token-caller.test.mjs`) menyatakan BLOCKED/`FULL_REFUND` hanya bila
+  keempat bukti terpenuhi: saldo USDC pengirim tak berubah, saldo USDC kontrak tak berubah, tidak ada event `deposited`, dan state mandat tak
+  berubah. Deposit yang konsisten menjadi INERT (KAT-E-11-01, funding sah). Selisih saldo yang tidak saling mencerminkan menjadi BREACH
+  (`LEDGER_MISMATCH`). Bukti yang tidak terbaca (galat jaringan) menjadi `SKIPPED/INFRA_ERROR`, bukan verdict.
+  Tetap `SKIPPED` / `TOKEN_REJECTS_INPUT`: amount nol (KAT-E-11-04), karena token USDC menolak sebelum kontrak dijangkau; ini dicakup tes Rust
+  dan tidak dihitung lulus. Catatan: KAT-E-11-01 sebelumnya "PASS" secara kebetulan (stranger menerima refund, bukan deposit).
 
 ## Dicakup di luar testnet
 
