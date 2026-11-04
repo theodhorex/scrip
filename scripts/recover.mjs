@@ -6,7 +6,7 @@
 //   node scripts/recover.mjs --apply    sends transactions
 //
 // recovery files. No key is ever printed. Testnet only; refuses ids that are not sub-accounts of the funder.
-import { readFileSync, readdirSync, unlinkSync } from 'node:fs';
+import { readFileSync, readdirSync, unlinkSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -36,6 +36,13 @@ export async function withRpcRetry(fn, { tries = 8, baseMs = 1500, sleep = (ms) 
       await sleep(baseMs * (i + 1));
     }
   }
+}
+
+/** Keeps the `n` most recently modified recovery files (all when n is not a positive integer). */
+export function selectRecentFiles(files, n) {
+  const k = Number(n);
+  if (!Number.isInteger(k) || k <= 0) return files.map((f) => f.name ?? f);
+  return [...files].sort((a, b) => a.mtimeMs - b.mtimeMs).slice(-k).map((f) => f.name ?? f);
 }
 
 /** Parse a recovery file body; returns [{id,key}] with only well-formed entries. */
@@ -78,7 +85,11 @@ async function main() {
   const KEY_DIR = process.env.KEY_DIR;
   if (!FUNDER_ID.endsWith('.testnet')) throw new Error('testnet only');
 
-  const files = readdirSync(HERE).filter((f) => /^\.recovery-.*\.json$/.test(f));
+  const lastIdx = process.argv.indexOf('--last');
+  const all = readdirSync(HERE).filter((f) => /^\.recovery-.*\.json$/.test(f));
+  const files = lastIdx > 0
+    ? selectRecentFiles(all.map((f) => ({ name: f, mtimeMs: statSync(join(HERE, f)).mtimeMs })), process.argv[lastIdx + 1])
+    : all;
   if (files.length === 0) { console.log('no .recovery-*.json files: nothing to recover'); return; }
   const per = files.map((f) => ({ f, entries: parseRecovery(readFileSync(join(HERE, f), 'utf8')) }));
   const entries = per.flatMap((p) => p.entries);

@@ -50,3 +50,11 @@ test('recover: transient errors are retried, other errors are thrown at once', a
   await assert.rejects(withRpcRetry(async () => { m++; throw new Error('UNAUTHORIZED'); }, { sleep: async () => {} }));
   assert.equal(m, 1);
 });
+
+import { selectRecentFiles } from '../recover.mjs';
+test('recover: --last N keeps the N most recent recovery files, otherwise all', () => {
+  const f = [{ name: 'a', mtimeMs: 3 }, { name: 'b', mtimeMs: 1 }, { name: 'c', mtimeMs: 2 }];
+  assert.deepEqual(selectRecentFiles(f, 2).sort(), ['a', 'c']);
+  assert.deepEqual(selectRecentFiles(f, undefined).sort(), ['a', 'b', 'c']);
+  assert.deepEqual(selectRecentFiles(f, '0').sort(), ['a', 'b', 'c']);
+});
