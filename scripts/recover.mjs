@@ -52,7 +52,7 @@ async function main() {
   const apply = process.argv.includes('--apply');
   const RPC = process.env.RPC_URL ?? 'https://rpc.testnet.fastnear.com';
   const FUNDER_ID = process.env.FUNDER_ID ?? 'envtest-theo-1747.testnet';
-  const KEY_DIR = process.env.KEY_DIR ?? '/home/theo/Documents/dev/hackathon/NEAR';
+  const KEY_DIR = process.env.KEY_DIR;
   if (!FUNDER_ID.endsWith('.testnet')) throw new Error('testnet only');
 
   const files = readdirSync(HERE).filter((f) => /^\.recovery-.*\.json$/.test(f));

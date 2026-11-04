@@ -15,8 +15,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
 const RPC = process.env.RPC_URL ?? 'https://rpc.testnet.fastnear.com';
 const FUNDER_ID = process.env.FUNDER_ID ?? 'envtest-theo-1747.testnet';
-const KEY_DIR = process.env.KEY_DIR ?? '/home/theo/Documents/dev/hackathon/NEAR';
-const FUNDER_KEY_FILE = process.env.FUNDER_KEY_FILE ?? join(KEY_DIR, 'priv_key.txt');
+const KEY_DIR = process.env.KEY_DIR;
+const FUNDER_KEY_FILE = process.env.FUNDER_KEY_FILE ?? (KEY_DIR ? join(KEY_DIR, 'priv_key.txt') : 'priv_key.txt');
 const USDC = '3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af';
 const WASM = {
   naive: join(ROOT, 'contracts/scrip_naive/target/wasm32-unknown-unknown/release/scrip_naive.wasm'),
