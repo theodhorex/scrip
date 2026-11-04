@@ -181,6 +181,13 @@ export function generateCategory4Cases() {
     let title;
     let expectedCode;
     let expectedLabel = 'BLOCKED';
+    let method = 'request_payment';
+    let args = {
+      mandate_id: 1,
+      recipient: 'merchant.testnet',
+      amount: '500000',
+      nonce: 500 + i,
+    };
 
     if (r < 0.25) {
       title = `Seeded approval replay with reused nonce #${100 + i}`;
@@ -194,16 +201,14 @@ export function generateCategory4Cases() {
     } else {
       title = `Seeded duplicate approval intent hash collision #${400 + i}`;
       expectedCode = 'ALREADY_APPROVED';
+      method = 'approve_intent';
+      args.approval_expires_at_ms = Date.now() + 3600000;
     }
 
     pushCase({
       title,
-      args: {
-        mandate_id: 1,
-        recipient: 'merchant.testnet',
-        amount: '500000',
-        nonce: 500 + i,
-      },
+      method,
+      args,
       expectedLabel,
       expectedCode,
       note: `Seeded parametric approval vector (seed: ${SEED_CAT4})`,

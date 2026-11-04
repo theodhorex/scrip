@@ -15,6 +15,7 @@ import {
   waitForSettlement,
   prepareCaseState,
 } from '../layers/testnet.mjs';
+import { getLayerECases } from '../cases/layer_e/index.mjs';
 
 test('state preparation: remainingBudget correctly depletes mandate and triggers OVER_BUDGET', async () => {
   const session = await createTestnetSession({ dry: true, mandatesCount: 2 });
@@ -391,6 +392,34 @@ test('state preparation: Cat 4 direct approve_intent methods', async () => {
   }
 });
 
+test('state preparation: Cat 4 seeded duplicate approve_intent (ALREADY_APPROVED)', async () => {
+  const session = await createTestnetSession({ dry: true, mandatesCount: 2 });
+  try {
+    const cases = getLayerECases();
+    const targetIds = [
+      'KAT-E-04-35',
+      'KAT-E-04-41',
+      'KAT-E-04-45',
+      'KAT-E-04-48',
+      'KAT-E-04-49',
+      'KAT-E-04-52',
+      'KAT-E-04-54',
+      'KAT-E-04-57',
+    ];
+    for (const id of targetIds) {
+      const c = cases.find((x) => x.id === id);
+      assert.ok(c, `Case ${id} not found`);
+      assert.equal(c.params.method, 'approve_intent', `Case ${id} should use approve_intent`);
+      assert.ok(c.params.args.approval_expires_at_ms > Date.now(), `Case ${id} approval_expires_at_ms must be in future`);
+      const act = await executeLayerE(c, session);
+      assert.equal(act.label, 'BLOCKED', `Case ${id} should be BLOCKED`);
+      assert.equal(act.code, 'ALREADY_APPROVED', `Case ${id} should have code ALREADY_APPROVED`);
+    }
+  } finally {
+    await session.closeSession();
+  }
+});
+
 test('manual mutation proof: Cat 4 state prep disable causes failure', async () => {
   const session = await createTestnetSession({ dry: true, mandatesCount: 2 });
   try {
@@ -425,6 +454,22 @@ test('manual mutation proof: Cat 4 state prep disable causes failure', async () 
     };
     const actUsedMut = await executeLayerE(cUsedMut, session);
     assert.equal(actUsedMut.label, 'INERT', 'Without prior consumption, payment does not trigger APPROVAL_USED');
+
+    // With skipStatePrep: true, seeded duplicate approve_intent executes without prior approval -> INERT
+    const cDupMut = {
+      id: 'KAT-E-04-35',
+      category: 4,
+      layer: 'E',
+      params: {
+        mandate_id: 1,
+        skipStatePrep: true, // MUTATION: Disable prep
+        method: 'approve_intent',
+        args: { mandate_id: 1, recipient: 'merchant.testnet', amount: '500000', nonce: 519, approval_expires_at_ms: Date.now() + 3600000 },
+      },
+      expected: { label: 'BLOCKED', code: 'ALREADY_APPROVED' },
+    };
+    const actDupMut = await executeLayerE(cDupMut, session);
+    assert.equal(actDupMut.label, 'INERT', 'Without prior registration, approve_intent succeeds as INERT');
   } finally {
     await session.closeSession();
   }
