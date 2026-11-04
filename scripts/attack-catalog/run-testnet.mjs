@@ -205,7 +205,9 @@ export async function runTestnetExecution(options = {}) {
         txHashes.push(actual.txHash);
       }
 
-      if (actual.label === 'BREACH') {
+      if (actual.label === 'SKIPPED') {
+        evaluated.verdict = 'SKIPPED';
+      } else if (actual.label === 'BREACH') {
         evaluated.verdict = 'BREACH';
       } else if (actual.label === c.expected.label) {
         if (c.expected.code !== undefined && c.expected.code !== null) {

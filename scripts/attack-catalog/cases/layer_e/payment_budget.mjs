@@ -280,7 +280,7 @@ export function generateCategory3Cases() {
     { title: 'Payment exceeding remaining free budget by 1', amt: '100001', code: 'OVER_BUDGET' },
     { title: 'Payment exceeding remaining free budget by 1000', amt: '101000', code: 'OVER_BUDGET' },
     { title: 'Payment exceeding remaining free budget by 50000', amt: '150000', code: 'OVER_BUDGET' },
-    { title: 'Payment on fully exhausted budget (zero remaining)', amt: '50000', code: 'OVER_BUDGET' },
+    { title: 'Payment on fully exhausted budget (zero remaining)', amt: '50000', rem: '0', code: 'OVER_BUDGET' },
     { title: 'Payment beyond deposited funds', amt: '300000', code: 'OVER_BUDGET' },
   ];
   for (const b of budgetTests) {
@@ -290,7 +290,7 @@ export function generateCategory3Cases() {
       expectedLabel: 'BLOCKED',
       expectedCode: b.code,
       note: 'Budget depletion check enforced',
-      extraParams: { remainingBudget: '100000' },
+      extraParams: { remainingBudget: b.rem ?? '100000' },
     });
   }
 
@@ -319,12 +319,15 @@ export function generateCategory3Cases() {
 
   // 37-45. Concurrency & race variations (simultaneous payment requests with competing nonces)
   for (let i = 1; i <= 9; i++) {
+    const isOver = i > 5;
+    const amt = BigInt(10000 * i);
     pushCase({
       title: `Concurrent payment request race condition variation #${i}`,
-      amount: String(10000 * i),
-      expectedLabel: i <= 5 ? 'INERT' : 'BLOCKED',
-      expectedCode: i <= 5 ? null : 'OVER_BUDGET',
+      amount: amt.toString(),
+      expectedLabel: isOver ? 'BLOCKED' : 'INERT',
+      expectedCode: isOver ? 'OVER_BUDGET' : null,
       note: `Simulated concurrent execution race ${i}`,
+      extraParams: isOver ? { remainingBudget: String(amt - 1n) } : {},
     });
   }
 
@@ -335,6 +338,7 @@ export function generateCategory3Cases() {
     let amt;
     let expectedLabel;
     let expectedCode;
+    let extraParams = {};
 
     if (r < 0.5) {
       // Valid stream transaction
@@ -346,11 +350,13 @@ export function generateCategory3Cases() {
       amt = BigInt(Math.floor(rng() * 300000) + 200000);
       expectedLabel = 'BLOCKED';
       expectedCode = 'OVER_BUDGET';
+      extraParams = { remainingBudget: String(amt - 1n) };
     } else {
       // Queue congested request
       amt = 5000n;
       expectedLabel = 'BLOCKED';
       expectedCode = 'TOO_MANY_OPEN';
+      extraParams = { openRequestsCount: 33 };
     }
 
     pushCase({
@@ -359,6 +365,7 @@ export function generateCategory3Cases() {
       expectedLabel,
       expectedCode,
       note: `Deterministic pseudo-random concurrency stream (seed: ${SEED_CAT3})`,
+      extraParams,
     });
   }
 

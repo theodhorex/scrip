@@ -30,7 +30,7 @@ const ROOT = resolve(HERE, '../../..');
 const SCRIPTS_DIR = resolve(ROOT, 'scripts');
 const DEFAULT_USDC = '3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af';
 const DEFAULT_WASM = join(ROOT, 'contracts/scrip/target/wasm32-unknown-unknown/release/scrip.wasm');
-const T = (n) => BigInt(n) * 1_000_000_000_000n; // Tgas
+export const T = (n) => BigInt(n) * 1_000_000_000_000n; // Tgas
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -98,9 +98,13 @@ export function detectMandateBreach(before, after, expectedOrActualLabel) {
     return { isBreach: false };
   }
 
-  const spentDiff = BigInt(after.spent ?? '0') !== BigInt(before.spent ?? '0');
-  const reservedDiff = BigInt(after.reserved ?? '0') !== BigInt(before.reserved ?? '0');
-  const merchantDiff = (after.merchantBalance ?? 0n) > (before.merchantBalance ?? 0n);
+  // A payment that was already in flight BEFORE the case may settle during it (reserved -> spent). That is not the
+  // case's doing, so allow spent/merchant balance to grow by at most the amount that was pending beforehand.
+  const pending = BigInt(before.priorPendingReserved ?? before.reserved ?? '0');
+  const spentDelta = BigInt(after.spent ?? '0') - BigInt(before.spent ?? '0');
+  const spentDiff = spentDelta < 0n || spentDelta > pending;
+  const reservedDiff = BigInt(after.reserved ?? '0') > BigInt(before.reserved ?? '0');
+  const merchantDiff = (after.merchantBalance ?? 0n) - (before.merchantBalance ?? 0n) > pending;
   const statusDiff = before.status && after.status && before.status !== after.status;
 
   if (expectedOrActualLabel === 'BLOCKED') {
@@ -142,6 +146,9 @@ export function createMockTestnetEngine(funderId) {
   const balances = new Map(); // id -> yoctoNEAR
   const ftBalances = new Map(); // id -> bigint USDC
   const mandates = new Map(); // id -> mandate object
+  const approvals = new Map(); // key -> { expires_at_ms, used }
+  const pending = new Map(); // "mandate_id:request_id" -> { recipient, amount, height }
+  const MOCK_BLOCK_HEIGHT = 2000;
   let mandateCounter = 0;
   let txNonce = 1000;
 
@@ -153,6 +160,8 @@ export function createMockTestnetEngine(funderId) {
     balances,
     ftBalances,
     mandates,
+    approvals,
+    pending,
     async viewAccount({ accountId }) {
       if (!accounts.has(accountId) && accountId !== funderId) {
         throw new Error(`Account ${accountId} does not exist`);
@@ -162,7 +171,7 @@ export function createMockTestnetEngine(funderId) {
       };
     },
     async viewBlock() {
-      return { header: { height: 2000, hash: 'MOCK_BLOCK_HASH' } };
+      return { header: { height: MOCK_BLOCK_HEIGHT, hash: 'MOCK_BLOCK_HASH' } };
     },
     async viewAccessKey() {
       return { nonce: 0n, permission: 'FullAccess' };
@@ -183,9 +192,11 @@ export function createMockTestnetEngine(funderId) {
           token: m.token,
           budget: m.budget.toString(),
           per_payment_cap: m.per_payment_cap.toString(),
+          approval_threshold: (m.approval_threshold ?? 500_000n).toString(),
           deposited: m.deposited.toString(),
           spent: m.spent.toString(),
           reserved: m.reserved.toString(),
+          open_requests: m.open_requests ?? 0,
           withdrawn: m.withdrawn.toString(),
           status: m.status,
           recipients: [...m.recipients],
@@ -214,6 +225,8 @@ export function createMockTestnetEngine(funderId) {
           token: args.token,
           budget: BigInt(args.budget),
           per_payment_cap: BigInt(args.per_payment_cap),
+          approval_threshold: BigInt(args.approval_threshold ?? 500_000),
+          approvals_count: 0,
           deposited: 0n,
           spent: 0n,
           reserved: 0n,
@@ -223,6 +236,114 @@ export function createMockTestnetEngine(funderId) {
         });
         const val = Buffer.from(JSON.stringify(id)).toString('base64');
         return { transaction: { hash }, status: { SuccessValue: val } };
+      }
+      if (methodName === 'request_payment') {
+        const m = mandates.get(Number(args.mandate_id));
+        if (m && senderId && senderId !== m.agent) {
+          return { error: 'UNAUTHORIZED_AGENT', transaction: { hash }, status: { Failure: 'AMANAT_ERR:UNAUTHORIZED_AGENT' } };
+        }
+      }
+      if (methodName === 'tighten') {
+        const m = mandates.get(Number(args.mandate_id));
+        if (m && senderId && senderId !== m.owner && senderId !== m.guardian) {
+          return { error: 'UNAUTHORIZED', transaction: { hash }, status: { Failure: 'AMANAT_ERR:UNAUTHORIZED' } };
+        }
+        if (m && m.status !== 'Active') {
+          return { error: 'NOT_ACTIVE', transaction: { hash }, status: { Failure: 'AMANAT_ERR:NOT_ACTIVE' } };
+        }
+        if (m && args.change?.ApprovalThreshold !== undefined) {
+          m.approval_threshold = BigInt(args.change.ApprovalThreshold);
+        }
+        if (m && args.change?.Budget !== undefined) {
+          const x = BigInt(args.change.Budget);
+          const fail = (code) => ({ error: code, transaction: { hash }, status: { Failure: `AMANAT_ERR:${code}` } });
+          if (x >= m.budget) return fail('NOT_STRICTER');
+          if (x < m.spent + m.reserved) return fail('BUDGET_BELOW_COMMITTED');
+          if (x < m.per_payment_cap) return fail('BUDGET_BELOW_CAP');
+          m.budget = x;
+        }
+        return { transaction: { hash }, status: { SuccessValue: '' } };
+      }
+      if (methodName === 'loosen') {
+        const m = mandates.get(Number(args.mandate_id));
+        if (m && senderId && senderId !== m.guardian) {
+          return { error: 'UNAUTHORIZED_GUARDIAN', transaction: { hash }, status: { Failure: 'AMANAT_ERR:UNAUTHORIZED_GUARDIAN' } };
+        }
+        if (m && m.status !== 'Active') {
+          return { error: 'NOT_ACTIVE', transaction: { hash }, status: { Failure: 'AMANAT_ERR:NOT_ACTIVE' } };
+        }
+        // Mirror the check order of lib.rs loosen (guarded constants: MAX_RECIPIENTS = 16).
+        const fail = (code) => ({ error: code, transaction: { hash }, status: { Failure: `AMANAT_ERR:${code}` } });
+        const change = args.change || {};
+        if (m) {
+          if (change.Budget !== undefined) {
+            const x = BigInt(change.Budget);
+            if (x <= m.budget) return fail('NOT_LOOSER');
+            if (x > m.deposited - m.withdrawn) return fail('BUDGET_ABOVE_DEPOSITED');
+            m.budget = x;
+          } else if (change.PerPaymentCap !== undefined) {
+            const x = BigInt(change.PerPaymentCap);
+            if (x <= m.per_payment_cap) return fail('NOT_LOOSER');
+            if (x > m.budget) return fail('CAP_ABOVE_BUDGET');
+            m.per_payment_cap = x;
+          } else if (change.ApprovalThreshold !== undefined) {
+            const x = BigInt(change.ApprovalThreshold);
+            if (x <= (m.approval_threshold ?? 500_000n)) return fail('NOT_LOOSER');
+            if (x > m.per_payment_cap) return fail('THRESHOLD_ABOVE_CAP');
+            m.approval_threshold = x;
+          } else if (change.AddRecipient !== undefined) {
+            const r = String(change.AddRecipient);
+            if (!r || !/^[a-z0-9._-]+$/.test(r)) return fail('INVALID_RECIPIENT');
+            if (m.recipients.includes(r)) return fail('DUPLICATE_RECIPIENT');
+            if (m.recipients.length >= 16) return fail('TOO_MANY_RECIPIENTS');
+            m.recipients.push(r);
+          } else if (change.RemoveRecipient !== undefined) {
+            return fail('NOT_LOOSER');
+          } else if (change.Expiry !== undefined) {
+            if (Number(change.Expiry) <= (m.expires_at_ms ?? 0)) return fail('NOT_LOOSER');
+            m.expires_at_ms = Number(change.Expiry);
+          }
+        }
+        return { transaction: { hash }, status: { SuccessValue: '' } };
+      }
+      if (methodName === 'resolve_stale') {
+        const m = mandates.get(Number(args.mandate_id));
+        const fail = (code) => ({ error: code, transaction: { hash }, status: { Failure: `AMANAT_ERR:${code}` } });
+        if (m && senderId && senderId !== m.guardian) return fail('UNAUTHORIZED_GUARDIAN');
+        const key = `${Number(args.mandate_id)}:${Number(args.request_id)}`;
+        const p = pending.get(key);
+        if (!p) return fail('NO_SUCH_PENDING');
+        if (MOCK_BLOCK_HEIGHT - p.height < 200) return fail('NOT_STALE_YET'); // STALE_BLOCKS = 200
+        if (!args.transferred) return fail('STALE_REFUND_UNPROVABLE');
+        pending.delete(key);
+        if (m) {
+          m.reserved -= p.amount;
+          m.open_requests = Math.max((m.open_requests ?? 1) - 1, 0);
+          m.spent += p.amount;
+        }
+        return { transaction: { hash }, status: { SuccessValue: '' } };
+      }
+      if (methodName === 'approve_intent') {
+        const m = mandates.get(Number(args.mandate_id));
+        const dep = BigInt(deposit || '0');
+        const minDep = 2_000_000_000_000_000_000_000n; // 2 mNEAR (STORAGE_DEPOSIT_PER_APPROVAL, lib.rs:42)
+        if (dep < minDep) {
+          return { error: 'INSUFFICIENT_APPROVAL_DEPOSIT', transaction: { hash }, status: { Failure: 'INSUFFICIENT_APPROVAL_DEPOSIT' } };
+        }
+        const now = Date.now();
+        if (args.approval_expires_at_ms && Number(args.approval_expires_at_ms) <= now) {
+          return { error: 'APPROVAL_NOT_IN_FUTURE', transaction: { hash }, status: { Failure: 'APPROVAL_NOT_IN_FUTURE' } };
+        }
+        if (m && (m.approvals_count ?? 0) >= 512) {
+          return { error: 'TOO_MANY_APPROVALS', transaction: { hash }, status: { Failure: 'TOO_MANY_APPROVALS' } };
+        }
+        const key = `${args.mandate_id}:${args.recipient}:${args.amount}:${args.nonce}`;
+        if (approvals.has(key)) {
+          return { error: 'ALREADY_APPROVED', transaction: { hash }, status: { Failure: 'ALREADY_APPROVED' } };
+        }
+        if (m) m.approvals_count = (m.approvals_count ?? 0) + 1;
+        approvals.set(key, { expires_at_ms: Number(args.approval_expires_at_ms), used: false });
+        return { transaction: { hash }, status: { SuccessValue: '' } };
       }
       if (methodName === 'ft_transfer_call') {
         const receiver = args.receiver_id;
@@ -241,11 +362,23 @@ export function createMockTestnetEngine(funderId) {
       }
       if (methodName === 'revoke') {
         const m = mandates.get(Number(args.mandate_id));
+        if (m && senderId && senderId !== m.owner && senderId !== m.guardian) {
+          return { error: 'UNAUTHORIZED', transaction: { hash }, status: { Failure: 'AMANAT_ERR:UNAUTHORIZED' } };
+        }
+        if (m && m.status !== 'Active') {
+          return { error: 'NOT_ACTIVE', transaction: { hash }, status: { Failure: 'AMANAT_ERR:NOT_ACTIVE' } };
+        }
         if (m) m.status = 'Revoked';
         return { transaction: { hash }, status: { SuccessValue: '' } };
       }
       if (methodName === 'withdraw') {
         const m = mandates.get(Number(args.mandate_id));
+        if (m && senderId && senderId !== m.owner) {
+          return { error: 'UNAUTHORIZED_OWNER', transaction: { hash }, status: { Failure: 'AMANAT_ERR:UNAUTHORIZED_OWNER' } };
+        }
+        if (m && m.status !== 'Revoked') {
+          return { error: 'MANDATE_STILL_ACTIVE', transaction: { hash }, status: { Failure: 'AMANAT_ERR:MANDATE_STILL_ACTIVE' } };
+        }
         const amount = BigInt(args.amount);
         if (m) {
           m.withdrawn += amount;
@@ -305,7 +438,10 @@ export async function createTestnetSession(opts = {}) {
   const rpcUrl = opts.rpcUrl ?? process.env.RPC_URL ?? 'https://rpc.testnet.fastnear.com';
   const funderId = opts.funderId ?? process.env.FUNDER_ID ?? 'envtest-theo-1747.testnet';
   const relayerId = opts.relayerId ?? process.env.RELAYER_ID ?? 'relayer-theo-1747.testnet';
-  const keyDir = opts.keyDir ?? process.env.KEY_DIR ?? '/home/theo/Documents/dev/hackathon/NEAR';
+  const keyDir = opts.keyDir ?? process.env.KEY_DIR ?? '';
+  if (!dry && !keyDir && !(opts.funderKeyFile ?? process.env.FUNDER_KEY_FILE)) {
+    throw new Error('Set KEY_DIR (folder holding priv_key.txt and priv_key_relayer.txt) or FUNDER_KEY_FILE and RELAYER_KEY_FILE');
+  }
   const funderKeyFile = opts.funderKeyFile ?? process.env.FUNDER_KEY_FILE ?? join(keyDir, 'priv_key.txt');
   const relayerKeyFile = opts.relayerKeyFile ?? process.env.RELAYER_KEY_FILE ?? join(keyDir, 'priv_key_relayer.txt');
   const usdc = opts.usdcContractId ?? DEFAULT_USDC;
@@ -331,9 +467,12 @@ export async function createTestnetSession(opts = {}) {
 
   const contractKey = KeyPair.fromRandom('ed25519');
   const merchantKey = KeyPair.fromRandom('ed25519');
+  const strangerKey = KeyPair.fromRandom('ed25519');
+  const strangerId = idPrefix('amst_');
 
   createdAccounts.push({ id: contractId, key: contractKey });
   createdAccounts.push({ id: merchantId, key: merchantKey });
+  createdAccounts.push({ id: strangerId, key: strangerKey });
 
   for (let i = 0; i < mandatesCount; i++) {
     const aKey = KeyPair.fromRandom('ed25519');
@@ -366,6 +505,7 @@ export async function createTestnetSession(opts = {}) {
 
   if (dry) {
     mockEngine = createMockTestnetEngine(funderId);
+    await mockEngine.createSubAccount({ accountOrPrefix: strangerId, nearToTransfer: nearToYocto('0.12'), key: strangerKey.getPublicKey().toString() });
     provider = {
       viewAccount: (a) => mockEngine.viewAccount(a),
       viewBlock: (a) => mockEngine.viewBlock(a),
@@ -408,6 +548,8 @@ export async function createTestnetSession(opts = {}) {
     limiter,
     provider,
     funderAcc,
+    strangerId,
+    strangerKey,
     createdAccounts,
     agentKeyPairs,
     guardianKeyPairs,
@@ -483,24 +625,27 @@ export async function createTestnetSession(opts = {}) {
               });
             }
           } else {
-            await funderAcc.callFunctionRaw({
+            await withRetry(() => funderAcc.callFunctionRaw({
               contractId,
               methodName: 'revoke',
               args: { mandate_id: m.id },
               gas: T(30),
               deposit: 0n,
+            }), { tries: 6 });
+            const s = await withRetry(async () => {
+              const r = await provider.callFunction({ contractId, method: 'get_mandate', args: { id: m.id } });
+              return r;
             });
-            const s = await session.viewMandate(m.id);
             if (s) {
               const free = BigInt(s.deposited) - BigInt(s.spent) - BigInt(s.reserved) - BigInt(s.withdrawn);
               if (free > 0n) {
-                await funderAcc.callFunctionRaw({
+                await withRetry(() => funderAcc.callFunctionRaw({
                   contractId,
                   methodName: 'withdraw',
                   args: { mandate_id: m.id, amount: free.toString() },
                   gas: T(100),
                   deposit: 0n,
-                });
+                }), { tries: 6 });
               }
             }
           }
@@ -590,8 +735,8 @@ export async function createTestnetSession(opts = {}) {
       for (let i = 0; i < mandatesCount; i++) {
         const ag = agentKeyPairs[i];
         const gu = guardianKeyPairs[i];
-        await mockEngine.createSubAccount({ accountOrPrefix: ag.id, nearToTransfer: nearToYocto('0.05'), publicKey: ag.key.getPublicKey() });
-        await mockEngine.createSubAccount({ accountOrPrefix: gu.id, nearToTransfer: nearToYocto('0.05'), publicKey: gu.key.getPublicKey() });
+        await mockEngine.createSubAccount({ accountOrPrefix: ag.id, nearToTransfer: nearToYocto('0.12'), publicKey: ag.key.getPublicKey() });
+        await mockEngine.createSubAccount({ accountOrPrefix: gu.id, nearToTransfer: nearToYocto('0.12'), publicKey: gu.key.getPublicKey() });
       }
 
       // Initialize contract
@@ -657,9 +802,10 @@ export async function createTestnetSession(opts = {}) {
 
       await mk(contractId, contractKey, '3.5');
       await mk(merchantId, merchantKey, '0.15');
+      await mk(strangerId, strangerKey, '0.12');
       for (let i = 0; i < mandatesCount; i++) {
-        await mk(agentKeyPairs[i].id, agentKeyPairs[i].key, '0.05');
-        await mk(guardianKeyPairs[i].id, guardianKeyPairs[i].key, '0.05');
+        await mk(agentKeyPairs[i].id, agentKeyPairs[i].key, '0.12');
+        await mk(guardianKeyPairs[i].id, guardianKeyPairs[i].key, '0.12');
       }
 
       // Deploy WASM & init
@@ -791,6 +937,767 @@ export async function createTestnetSession(opts = {}) {
   return session;
 }
 
+
+const INFRA_RE = /429|rate limit|502|503|504|fetch failed|ECONNRESET|ETIMEDOUT|socket hang up|UND_ERR|timed out/i;
+/** True when an error/status text is an RPC/network outage (not a verdict about the contract). */
+export function isInfraError(text) { return INFRA_RE.test(String(text ?? '')); }
+/** Retries an idempotent read/cleanup call on infrastructure errors only, with backoff. */
+export async function withRetry(fn, { tries = 5, baseMs = 1500 } = {}) {
+  for (let i = 0; ; i++) {
+    try { return await fn(); } catch (e) {
+      if (i >= tries - 1 || !isInfraError(e?.message)) throw e;
+      await new Promise((r) => setTimeout(r, baseMs * (i + 1)));
+    }
+  }
+}
+
+const MAX_OPEN = 32;
+let relayedPaymentNonce = 9_000_000;
+
+/** Polls get_mandate until nothing is reserved (in-flight payment callbacks settled). Dry mode settles instantly. */
+export async function waitForSettlement(session, mandateId, { timeoutMs = 20_000, intervalMs = 1_000 } = {}) {
+  const deadline = Date.now() + timeoutMs;
+  let m = await session.viewMandate(mandateId);
+  if (session.isDry) return m;
+  while (m && BigInt(m.reserved ?? '0') > 0n && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, intervalMs));
+    m = await session.viewMandate(mandateId);
+  }
+  return m;
+}
+
+/** Guardian account helper for dry mode and live testnet. */
+export function getGuardianAcc(session, idx = 0) {
+  const g = session.guardianKeyPairs[idx] || session.guardianKeyPairs[0];
+  if (!g) throw new Error(`Guardian key pair at index ${idx} not found in session`);
+  if (session.isDry) {
+    return {
+      accountId: g.id,
+      callFunctionRaw: async ({ contractId, methodName, args, gas, deposit }) => {
+        return session.mockEngine.callFunctionRaw({
+          contractId,
+          methodName,
+          args,
+          deposit,
+          senderId: g.id,
+        });
+      },
+    };
+  }
+  return new Account(g.id, session.provider, new KeyPairSigner(g.key));
+}
+
+/**
+ * Chooses how a case method must be transmitted on the REAL path. The facilitator /relay only accepts
+ * request_payment, so lifecycle methods must go straight to their authorized account instead.
+ *   owner          -> session.funderAcc (mandate owner; revoke/withdraw/tighten)
+ *   guardian       -> session guardian account (loosen/resolve_stale)
+ *   approve_intent -> guardian account with the approval storage deposit
+ *   relay          -> agent function-call key through the facilitator
+ */
+export function routeMethod(method = 'request_payment') {
+  if (['revoke', 'withdraw', 'tighten'].includes(method)) return 'owner';
+  if (['loosen', 'resolve_stale'].includes(method)) return 'guardian';
+  if (method === 'approve_intent') return 'approve_intent';
+  return 'relay';
+}
+
+/** Calls an owner-only method from the funder account (the owner of every session mandate). */
+export async function callAsOwner(session, methodName, args, { gas = T(30), deposit = 0n } = {}) {
+  return session.funderAcc.callFunctionRaw({
+    contractId: session.contractId,
+    methodName,
+    args,
+    gas,
+    deposit,
+  });
+}
+
+/**
+ * Resolves the appropriate Account instance for a given caller role.
+ */
+export function getCallerAccount(session, callerName, agentIdx = 0) {
+  if (callerName === 'agent.testnet') {
+    const ag = session.getAgent(agentIdx);
+    if (session.isDry) {
+      return {
+        accountId: ag.id,
+        callFunctionRaw: async ({ contractId, methodName, args, gas, deposit }) => {
+          return session.mockEngine.callFunctionRaw({
+            contractId,
+            methodName,
+            args,
+            deposit,
+            senderId: ag.id,
+          });
+        },
+      };
+    }
+    return new Account(ag.id, session.provider, new KeyPairSigner(ag.key));
+  }
+
+  if (callerName === 'owner.testnet' || callerName === 'alice.testnet') {
+    return session.funderAcc;
+  }
+
+  if (callerName === 'guardian.testnet') {
+    return getGuardianAcc(session, agentIdx);
+  }
+
+  // Stranger / unauthorized accounts
+  const sId = session.strangerId || 'stranger.testnet';
+  if (session.isDry) {
+    return {
+      accountId: sId,
+      callFunctionRaw: async ({ contractId, methodName, args, gas, deposit }) => {
+        return session.mockEngine.callFunctionRaw({
+          contractId,
+          methodName,
+          args,
+          deposit,
+          senderId: sId,
+        });
+      },
+    };
+  }
+  return new Account(session.strangerId, session.provider, new KeyPairSigner(session.strangerKey));
+}
+
+/**
+ * Classifies a transaction result from near-api-js callFunctionRaw or RPC response.
+ * Detects contract events, AMANAT_ERR in logs, or transaction Failure.
+ */
+export function classifyTxResult(txRes, defaultLabel = 'INERT') {
+  if (!txRes) {
+    return { label: defaultLabel, txHash: null, note: 'Empty transaction result' };
+  }
+  const txHash = txRes.transaction?.hash ?? txRes.transaction_outcome?.id ?? null;
+  const logs = txRes.receipts_outcome?.flatMap((o) => o?.outcome?.logs || []) || [];
+
+  const rejectedEvent = logs
+    .filter((l) => typeof l === 'string' && l.startsWith('EVENT_JSON:'))
+    .map((l) => {
+      try { return JSON.parse(l.slice(11)); } catch { return null; }
+    })
+    .find((e) => e && e.event === 'rejected');
+  if (rejectedEvent) {
+    const code = rejectedEvent.data?.[0]?.code || 'REJECTED';
+    return { label: 'BLOCKED', code: String(code), txHash, note: `Contract rejected: ${code}` };
+  }
+
+  const errLog = logs.find((l) => typeof l === 'string' && l.startsWith('AMANAT_ERR:'));
+  if (errLog) {
+    const code = errLog.slice('AMANAT_ERR:'.length).trim();
+    return { label: 'BLOCKED', code, txHash, note: `AMANAT_ERR: ${code}` };
+  }
+
+  if (txRes.status?.Failure) {
+    const failureStr = JSON.stringify(txRes.status.Failure);
+    const match = failureStr.match(/AMANAT_ERR:([A-Za-z0-9_]+)/) || failureStr.match(/ExecutionError.*?([A-Z_]{4,})/);
+    return { label: 'BLOCKED', code: match ? match[1] : 'CALL_FAILED', txHash, note: `Failure: ${failureStr}` };
+  }
+
+  return { label: defaultLabel, txHash, note: `Transaction confirmed: ${txHash}` };
+}
+
+/**
+ * Classifies a transaction error thrown by near-api-js callFunctionRaw.
+ * Extracts AMANAT_ERR from error messages, attached transactionResult logs, or on-chain tx lookup.
+ */
+export async function classifyTxError(err, session = null, signerAccountId = null) {
+  const msg = err?.message || '';
+  const failedRes = err?.transactionResult ?? null;
+  const failedHash = failedRes?.transaction_outcome?.id ?? err?.context?.transactionHash ?? err?.transactionHash ?? null;
+
+  // near-sdk method guards are NOT AMANAT_ERR codes: a non-payable method rejects any
+  // attached deposit and a #[private] method rejects external callers. The contract marks
+  // these methods with the macros (lib.rs:489/589/657/701/743/792/818) but the panic text
+  // comes from near-sdk (near-sdk-macros-5.30 impl_item_method_info.rs:156/187).
+  if (/doesn't accept deposit/i.test(msg)) {
+    return { label: 'BLOCKED', code: 'METHOD_NOT_PAYABLE', txHash: failedHash ? String(failedHash) : null, note: msg };
+  }
+  if (/\bis private\b/i.test(msg)) {
+    return { label: 'BLOCKED', code: 'METHOD_IS_PRIVATE', txHash: failedHash ? String(failedHash) : null, note: msg };
+  }
+
+  let match = msg.match(/AMANAT_ERR:([A-Za-z0-9_]+)/) || msg.match(/Smart contract panicked:\s*([A-Za-z0-9_]+)/);
+
+  if (!match && failedRes) {
+    const inline = failedRes.receipts_outcome?.flatMap((o) => o?.outcome?.logs ?? []) ?? [];
+    const l = inline.find((x) => typeof x === 'string' && x.startsWith('AMANAT_ERR:'));
+    if (l) match = [null, l.slice('AMANAT_ERR:'.length).trim()];
+  }
+
+  if (!match && failedHash && session?.provider && signerAccountId) {
+    try {
+      const failedTx = await withRetry(() => session.provider.sendJsonRpc('tx', [failedHash, signerAccountId]));
+      const failedLogs = failedTx?.receipts_outcome?.flatMap((o) => o.outcome.logs) || [];
+      const l = failedLogs.find((x) => typeof x === 'string' && x.startsWith('AMANAT_ERR:'));
+      if (l) match = [null, l.slice('AMANAT_ERR:'.length).trim()];
+    } catch { /* keep generic fallback below */ }
+  }
+
+  if (match) {
+    return { label: 'BLOCKED', code: match[1], txHash: failedHash ? String(failedHash) : null, note: `Panic: ${match[1]}` };
+  }
+  if (isInfraError(msg)) {
+    return { label: 'SKIPPED', code: 'INFRA_ERROR', txHash: null, note: msg };
+  }
+  return { label: 'BLOCKED', code: 'TX_FAILED', txHash: failedHash ? String(failedHash) : null, note: `${msg} [errKeys=${Object.keys(err || {}).join(',')}]` };
+}
+
+/**
+ * Determines the mandate index for a case to preserve status dependencies (e.g. Cat 10 revoked group)
+ * and prevent cross-case state contamination.
+ */
+export function getMandateIndexForCase(c, session) {
+  if (!session?.mandates || session.mandates.length <= 1) return 0;
+  const numMandates = session.mandates.length;
+
+  if (c.category === 10) {
+    const id = c.id || '';
+    const mMatch = id.match(/KAT-E-10-(\d+)/);
+    const num = mMatch ? parseInt(mMatch[1], 10) : 0;
+
+    // Group 1: 10-01 to 10-05 (revocation lifecycle)
+    if (num >= 1 && num <= 5) {
+      return 0;
+    }
+    // Group 2: 10-06 (withdraw on active mandate)
+    if (num === 6) {
+      return 1 % numMandates;
+    }
+    // Group 3: 10-07, 10-08 (withdraw on revoked mandate)
+    if (num === 7 || num === 8) {
+      return (numMandates > 2 ? 2 : 0) % numMandates;
+    }
+    // Group 4: 10-09 (insufficient gas)
+    if (num === 9) {
+      return 1 % numMandates;
+    }
+    // Seeded post-revoke checks
+    if (c.expected?.code === 'NOT_ACTIVE' || c.params?.mandateRevoked) {
+      return 0;
+    }
+    if (c.expected?.code === 'MANDATE_STILL_ACTIVE') {
+      return 1 % numMandates;
+    }
+    // Active lifecycle modifications (tighten 10-14, loosen 15-20, seeded 21-60)
+    const activeOffset = numMandates > 3 ? 3 : 1;
+    const activeSpan = numMandates > 3 ? numMandates - 3 : 1;
+    return (activeOffset + (num % activeSpan)) % numMandates;
+  }
+
+  const seq = session.caseSeq ?? 0;
+  return seq % numMandates;
+}
+
+/** One legitimate payment through the facilitator relay, signed by the mandate's own agent function-call key. */
+async function relayLegitPayment(session, agent, mandateId, recipient, amount, customNonce) {
+  const signer = new KeyPairSigner(agent.fcKey);
+  const head = await withRetry(() => session.provider.viewBlock({ finality: 'optimistic' }));
+  const pub = await signer.getPublicKey();
+  let onChain = 0n;
+  try {
+    const k = await withRetry(() => session.provider.viewAccessKey({ accountId: agent.id, publicKey: pub.toString() }));
+    onChain = BigInt(k?.nonce ?? 0);
+  } catch { onChain = 0n; }
+  const paymentNonce = customNonce !== undefined ? customNonce : ++relayedPaymentNonce;
+  const delegate = buildDelegateAction({
+    senderId: agent.id,
+    receiverId: session.contractId,
+    nonce: onChain + 1n,
+    maxBlockHeight: BigInt(head.header.height) + 100n,
+    publicKey: pub,
+    actions: [actions.functionCall('request_payment',
+      { mandate_id: mandateId, recipient, amount: String(amount), nonce: paymentNonce }, T(100), 0n)],
+  });
+  const signed = await signer.signDelegateAction(delegate);
+  const b64 = Buffer.from(encodeSignedDelegate(signed.signedDelegate)).toString('base64');
+  const res = await fetch(`http://127.0.0.1:${session.port}/relay`, {
+    method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ signed_delegate: b64 }),
+  });
+  const json = await res.json().catch(() => null);
+  if (res.status >= 400) throw new Error(`prep payment rejected: HTTP ${res.status} ${json?.code ?? ''}`);
+  return json?.tx_hash;
+}
+
+/**
+ * Brings the case's mandate into the state the case is written against (catalog metadata the harness used to
+ * ignore). Returns { ok: true } or { ok: false, reason }; an unsupported or failed preparation must NOT run the
+ * case (it would give a meaningless PASS/FAIL/BREACH), the caller records SKIPPED with the reason.
+ *   remainingBudget      free budget left = R (valid payments up to the cap)
+ *   openRequestsCount    N: N-1 requests already open, the case itself is the Nth
+ *   hasValidApproval / approvalAlreadyUsed / approvalExpired   approval state
+ */
+export async function prepareCaseState(c, session) {
+  const p = c.params || {};
+  if (p.skipStatePrep) return { ok: true };
+  const mandateId = p.mandate_id ?? session.mandates[0]?.id ?? 1;
+  const agentIdx = p.agentIndex ?? 0;
+  const expectedCode = c.expected?.code;
+  const method = p.method || 'request_payment';
+  const amount = BigInt(p.args?.amount || p.amount || '0');
+
+  // Handle mandate revocation state if needed by the case
+  const needsRevoked = p.mandateRevoked
+    || (c.category === 10 && (expectedCode === 'NOT_ACTIVE' || expectedCode === 'ALREADY_REVOKED'));
+  const isInitialRevoke = method === 'revoke' && (c.expected?.label === 'INERT' || !expectedCode);
+
+  if (needsRevoked && !isInitialRevoke) {
+    if (session.isDry) {
+      const m = session.mockEngine?.mandates?.get(mandateId);
+      if (m && m.status !== 'Revoked') {
+        m.status = 'Revoked';
+      }
+    } else {
+      const m = await session.viewMandate(mandateId);
+      if (m && m.status !== 'Revoked') {
+        try {
+          const res = await withRetry(() => session.funderAcc.callFunctionRaw({
+            contractId: session.contractId,
+            methodName: 'revoke',
+            args: { mandate_id: mandateId },
+            gas: T(30),
+          }));
+          if (res?.status?.Failure || res?.error) {
+            return { ok: false, reason: `prep revoke failed: ${JSON.stringify(res?.status?.Failure || res?.error)}` };
+          }
+        } catch (e) {
+          return { ok: false, reason: `prep revoke failed: ${e.message}` };
+        }
+      }
+    }
+  }
+
+  // 1. TOO_MANY_APPROVALS (Family 7)
+  // MAX_APPROVALS_PER_MANDATE is 512 (contracts/amanat/src/lib.rs:45).
+  // Creating 512 prior approvals on testnet is prohibitively slow and expensive; skip with reason.
+  if (expectedCode === 'TOO_MANY_APPROVALS') {
+    return {
+      ok: false,
+      reason: 'MAX_APPROVALS_PER_MANDATE is 512 (lib.rs:45); creating 512 approvals on testnet is prohibitively expensive; covered by unit tests',
+    };
+  }
+
+  // 2. ALREADY_APPROVED via request_payment (Family 6)
+  // Contracts/amanat/src/lib.rs:632 shows ALREADY_APPROVED is only generated by approve_intent.
+  // request_payment cannot return ALREADY_APPROVED (RejectCode has only ApprovalUsed/ApprovalExpired/NeedsApproval).
+  if (expectedCode === 'ALREADY_APPROVED' && method === 'request_payment') {
+    return {
+      ok: false,
+      reason: 'ALREADY_APPROVED can only be produced by approve_intent (lib.rs:632); request_payment cannot return ALREADY_APPROVED; inconsistent with contract spec',
+    };
+  }
+
+  // 3. Direct approve_intent expecting ALREADY_APPROVED (Family 7, e.g. KAT-E-04-10)
+  // Need 1 initial approve_intent so the case execution triggers ALREADY_APPROVED.
+  if (expectedCode === 'ALREADY_APPROVED' && method === 'approve_intent') {
+    const recipient = (p.args?.recipient === 'merchant.testnet' || !p.args?.recipient) ? session.merchantId : p.args.recipient;
+    const gAcc = getGuardianAcc(session, agentIdx);
+    const nonce = Number(p.args?.nonce ?? 0);
+    const expiresAt = p.args?.approval_expires_at_ms || (Date.now() + 600_000);
+    try {
+      const res = await withRetry(() => gAcc.callFunctionRaw({
+        contractId: session.contractId,
+        methodName: 'approve_intent',
+        args: {
+          mandate_id: mandateId,
+          recipient,
+          amount: String(amount),
+          nonce,
+          approval_expires_at_ms: expiresAt,
+        },
+        gas: T(30),
+        deposit: 2_000_000_000_000_000_000_000n, // 2 mNEAR (STORAGE_DEPOSIT_PER_APPROVAL, lib.rs:42)
+      }));
+      if (res?.status?.Failure || res?.error) {
+        return { ok: false, reason: `prep approve_intent failed: ${JSON.stringify(res?.status?.Failure || res?.error)}` };
+      }
+    } catch (e) {
+      return { ok: false, reason: `prep approve_intent failed: ${e.message}` };
+    }
+    return { ok: true };
+  }
+
+  // 4. NEEDS_APPROVAL (Family 3)
+  // Needs approval_threshold < amount. Mandates start with threshold = cap (500000).
+  // If amount > cap (e.g. 500001 or 501000), Step 4 (cap check) rejects BEFORE Step 7 (approval check),
+  // making NEEDS_APPROVAL impossible; skip with reason.
+  // Otherwise tighten ApprovalThreshold to amount - 1.
+  if (expectedCode === 'NEEDS_APPROVAL' && method === 'request_payment') {
+    const m0 = await session.viewMandate(mandateId);
+    const cap = BigInt(m0?.per_payment_cap ?? 500_000n);
+    if (amount > cap) {
+      return {
+        ok: false,
+        reason: `amount (${amount}) > per_payment_cap (${cap}) so cap check (lib.rs:514) rejects before approval check (lib.rs:533); NEEDS_APPROVAL impossible; covered by layer A/D`,
+      };
+    }
+    const newThreshold = amount > 0n ? amount - 1n : 0n;
+    const curThreshold = BigInt(m0?.approval_threshold ?? 500_000n);
+    if (newThreshold < curThreshold) {
+      try {
+        const res = await withRetry(() => session.funderAcc.callFunctionRaw({
+          contractId: session.contractId,
+          methodName: 'tighten',
+          args: {
+            mandate_id: mandateId,
+            change: { ApprovalThreshold: String(newThreshold) },
+          },
+          gas: T(30),
+        }));
+        if (res?.status?.Failure || res?.error) {
+          return { ok: false, reason: `tighten threshold failed: ${JSON.stringify(res?.status?.Failure || res?.error)}` };
+        }
+      } catch (e) {
+        return { ok: false, reason: `tighten threshold failed: ${e.message}` };
+      }
+    }
+    return { ok: true };
+  }
+
+  // 5. APPROVAL_USED (Family 4)
+  // Tighten threshold, guardian approve_intent, agent pays ONCE with that nonce via relay,
+  // so the approval is consumed and case payment triggers APPROVAL_USED.
+  if (expectedCode === 'APPROVAL_USED' || p.approvalAlreadyUsed) {
+    const m0 = await session.viewMandate(mandateId);
+    const cap = BigInt(m0?.per_payment_cap ?? 500_000n);
+    if (amount > cap) {
+      return { ok: false, reason: `amount (${amount}) > per_payment_cap (${cap})` };
+    }
+    const newThreshold = amount > 0n ? amount - 1n : 0n;
+    const curThreshold = BigInt(m0?.approval_threshold ?? 500_000n);
+    if (newThreshold < curThreshold) {
+      try {
+        const res = await withRetry(() => session.funderAcc.callFunctionRaw({
+          contractId: session.contractId,
+          methodName: 'tighten',
+          args: {
+            mandate_id: mandateId,
+            change: { ApprovalThreshold: String(newThreshold) },
+          },
+          gas: T(30),
+        }));
+        if (res?.status?.Failure || res?.error) {
+          return { ok: false, reason: `tighten threshold failed: ${JSON.stringify(res?.status?.Failure || res?.error)}` };
+        }
+      } catch (e) {
+        return { ok: false, reason: `tighten threshold failed: ${e.message}` };
+      }
+    }
+    const recipient = (p.args?.recipient === 'merchant.testnet' || !p.args?.recipient) ? session.merchantId : p.args.recipient;
+    const nonce = Number(p.args?.nonce ?? 0);
+    const expiresAt = Date.now() + 600_000;
+    const gAcc = getGuardianAcc(session, agentIdx);
+    try {
+      const res = await withRetry(() => gAcc.callFunctionRaw({
+        contractId: session.contractId,
+        methodName: 'approve_intent',
+        args: {
+          mandate_id: mandateId,
+          recipient,
+          amount: String(amount),
+          nonce,
+          approval_expires_at_ms: expiresAt,
+        },
+        gas: T(30),
+        deposit: 2_000_000_000_000_000_000_000n, // 2 mNEAR
+      }));
+      if (res?.status?.Failure || res?.error) {
+        return { ok: false, reason: `approve_intent failed: ${JSON.stringify(res?.status?.Failure || res?.error)}` };
+      }
+    } catch (e) {
+      return { ok: false, reason: `approve_intent failed: ${e.message}` };
+    }
+
+    if (session.isDry) {
+      const key = `${mandateId}:${recipient}:${amount}:${nonce}`;
+      const app = session.mockEngine.approvals.get(key);
+      if (app) app.used = true;
+      return { ok: true };
+    }
+
+    const agent = session.getAgent(agentIdx);
+    try {
+      await relayLegitPayment(session, agent, mandateId, recipient, amount, nonce);
+      const mSettle = await waitForSettlement(session, mandateId);
+      if (!mSettle || BigInt(mSettle.reserved ?? '0') > 0n) {
+        return { ok: false, reason: 'initial approved payment did not settle in time' };
+      }
+    } catch (e) {
+      return { ok: false, reason: `initial payment failed: ${e.message}` };
+    }
+    return { ok: true };
+  }
+
+  // 6. APPROVAL_EXPIRED (Family 5)
+  // Tighten threshold, guardian approve_intent with expiry = now + 15s (> block timestamp),
+  // wait until expired (poll viewBlock or clock + 10s margin).
+  if (expectedCode === 'APPROVAL_EXPIRED' || p.approvalExpired) {
+    const m0 = await session.viewMandate(mandateId);
+    const cap = BigInt(m0?.per_payment_cap ?? 500_000n);
+    if (amount > cap) {
+      return { ok: false, reason: `amount (${amount}) > per_payment_cap (${cap})` };
+    }
+    const newThreshold = amount > 0n ? amount - 1n : 0n;
+    const curThreshold = BigInt(m0?.approval_threshold ?? 500_000n);
+    if (newThreshold < curThreshold) {
+      try {
+        const res = await withRetry(() => session.funderAcc.callFunctionRaw({
+          contractId: session.contractId,
+          methodName: 'tighten',
+          args: {
+            mandate_id: mandateId,
+            change: { ApprovalThreshold: String(newThreshold) },
+          },
+          gas: T(30),
+        }));
+        if (res?.status?.Failure || res?.error) {
+          return { ok: false, reason: `tighten threshold failed: ${JSON.stringify(res?.status?.Failure || res?.error)}` };
+        }
+      } catch (e) {
+        return { ok: false, reason: `tighten threshold failed: ${e.message}` };
+      }
+    }
+    const recipient = (p.args?.recipient === 'merchant.testnet' || !p.args?.recipient) ? session.merchantId : p.args.recipient;
+    const nonce = Number(p.args?.nonce ?? 0);
+    const expiresAt = Date.now() + 15_000;
+    const gAcc = getGuardianAcc(session, agentIdx);
+    try {
+      const res = await withRetry(() => gAcc.callFunctionRaw({
+        contractId: session.contractId,
+        methodName: 'approve_intent',
+        args: {
+          mandate_id: mandateId,
+          recipient,
+          amount: String(amount),
+          nonce,
+          approval_expires_at_ms: expiresAt,
+        },
+        gas: T(30),
+        deposit: 2_000_000_000_000_000_000_000n, // 2 mNEAR
+      }));
+      if (res?.status?.Failure || res?.error) {
+        return { ok: false, reason: `approve_intent failed: ${JSON.stringify(res?.status?.Failure || res?.error)}` };
+      }
+    } catch (e) {
+      return { ok: false, reason: `approve_intent failed: ${e.message}` };
+    }
+
+    if (session.isDry) {
+      const key = `${mandateId}:${recipient}:${amount}:${nonce}`;
+      const app = session.mockEngine.approvals.get(key);
+      if (app) app.expires_at_ms = Date.now() - 1000;
+      return { ok: true };
+    }
+
+    const deadline = expiresAt + 10_000;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    return { ok: true };
+  }
+
+  // 7. hasValidApproval
+  if (p.hasValidApproval) {
+    const m0 = await session.viewMandate(mandateId);
+    const newThreshold = amount > 0n ? amount - 1n : 0n;
+    const curThreshold = BigInt(m0?.approval_threshold ?? 500_000n);
+    if (newThreshold < curThreshold) {
+      try {
+        const res = await withRetry(() => session.funderAcc.callFunctionRaw({
+          contractId: session.contractId,
+          methodName: 'tighten',
+          args: {
+            mandate_id: mandateId,
+            change: { ApprovalThreshold: String(newThreshold) },
+          },
+          gas: T(30),
+        }));
+        if (res?.status?.Failure || res?.error) {
+          return { ok: false, reason: `tighten threshold failed: ${JSON.stringify(res?.status?.Failure || res?.error)}` };
+        }
+      } catch (e) {
+        return { ok: false, reason: `tighten threshold failed: ${e.message}` };
+      }
+    }
+    const recipient = (p.args?.recipient === 'merchant.testnet' || !p.args?.recipient) ? session.merchantId : p.args.recipient;
+    const nonce = Number(p.args?.nonce ?? 0);
+    const expiresAt = Date.now() + 600_000;
+    const gAcc = getGuardianAcc(session, agentIdx);
+    try {
+      const res = await withRetry(() => gAcc.callFunctionRaw({
+        contractId: session.contractId,
+        methodName: 'approve_intent',
+        args: {
+          mandate_id: mandateId,
+          recipient,
+          amount: String(amount),
+          nonce,
+          approval_expires_at_ms: expiresAt,
+        },
+        gas: T(30),
+        deposit: 2_000_000_000_000_000_000_000n,
+      }));
+      if (res?.status?.Failure || res?.error) {
+        return { ok: false, reason: `approve_intent failed: ${JSON.stringify(res?.status?.Failure || res?.error)}` };
+      }
+    } catch (e) {
+      return { ok: false, reason: `approve_intent failed: ${e.message}` };
+    }
+    return { ok: true };
+  }
+
+  // 8. openRequestsCount (existing)
+  if (p.openRequestsCount !== undefined) {
+    const open = Math.min(Math.max(Number(p.openRequestsCount) - 1, 0), MAX_OPEN);
+    if (session.isDry) {
+      const m = session.mockEngine.mandates.get(mandateId);
+      if (!m) return { ok: false, reason: `mandate ${mandateId} not found` };
+      m.open_requests = open;
+      return { ok: true };
+    }
+    return { ok: false, reason: 'open requests settle within a few blocks on real testnet, so a queue of 31-32 open requests cannot be held; covered by layer A/D' };
+  }
+
+  // 9. remainingBudget (existing)
+  if (p.remainingBudget !== undefined) {
+    const target = BigInt(p.remainingBudget);
+    const m0 = await session.viewMandate(mandateId);
+    if (!m0) return { ok: false, reason: `mandate ${mandateId} not found` };
+    const free = (mm) => {
+      const ceil = BigInt(mm.budget) < BigInt(mm.deposited) - BigInt(mm.withdrawn) ? BigInt(mm.budget) : BigInt(mm.deposited) - BigInt(mm.withdrawn);
+      return ceil - BigInt(mm.spent) - BigInt(mm.reserved);
+    };
+    if (session.isDry) {
+      const m = session.mockEngine.mandates.get(mandateId);
+      const ceil = m.budget < m.deposited - m.withdrawn ? m.budget : m.deposited - m.withdrawn;
+      if (target > ceil) return { ok: false, reason: `target budget ${target} exceeds ceiling ${ceil}` };
+      m.spent = ceil - target;
+      return { ok: true };
+    }
+    let toSpend = free(m0) - target;
+    if (toSpend < 0n) return { ok: false, reason: `free budget ${free(m0)} already below target ${target}` };
+    const cap = BigInt(m0.per_payment_cap);
+    const agent = session.getAgent(p.agentIndex ?? 0);
+    while (toSpend > 0n) {
+      const chunk = toSpend < cap ? toSpend : cap;
+      try {
+        await relayLegitPayment(session, agent, mandateId, session.merchantId, chunk);
+      } catch (e) {
+        return { ok: false, reason: e.message };
+      }
+      const m = await waitForSettlement(session, mandateId);
+      if (!m || BigInt(m.reserved) > 0n) return { ok: false, reason: 'prep payment did not settle in time' };
+      toSpend = free(m) - target;
+    }
+    const mEnd = await session.viewMandate(mandateId);
+    if (!mEnd || free(mEnd) !== target) return { ok: false, reason: `prep ended with free ${mEnd && free(mEnd)} != target ${target}` };
+    return { ok: true };
+  }
+  // 10. loosenBudgetPrep (H3, KAT-E-05-09)
+  // Budget starts equal to deposited, so `loosen(Budget)` has no legal target: the contract needs
+  // budget < x <= deposited - withdrawn (lib.rs:709-712). Tighten first so the case's loosen is real.
+  if (p.loosenBudgetPrep !== undefined) {
+    const target = BigInt(p.loosenBudgetPrep);
+    const m0 = await session.viewMandate(mandateId);
+    if (!m0) return { ok: false, reason: `mandate ${mandateId} not found` };
+    const cur = BigInt(m0.budget);
+    if (target > cur) return { ok: false, reason: `loosenBudgetPrep ${target} is above current budget ${cur}` };
+    if (target < BigInt(m0.per_payment_cap)) {
+      return { ok: false, reason: `loosenBudgetPrep ${target} is below per_payment_cap ${m0.per_payment_cap}` };
+    }
+    if (target < cur) {
+      const args = { mandate_id: mandateId, change: { Budget: String(target) } };
+      if (session.isDry) {
+        const res = await session.mockEngine.callFunctionRaw({
+          contractId: session.contractId, methodName: 'tighten', args, deposit: 0n, senderId: session.funderId,
+        });
+        if (res.error) return { ok: false, reason: `prep tighten failed: ${res.error}` };
+      } else {
+        try {
+          const res = await withRetry(() => session.funderAcc.callFunctionRaw({
+            contractId: session.contractId, methodName: 'tighten', args, gas: T(30),
+          }));
+          if (res?.status?.Failure || res?.error) {
+            return { ok: false, reason: `prep tighten failed: ${JSON.stringify(res?.status?.Failure || res?.error)}` };
+          }
+        } catch (e) {
+          return { ok: false, reason: `prep tighten failed: ${e.message}` };
+        }
+      }
+    }
+  }
+
+  // 11. recipientsCount (H3, KAT-E-10-20)
+  // MAX_RECIPIENTS = 16 (lib.rs:23). Fill the allowlist with real guardian `loosen(AddRecipient)`
+  // calls so the case's own AddRecipient is the 17th and hits TOO_MANY_RECIPIENTS (lib.rs:727).
+  if (p.recipientsCount !== undefined) {
+    const target = Number(p.recipientsCount);
+    const m0 = await session.viewMandate(mandateId);
+    if (!m0) return { ok: false, reason: `mandate ${mandateId} not found` };
+    const have = m0.recipients.length;
+    if (have >= target) return { ok: true };
+    const gAcc = getGuardianAcc(session, agentIdx);
+    for (let i = have + 1; i <= target; i++) {
+      const recipient = `prep-r${i}.testnet`;
+      const args = { mandate_id: mandateId, change: { AddRecipient: recipient } };
+      let res;
+      try {
+        res = session.isDry
+          ? await session.mockEngine.callFunctionRaw({ contractId: session.contractId, methodName: 'loosen', args, deposit: 0n, senderId: gAcc.accountId })
+          : await gAcc.callFunctionRaw({ contractId: session.contractId, methodName: 'loosen', args, gas: T(30) });
+      } catch (e) {
+        return { ok: false, reason: `prep AddRecipient ${recipient} failed: ${e.message}` };
+      }
+      if (res?.error || res?.status?.Failure) {
+        return { ok: false, reason: `prep AddRecipient ${recipient} failed: ${res.error || JSON.stringify(res.status.Failure)}` };
+      }
+    }
+  }
+
+  // 12. pendingRequest: 'fresh' | 'stale' (H3, KAT-E-10-21 and KAT-E-05-25)
+  // resolve_stale needs a real Pending entry; STALE_BLOCKS = 200 (lib.rs:21). Dry mode can hold one
+  // deterministically. On testnet `on_payment_done` removes it after ~1-2 blocks, so only a stuck
+  // callback is stale; report the case as SKIPPED instead of faking a verdict.
+  if (p.pendingRequest !== undefined || p.isStale) {
+    const stale = p.pendingRequest === 'stale' || p.isStale === true;
+    if (!session.isDry) {
+      return {
+        ok: false,
+        reason: `Pending exists only until on_payment_done settles it (~1-2 blocks), so a ${stale ? 'stale' : 'fresh'} Pending cannot be held on testnet; needs a stuck callback; covered offline`,
+      };
+    }
+    const m = session.mockEngine.mandates.get(mandateId);
+    if (!m) return { ok: false, reason: `mandate ${mandateId} not found` };
+    const requestId = Number(p.args?.request_id ?? 1);
+    const key = `${mandateId}:${requestId}`;
+    if (!session.mockEngine.pending.has(key)) {
+      const amount = BigInt(p.amount || p.args?.amount || '1000');
+      const head = await session.provider.viewBlock({ finality: 'optimistic' });
+      session.mockEngine.pending.set(key, {
+        recipient: p.args?.recipient || m.recipients[0] || session.merchantId,
+        amount,
+        height: stale ? Math.max(head.header.height - 200, 0) : head.header.height,
+      });
+      m.reserved += amount;
+      m.open_requests = (m.open_requests ?? 0) + 1;
+    } else {
+      const entry = session.mockEngine.pending.get(key);
+      if (m.reserved < entry.amount) {
+        m.reserved = entry.amount;
+      }
+      if ((m.open_requests ?? 0) === 0) {
+        m.open_requests = 1;
+      }
+    }
+  }
+
+  return { ok: true };
+}
+
+
 /**
  * Executes a single Attack Case under Layer E (Testnet).
  *
@@ -819,29 +1726,61 @@ export async function executeLayerE(c, session) {
     c = { ...c, params: subst(c.params) };
   }
 
-  // Category 2 (payment amounts/budget) cases are independent single payments, each written against a FRESH
-  // mandate (budget 1250000). Sharing mandate 1 let earlier cases spend its budget, so later INERT expectations
-  // hit OVER_BUDGET (wave 1: KAT-E-02-13/14/57). Give each such case its own mandate, by id suffix.
-  if (String(c.category) === '2' && c.params && c.params.mandate_id === 1 && session.mandates.length > 1) {
-    const n = Number(/(\d+)$/.exec(String(c.id))?.[1]);
-    if (Number.isInteger(n) && n > 0) {
-      const idx = (n - 1) % session.mandates.length;
-      const own = session.mandates[idx].id;
-      c = {
-        ...c,
-        params: {
-          ...c.params,
-          mandate_id: own,
-          // each mandate has its own agent (and function-call key): sign with the owner of this mandate
-          agentIndex: c.params.agentIndex ?? idx,
-          ...(c.params.args && typeof c.params.args === 'object' ? { args: { ...c.params.args, mandate_id: own } } : {}),
-        },
-      };
-    }
+  // Isolation: every catalog case is an independent scenario written against a FRESH mandate (budget 1250000,
+  // cap 500000). Sharing mandate 1 made earlier cases spend its budget, so later expectations failed with
+  // OVER_BUDGET (waves 1-3). Give each case its own mandate AND that mandate's own agent, in run order.
+  // Cases that name an agent (agentIndex) or another mandate on purpose (cross-agent / cross-mandate attacks)
+  // keep their explicit targets.
+  const seq = session.caseSeq ?? 0;
+  session.caseSeq = seq + 1;
+  if (
+    c.params &&
+    session.mandates.length > 1 &&
+    c.params.agentIndex === undefined &&
+    (c.params.mandate_id === undefined || c.params.mandate_id === 1)
+  ) {
+    // Use the pre-increment sequence: getMandateIndexForCase reads session.caseSeq, and the
+    // increment above must not shift the first case onto a different mandate (regression:
+    // state-prep tests for mandate 1 were landing on mandate 2).
+    const idx = getMandateIndexForCase(c, { ...session, caseSeq: seq });
+    const own = session.mandates[idx].id;
+    c = {
+      ...c,
+      params: {
+        ...c.params,
+        mandate_id: own,
+        agentIndex: idx,
+        ...(c.params.args && typeof c.params.args === 'object' ? { args: { ...c.params.args, mandate_id: own } } : {}),
+      },
+    };
   }
 
   const mandateId = c.params?.mandate_id ?? session.mandates[0]?.id ?? 1;
   const targetRecipient = c.params?.recipient || session.merchantId;
+
+  // In dry mode, ensure fresh mandate baseline before case prep runs
+  if (session.isDry && !c.params?.skipStatePrep) {
+    const m = session.mockEngine?.mandates?.get(mandateId);
+    if (m) {
+      m.open_requests = 0;
+      m.spent = 0n;
+      m.reserved = 0n;
+      m.approval_threshold = m.per_payment_cap;
+      const needsRevoked = c.params?.mandateRevoked
+        || (c.category === 10 && (c.expected?.code === 'NOT_ACTIVE' || c.expected?.code === 'ALREADY_REVOKED'));
+      if (!needsRevoked && m.status === 'Revoked') {
+        m.status = 'Active';
+      }
+    }
+  }
+
+  // Bring the mandate into the state this case is written against; if that is impossible, do not fake a verdict.
+  const prep = await prepareCaseState(c, session);
+  if (!prep.ok) {
+    const txHash = session.isDry ? `TX_E_DRY_${c.id}_${Date.now()}` : null;
+    return { label: 'SKIPPED', code: 'STATE_PREP_UNAVAILABLE', txHash, note: prep.reason };
+  }
+  await waitForSettlement(session, mandateId);
 
   // Snapshot before
   const beforeMandate = await session.viewMandate(mandateId);
@@ -858,7 +1797,21 @@ export async function executeLayerE(c, session) {
     let txHash = `TX_E_DRY_${c.id}_${Date.now()}`;
     const p = c.params || {};
 
-    if (p.invalidSignature || p.forgedKey) {
+    if ((p.method || 'request_payment') === 'approve_intent') {
+      const gId = session.guardianKeyPairs[c.params?.agentIndex ?? 0]?.id;
+      const res = await session.mockEngine.callFunctionRaw({
+        contractId: session.contractId,
+        methodName: 'approve_intent',
+        args: p.args || {},
+        deposit: p.deposit ? BigInt(p.deposit) : 2_000_000_000_000_000_000_000n,
+        senderId: gId,
+      });
+      if (res.error) {
+        actual = { label: 'BLOCKED', code: res.error, txHash, note: `Mock AMANAT_ERR: ${res.error}` };
+      } else {
+        actual = { label: 'INERT', txHash, note: 'Mock approve_intent accepted' };
+      }
+    } else if (p.invalidSignature || p.forgedKey) {
       actual = {
         label: 'BLOCKED',
         code: 'INVALID_SIGNATURE',
@@ -903,6 +1856,65 @@ export async function executeLayerE(c, session) {
         txHash,
         note: 'Simulated breach with mutated state',
       };
+    } else if ((p.method || 'request_payment') === 'request_payment' && session.mockEngine.mandates.get(mandateId)
+      && (p.remainingBudget !== undefined || p.openRequestsCount !== undefined
+          || c.expected?.code === 'NEEDS_APPROVAL' || c.expected?.code === 'APPROVAL_USED' || p.approvalAlreadyUsed
+          || c.expected?.code === 'APPROVAL_EXPIRED' || p.approvalExpired || p.hasValidApproval)) {
+      // Real rules for prepared-state families, so skipping preparation changes the outcome.
+      const m = session.mockEngine.mandates.get(mandateId);
+      const amt = BigInt(p.amount || p.args?.amount || '0');
+      const ceil = m.budget < m.deposited - m.withdrawn ? m.budget : m.deposited - m.withdrawn;
+      const now = Date.now();
+
+      if (amt === 0n || amt > m.per_payment_cap) {
+        actual = { label: 'BLOCKED', code: 'OVER_PER_PAYMENT_CAP', txHash, note: 'Mock: cap exceeded' };
+      } else if ((m.open_requests ?? 0) >= MAX_OPEN) {
+        actual = { label: 'BLOCKED', code: 'TOO_MANY_OPEN', txHash, note: 'Mock: queue full' };
+      } else if (m.spent + m.reserved + amt > ceil) {
+        actual = { label: 'BLOCKED', code: 'OVER_BUDGET', txHash, note: 'Mock: over remaining budget' };
+      } else if (amt > m.approval_threshold) {
+        const recipient = (p.args?.recipient === 'merchant.testnet' || !p.args?.recipient) ? session.merchantId : p.args.recipient;
+        const nonce = Number(p.args?.nonce ?? 0);
+        const key = `${mandateId}:${recipient}:${amt}:${nonce}`;
+        const app = session.mockEngine.approvals.get(key);
+        if (!app) {
+          actual = { label: 'BLOCKED', code: 'NEEDS_APPROVAL', txHash, note: 'Mock: needs approval' };
+        } else if (app.used) {
+          actual = { label: 'BLOCKED', code: 'APPROVAL_USED', txHash, note: 'Mock: approval already used' };
+        } else if (now >= app.expires_at_ms) {
+          actual = { label: 'BLOCKED', code: 'APPROVAL_EXPIRED', txHash, note: 'Mock: approval expired' };
+        } else {
+          app.used = true;
+          actual = { label: 'INERT', txHash, note: `Mock payment accepted for ${c.id}` };
+        }
+      } else {
+        actual = { label: 'INERT', txHash, note: `Mock payment accepted for ${c.id}` };
+      }
+    } else if ((p.method || 'request_payment') === 'loosen'
+      && (p.loosenBudgetPrep !== undefined || p.recipientsCount !== undefined)) {
+      const gId = session.guardianKeyPairs[p.agentIndex ?? 0]?.id;
+      const res = await session.mockEngine.callFunctionRaw({
+        contractId: session.contractId,
+        methodName: 'loosen',
+        args: p.args || {},
+        deposit: p.deposit ? BigInt(p.deposit) : 0n,
+        senderId: gId,
+      });
+      actual = res.error
+        ? { label: 'BLOCKED', code: res.error, txHash, note: `Mock AMANAT_ERR: ${res.error}` }
+        : { label: 'INERT', code: null, txHash, note: `Mock loosen accepted for ${c.id}` };
+    } else if (p.method === 'resolve_stale' && (p.pendingRequest !== undefined || p.isStale)) {
+      const gId = session.guardianKeyPairs[p.agentIndex ?? 0]?.id;
+      const res = await session.mockEngine.callFunctionRaw({
+        contractId: session.contractId,
+        methodName: 'resolve_stale',
+        args: p.args || {},
+        deposit: p.deposit ? BigInt(p.deposit) : 0n,
+        senderId: gId,
+      });
+      actual = res.error
+        ? { label: 'BLOCKED', code: res.error, txHash, note: `Mock AMANAT_ERR: ${res.error}` }
+        : { label: 'INERT', code: null, txHash, note: `Mock resolve_stale accepted for ${c.id}` };
     } else {
       actual = {
         label: c.expected?.label || 'INERT',
@@ -920,22 +1932,94 @@ export async function executeLayerE(c, session) {
     let txHash = null;
 
     try {
+      const method = c.params?.method || 'request_payment';
+      const route = routeMethod(method);
+
       if (c.params?.transport === 'rpc') {
-        // Direct RPC transmission without facilitator
-        const contractAcc = new Account(session.contractId, session.provider, new KeyPairSigner(agent.key));
-        const res = await contractAcc.callFunctionRaw({
-          contractId: session.contractId,
-          methodName: c.params.method || 'request_payment',
-          args: c.params.args || {},
-          gas: c.params.gas ? BigInt(c.params.gas) : T(60),
-          deposit: c.params.deposit ? BigInt(c.params.deposit) : 0n,
-        });
-        txHash = res.transaction?.hash;
-        actual = {
-          label: 'INERT',
-          txHash,
-          note: `RPC tx executed: ${txHash}`,
-        };
+        // Direct RPC transmission using the appropriate caller account
+        const callerAcc = getCallerAccount(session, c.params?.senderId || c.params?.caller, c.params?.agentIndex ?? 0);
+        const mappedArgs = { ...(c.params?.args || {}) };
+        if (mappedArgs.mandate_id !== undefined) mappedArgs.mandate_id = mandateId;
+
+        // Direct RPC calls (category 5) have no facilitator default; 60 Tgas covers withdraw's minimum.
+        const gas = c.params?.gas ? BigInt(c.params.gas) : T(60);
+        const deposit = c.params?.deposit ? BigInt(c.params.deposit) : 0n;
+
+        try {
+          const res = await callerAcc.callFunctionRaw({
+            contractId: session.contractId,
+            methodName: method,
+            args: mappedArgs,
+            gas,
+            deposit,
+          });
+          actual = classifyTxResult(res);
+          txHash = actual.txHash;
+        } catch (err) {
+          actual = await classifyTxError(err, session, callerAcc.accountId);
+          txHash = actual.txHash;
+        }
+      } else if (route === 'approve_intent') {
+        const gAcc = getGuardianAcc(session, c.params?.agentIndex ?? 0);
+        const deposit = c.params.deposit !== undefined ? BigInt(c.params.deposit) : 2_000_000_000_000_000_000_000n;
+        const mappedArgs = { ...(c.params?.args || {}) };
+        if (mappedArgs.mandate_id !== undefined) mappedArgs.mandate_id = mandateId;
+
+        try {
+          const txRes = await gAcc.callFunctionRaw({
+            contractId: session.contractId,
+            methodName: 'approve_intent',
+            args: mappedArgs,
+            gas: c.params.gas ? BigInt(c.params.gas) : T(30),
+            deposit,
+          });
+          actual = classifyTxResult(txRes);
+          txHash = actual.txHash;
+        } catch (err) {
+          actual = await classifyTxError(err, session, gAcc.accountId);
+          txHash = actual.txHash;
+        }
+      } else if (route === 'owner') {
+        // Owner methods (revoke, withdraw, tighten) called directly via funderAcc.
+        const mappedArgs = { ...(c.params?.args || {}) };
+        if (mappedArgs.mandate_id !== undefined) mappedArgs.mandate_id = mandateId;
+
+        const gas = c.params?.gas
+          ? BigInt(c.params.gas)
+          : (method === 'withdraw' ? T(60) : T(30));
+        const deposit = c.params?.deposit ? BigInt(c.params.deposit) : 0n;
+
+        try {
+          const txRes = await callAsOwner(session, method, mappedArgs, { gas, deposit });
+          actual = classifyTxResult(txRes);
+          txHash = actual.txHash;
+        } catch (err) {
+          actual = await classifyTxError(err, session, session.funderAcc.accountId);
+          txHash = actual.txHash;
+        }
+      } else if (route === 'guardian') {
+        // Guardian methods (loosen, resolve_stale) called directly via guardianAcc
+        const gAcc = getGuardianAcc(session, c.params?.agentIndex ?? 0);
+        const mappedArgs = { ...(c.params?.args || {}) };
+        if (mappedArgs.mandate_id !== undefined) mappedArgs.mandate_id = mandateId;
+
+        const gas = c.params?.gas ? BigInt(c.params.gas) : T(30);
+        const deposit = c.params?.deposit ? BigInt(c.params.deposit) : 0n;
+
+        try {
+          const txRes = await gAcc.callFunctionRaw({
+            contractId: session.contractId,
+            methodName: method,
+            args: mappedArgs,
+            gas,
+            deposit,
+          });
+          actual = classifyTxResult(txRes);
+          txHash = actual.txHash;
+        } catch (err) {
+          actual = await classifyTxError(err, session, gAcc.accountId);
+          txHash = actual.txHash;
+        }
       } else {
         // Facilitator /relay transmission
         let b64;
@@ -944,7 +2028,7 @@ export async function executeLayerE(c, session) {
         } else {
           const signerKey = c.params?.forgedKey ? KeyPair.fromRandom('ed25519') : agent.fcKey;
           const signer = new KeyPairSigner(signerKey);
-          const head = await session.provider.viewBlock({ finality: 'optimistic' });
+          const head = await withRetry(() => session.provider.viewBlock({ finality: 'optimistic' }));
           const delegateSender = c.params?.senderId || agent.id;
           const delegatePub = await signer.getPublicKey();
           // NEAR access-key nonces are block-height based, so a literal nonce of 1 is always NONCE_TOO_LOW.
@@ -955,10 +2039,10 @@ export async function executeLayerE(c, session) {
           } else {
             let onChain = 0n;
             try {
-              const k = await session.provider.viewAccessKey({
+              const k = await withRetry(() => session.provider.viewAccessKey({
                 accountId: delegateSender,
                 publicKey: delegatePub.toString(),
-              });
+              }));
               onChain = BigInt(k?.nonce ?? 0);
             } catch {
               onChain = 0n; // missing key (forged/unknown): the facilitator rejects it for another reason
@@ -999,7 +2083,9 @@ export async function executeLayerE(c, session) {
         const json = await res.json().catch(() => null);
         txHash = json?.tx_hash;
 
-        if (status >= 400) {
+        if (status === 429 || status === 502 || status === 503 || status === 504) {
+          actual = { label: 'SKIPPED', code: 'INFRA_ERROR', txHash, note: `RPC/upstream outage (HTTP ${status}); not a verdict, rerun` };
+        } else if (status >= 400) {
           actual = {
             label: 'BLOCKED',
             code: json?.code || json?.invalidReason || `HTTP_${status}`,
@@ -1008,39 +2094,9 @@ export async function executeLayerE(c, session) {
           };
         } else if (txHash) {
           // Read transaction events without retries on failure (tanpa retry untuk TX_FAILED)
-          const txRes = await session.provider.sendJsonRpc('tx', [txHash, session.relayerId]);
-          const logs = txRes?.receipts_outcome?.flatMap((o) => o.outcome.logs) || [];
-          const rejectedEvent = logs
-            .filter((l) => l.startsWith('EVENT_JSON:'))
-            .map((l) => {
-              try { return JSON.parse(l.slice(11)); } catch { return null; }
-            })
-            .find((e) => e && e.event === 'rejected');
-          const errLog = logs.find((l) => l.startsWith('SCRIP_ERR:'));
-
-          if (rejectedEvent) {
-            const code = rejectedEvent.data?.[0]?.code || 'REJECTED';
-            actual = {
-              label: 'BLOCKED',
-              code: String(code),
-              txHash,
-              note: `Contract rejected: ${code}`,
-            };
-          } else if (errLog) {
-            const code = errLog.slice('SCRIP_ERR:'.length).trim();
-            actual = {
-              label: 'BLOCKED',
-              code,
-              txHash,
-              note: `SCRIP_ERR: ${code}`,
-            };
-          } else {
-            actual = {
-              label: 'INERT',
-              txHash,
-              note: `Transaction confirmed on chain: ${txHash}`,
-            };
-          }
+          const txRes = await withRetry(() => session.provider.sendJsonRpc('tx', [txHash, session.relayerId]));
+          actual = classifyTxResult(txRes);
+          txHash = actual.txHash;
         } else {
           actual = {
             label: 'INERT',
@@ -1049,7 +2105,9 @@ export async function executeLayerE(c, session) {
         }
       }
     } catch (err) {
-      actual = {
+      actual = isInfraError(err.message)
+        ? { label: 'SKIPPED', code: 'INFRA_ERROR', txHash, note: `RPC/network outage: ${String(err.message).slice(0, 120)}; not a verdict, rerun` }
+        : {
         label: 'BLOCKED',
         code: 'TX_FAILED',
         txHash,
@@ -1058,7 +2116,8 @@ export async function executeLayerE(c, session) {
     }
   }
 
-  // Snapshot after & state breach verification
+  // Snapshot after & state breach verification (let in-flight payment callbacks settle first)
+  await waitForSettlement(session, mandateId);
   const afterMandate = await session.viewMandate(mandateId);
   const afterMerchBal = await session.viewFtBalance(targetRecipient);
   const stateAfter = afterMandate ? {
@@ -1066,7 +2125,7 @@ export async function executeLayerE(c, session) {
     merchantBalance: afterMerchBal,
   } : null;
 
-  if (stateBefore && stateAfter) {
+  if (stateBefore && stateAfter && actual.label !== 'SKIPPED') {
     const breachCheck = detectMandateBreach(stateBefore, stateAfter, actual.label);
     if (breachCheck.isBreach) {
       actual = {

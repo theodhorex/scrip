@@ -136,7 +136,7 @@ export function generateCategory4Cases() {
     method: 'approve_intent',
     args: { mandate_id: 1, recipient: 'merchant.testnet', amount: '500000', nonce: 15, approval_expires_at_ms: Date.now() + 3600000 },
     expectedLabel: 'BLOCKED',
-    expectedCode: 'INSUFFICIENT_STORAGE_DEPOSIT',
+    expectedCode: 'INSUFFICIENT_APPROVAL_DEPOSIT', // lib.rs:625, err::INSUFFICIENT_APPROVAL_DEPOSIT
     note: 'Missing storage deposit for approval record',
     extraParams: { deposit: '1000000000000000000000' }, // 1 mNEAR (< 2 mNEAR)
   });
@@ -170,7 +170,7 @@ export function generateCategory4Cases() {
     method: 'approve_intent',
     args: { mandate_id: 1, recipient: 'merchant.testnet', amount: '500000', nonce: 21, approval_expires_at_ms: 1000 },
     expectedLabel: 'BLOCKED',
-    expectedCode: 'EXPIRY_NOT_IN_FUTURE',
+    expectedCode: 'APPROVAL_NOT_IN_FUTURE', // lib.rs:630, err::APPROVAL_NOT_IN_FUTURE
     note: 'Approval expiry must be in future',
   });
 
@@ -266,8 +266,8 @@ export function generateCategory10Cases() {
     method: 'revoke',
     args: { mandate_id: 1 },
     expectedLabel: 'BLOCKED',
-    expectedCode: 'NOT_ACTIVE',
-    note: 'Cannot revoke an already Revoked mandate',
+    expectedCode: 'ALREADY_REVOKED',
+    note: 'lib.rs:747: revoke on a non-Active mandate panics ALREADY_REVOKED (not NOT_ACTIVE)',
   });
   pushCase({
     title: 'loosen called on revoked mandate',
@@ -309,8 +309,8 @@ export function generateCategory10Cases() {
     method: 'withdraw',
     args: { mandate_id: 1, amount: '9999999999' },
     expectedLabel: 'BLOCKED',
-    expectedCode: 'INSUFFICIENT_FREE_BALANCE',
-    note: 'Cannot withdraw more than free remainder (deposited - spent - reserved - withdrawn)',
+    expectedCode: 'AMOUNT_EXCEEDS_FREE',
+    note: 'lib.rs:770: withdraw above free remainder panics AMOUNT_EXCEEDS_FREE',
     extraParams: { mandateRevoked: true },
   });
   pushCase({
@@ -410,15 +410,17 @@ export function generateCategory10Cases() {
     args: { mandate_id: 1, change: { AddRecipient: 'merchant17.testnet' } },
     expectedLabel: 'BLOCKED',
     expectedCode: 'TOO_MANY_RECIPIENTS',
-    note: 'Max 16 recipients per mandate',
+    note: 'Max 16 recipients per mandate; prep fills allowlist to 16 recipients first',
+    extraParams: { recipientsCount: 16 },
   });
   pushCase({
     title: 'resolve_stale: request is not stale (< 200 blocks)',
     method: 'resolve_stale',
     args: { mandate_id: 1, request_id: 1, transferred: false },
     expectedLabel: 'BLOCKED',
-    expectedCode: 'REQUEST_NOT_STALE',
-    note: 'Cannot resolve pending request before STALE_BLOCKS timeout',
+    expectedCode: 'NOT_STALE_YET',
+    note: 'lib.rs:825: pending younger than STALE_BLOCKS panics NOT_STALE_YET (a pending entry must exist first, else lib.rs:822 NO_SUCH_PENDING)',
+    extraParams: { pendingRequest: 'fresh' },
   });
 
   // 31-60. Property-based seeded variations for lifecycle operations (39 cases)
@@ -428,28 +430,35 @@ export function generateCategory10Cases() {
     let title;
     let expectedCode;
     let method = 'tighten';
+    // Each seeded method needs well-formed args so the call reaches the contract's rejection branch
+    // instead of failing borsh deserialization (which would surface as TX_FAILED).
+    let args;
 
     if (r < 0.25) {
       title = `Seeded invalid tighten budget direction #${i + 1}`;
       expectedCode = 'NOT_STRICTER';
+      args = { mandate_id: 1, change: { Budget: '2000000' } };
     } else if (r < 0.5) {
       title = `Seeded invalid loosen direction #${i + 1}`;
       method = 'loosen';
       expectedCode = 'NOT_LOOSER';
+      args = { mandate_id: 1, change: { Budget: '500000' } };
     } else if (r < 0.75) {
       title = `Seeded premature withdraw attempt #${i + 1}`;
       method = 'withdraw';
       expectedCode = 'MANDATE_STILL_ACTIVE';
+      args = { mandate_id: 1, amount: '1000' };
     } else {
       title = `Seeded post-revoke invalid method call #${i + 1}`;
       method = 'request_payment';
       expectedCode = 'NOT_ACTIVE';
+      args = { mandate_id: 1, recipient: 'merchant.testnet', amount: '1000', nonce: 600 + i };
     }
 
     pushCase({
       title,
       method,
-      args: { mandate_id: 1, nonce: 600 + i },
+      args,
       expectedLabel: 'BLOCKED',
       expectedCode,
       note: `Seeded parametric lifecycle test (seed: ${SEED_CAT10})`,

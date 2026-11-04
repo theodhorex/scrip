@@ -29,7 +29,7 @@ Setiap kasus dinilai tanpa mengubah file pengujian maupun kode produksi, dan dik
 Dua kasus dalam Kategori 9 diidentifikasi sebagai **REAL_DEFECT**:
 
 ### `KAT-B-09-123` & `KAT-B-09-124`: Malformed RPC Block Height Dianggap Valid
-- **Jalur Berkas & Baris**: [`facilitator/src/relay.mjs:169-170`](file:///home/theo/Documents/dev/hackathon/scrip/facilitator/src/relay.mjs#L169-L170)
+- **Jalur Berkas & Baris**: [`facilitator/src/relay.mjs:169-170`](<repo>/facilitator/src/relay.mjs#L169-L170)
 - **Kode Bermasalah**:
   ```javascript
   const block = await withTimeout(provider.viewBlock({ finality: 'final' }), rpcTimeoutMs);

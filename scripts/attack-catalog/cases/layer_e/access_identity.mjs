@@ -139,10 +139,11 @@ export function generateCategory5Cases() {
     title: 'loosen called by authorized guardian',
     method: 'loosen',
     caller: 'guardian.testnet',
-    args: { mandate_id: 1, change: { Budget: '1500000' } },
+    args: { mandate_id: 1, change: { Budget: '1250000' } },
     expectedLabel: 'INERT',
     expectedCode: null,
-    note: 'Guardian is authorized to loosen limits',
+    note: 'Guardian is authorized to loosen limits; prep lowers budget to 1000000 first so raising it to the 1250000 deposit ceiling is a legal loosening',
+    extraParams: { loosenBudgetPrep: '1000000' },
   });
   pushCase({
     title: 'loosen called by owner (unauthorized guardian)',
@@ -197,8 +198,8 @@ export function generateCategory5Cases() {
     caller: 'agent.testnet',
     args: { mandate_id: 1, change: { Budget: '1000000' } },
     expectedLabel: 'BLOCKED',
-    expectedCode: 'UNAUTHORIZED',
-    note: 'Agent cannot tighten mandate',
+    expectedCode: 'UNAUTHORIZED_OWNER_OR_GUARDIAN',
+    note: 'lib.rs:660: tighten requires owner or guardian, panics UNAUTHORIZED_OWNER_OR_GUARDIAN',
   });
   pushCase({
     title: 'tighten called by stranger (unauthorized)',
@@ -206,8 +207,8 @@ export function generateCategory5Cases() {
     caller: 'stranger.testnet',
     args: { mandate_id: 1, change: { Budget: '1000000' } },
     expectedLabel: 'BLOCKED',
-    expectedCode: 'UNAUTHORIZED',
-    note: 'Stranger cannot tighten mandate',
+    expectedCode: 'UNAUTHORIZED_OWNER_OR_GUARDIAN',
+    note: 'lib.rs:660: tighten requires owner or guardian, panics UNAUTHORIZED_OWNER_OR_GUARDIAN',
   });
 
   // 5. revoke: owner or guardian
@@ -235,8 +236,8 @@ export function generateCategory5Cases() {
     caller: 'agent.testnet',
     args: { mandate_id: 1 },
     expectedLabel: 'BLOCKED',
-    expectedCode: 'UNAUTHORIZED',
-    note: 'Agent cannot revoke mandate',
+    expectedCode: 'UNAUTHORIZED_OWNER_OR_GUARDIAN',
+    note: 'lib.rs:746: revoke requires owner or guardian, panics UNAUTHORIZED_OWNER_OR_GUARDIAN',
   });
   pushCase({
     title: 'revoke called by stranger (unauthorized)',
@@ -244,8 +245,8 @@ export function generateCategory5Cases() {
     caller: 'stranger.testnet',
     args: { mandate_id: 1 },
     expectedLabel: 'BLOCKED',
-    expectedCode: 'UNAUTHORIZED',
-    note: 'Stranger cannot revoke mandate',
+    expectedCode: 'UNAUTHORIZED_OWNER_OR_GUARDIAN',
+    note: 'lib.rs:746: revoke requires owner or guardian, panics UNAUTHORIZED_OWNER_OR_GUARDIAN',
   });
 
   // 6. withdraw: owner only
@@ -292,11 +293,11 @@ export function generateCategory5Cases() {
     title: 'resolve_stale called by authorized guardian',
     method: 'resolve_stale',
     caller: 'guardian.testnet',
-    args: { mandate_id: 1, request_id: 1, transferred: false },
+    args: { mandate_id: 1, request_id: 1, transferred: true },
     expectedLabel: 'INERT',
     expectedCode: null,
-    note: 'Guardian resolves stale request',
-    extraParams: { isStale: true },
+    note: 'Guardian resolves a stale Pending; transferred=true is required by lib.rs:827 (F4), prep creates a Pending >= 200 blocks old',
+    extraParams: { isStale: true, pendingRequest: 'stale' },
   });
   pushCase({
     title: 'resolve_stale called by owner (unauthorized guardian)',
@@ -477,19 +478,25 @@ export function generateCategory5Cases() {
     let method = 'request_payment';
     let caller = 'random_attacker.testnet';
     let expectedCode = 'UNAUTHORIZED_AGENT';
+    // Well-formed args are required: borsh decoding runs before the contract's authorization check,
+    // so a missing field would abort with TX_FAILED before the UNAUTHORIZED_* branch is reached.
+    let args = { mandate_id: 1, recipient: 'merchant.testnet', amount: '100000', nonce: 76 + i };
 
     if (r < 0.25) {
       method = 'loosen';
       caller = `intruder_${i}.testnet`;
       expectedCode = 'UNAUTHORIZED_GUARDIAN';
+      args = { mandate_id: 1, change: { Budget: '1500000' } };
     } else if (r < 0.5) {
       method = 'withdraw';
       caller = `thief_${i}.testnet`;
       expectedCode = 'UNAUTHORIZED_OWNER';
+      args = { mandate_id: 1, amount: '1000' };
     } else if (r < 0.75) {
       method = 'tighten';
       caller = `agent_${i}.testnet`;
-      expectedCode = 'UNAUTHORIZED';
+      expectedCode = 'UNAUTHORIZED_OWNER_OR_GUARDIAN';
+      args = { mandate_id: 1, change: { Budget: '1000000' } };
     } else {
       method = 'request_payment';
       caller = `impostor_${i}.testnet`;
@@ -500,6 +507,7 @@ export function generateCategory5Cases() {
       title: `Seeded unauthorized caller attempt #${i + 1} (${caller} on ${method})`,
       method,
       caller,
+      args,
       expectedLabel: 'BLOCKED',
       expectedCode,
       note: `Seeded authorization violation (seed: ${SEED_CAT5})`,
