@@ -26,3 +26,12 @@ test('withRetry does NOT retry a real error and gives up after the limit', async
   await assert.rejects(withRetry(async () => { m++; throw new Error('502'); }, { tries: 3, baseMs: 1 }), /502/);
   assert.equal(m, 3);
 });
+
+import { isAccountMissingError } from '../layers/testnet.mjs';
+test('cleanup leftover check: only an explicit missing-account error counts as deleted', () => {
+  assert.equal(isAccountMissingError({ type: 'AccountDoesNotExist' }), true);
+  assert.equal(isAccountMissingError(new Error('Account amce1.testnet does not exist while viewing')), true);
+  assert.equal(isAccountMissingError(new Error('fetch failed')), false);
+  assert.equal(isAccountMissingError(new Error('Rate limits exceeded')), false);
+  assert.equal(isAccountMissingError(undefined), false);
+});

@@ -711,8 +711,10 @@ export async function createTestnetSession(opts = {}) {
             await provider.viewAccount({ accountId: a.id });
             leftoverAccounts.push(a.id);
           }
-        } catch {
-          // Account confirmed deleted
+        } catch (e) {
+          // Only an explicit "account does not exist" proves deletion. A network error proves nothing,
+          // so the account stays on the leftover list (unverified) and the recovery file is kept.
+          if (!isAccountMissingError(e)) leftoverAccounts.push(a.id);
         }
       }
 
@@ -1037,6 +1039,15 @@ export function mapCallerInArgs(args, rawCaller, actualCallerId) {
     return val;
   };
   return mapValue(args);
+}
+
+/**
+ * True only when the error says the account does not exist (deleted). Network errors, rate limits and
+ * unknown failures return false so that cleanup never reports "deleted" for an account it could not check.
+ */
+export function isAccountMissingError(e) {
+  const text = [e?.type, e?.name, e?.code, e?.message, e?.cause?.message].filter(Boolean).join(' ');
+  return /UNKNOWN_ACCOUNT|AccountDoesNotExist|does not exist|doesn'?t exist|not exist while viewing/i.test(text);
 }
 
 /**
