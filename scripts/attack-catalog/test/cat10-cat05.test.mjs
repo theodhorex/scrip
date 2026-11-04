@@ -12,6 +12,10 @@ import {
   T,
   mapCallerInArgs,
   inferVmRejection,
+  calculateTopUpAmount,
+  ensureCallerFunded,
+  TOP_UP_BUFFER_YOCTO,
+  MAX_SESSION_TOP_UP_YOCTO,
 } from '../layers/testnet.mjs';
 import { generateCategory10Cases } from '../cases/layer_e/approval_lifecycle.mjs';
 import { generateCategory5Cases } from '../cases/layer_e/access_identity.mjs';
@@ -342,4 +346,73 @@ test('classifyTxError integrates inferVmRejection on trap errors with caller con
   });
   assert.equal(resMandate.label, 'BLOCKED');
   assert.equal(resMandate.code, 'TX_FAILED');
+});
+
+test('calculateTopUpAmount: pure function calculates top-up deficit or zero when sufficient', () => {
+  const ONE_NEAR = 1_000_000_000_000_000_000_000_000n;
+  const POINT_TWO_NEAR = 200_000_000_000_000_000_000_000n;
+  const POINT_TWELVE_NEAR = 120_000_000_000_000_000_000_000n;
+
+  // 1. Deficit case: 0.12 NEAR balance with 1 NEAR deposit
+  // Required = 1.2 NEAR; Deficit = 1.2 - 0.12 = 1.08 NEAR
+  const topUp1 = calculateTopUpAmount(POINT_TWELVE_NEAR, ONE_NEAR);
+  assert.equal(topUp1, 1_080_000_000_000_000_000_000_000n);
+
+  // 2. Object argument support: { currentBalance, deposit }
+  const topUpObj = calculateTopUpAmount({ currentBalance: POINT_TWELVE_NEAR, deposit: ONE_NEAR });
+  assert.equal(topUpObj, 1_080_000_000_000_000_000_000_000n);
+
+  // 3. Sufficient balance: 1.5 NEAR balance with 1 NEAR deposit -> NOT triggered (0n)
+  const topUpSufficient = calculateTopUpAmount(1_500_000_000_000_000_000_000_000n, ONE_NEAR);
+  assert.equal(topUpSufficient, 0n, 'Top-up must NOT trigger when balance is already sufficient');
+
+  // 4. Exact balance: balance exactly equals deposit + 0.2 NEAR -> NOT triggered (0n)
+  const topUpExact = calculateTopUpAmount(ONE_NEAR + POINT_TWO_NEAR, ONE_NEAR);
+  assert.equal(topUpExact, 0n, 'Top-up must NOT trigger when balance exactly equals deposit + buffer');
+
+  // 5. Zero deposit: calls with 0 deposit -> NOT triggered (0n)
+  const topUpZeroDep = calculateTopUpAmount(POINT_TWELVE_NEAR, 0n);
+  assert.equal(topUpZeroDep, 0n, 'Top-up must NOT trigger for zero deposit');
+
+  // 6. Custom buffer
+  const topUpCustomBuf = calculateTopUpAmount(100n, 500n, 50n);
+  assert.equal(topUpCustomBuf, 450n); // (500 + 50) - 100 = 450
+});
+
+test('ensureCallerFunded: offline top-up transfers funds, updates note, and enforces session limit', async () => {
+  const session = await createTestnetSession({ dry: true, mandatesCount: 2 });
+  try {
+    const callerId = session.agentKeyPairs[0].id;
+    const initialBal = BigInt((await session.provider.viewAccount({ accountId: callerId })).amount);
+    assert.equal(initialBal, 120_000_000_000_000_000_000_000n, 'Agent initial balance should be 0.12 NEAR');
+
+    // 1. Top-up for 1 NEAR deposit
+    const deposit1Near = 1_000_000_000_000_000_000_000_000n;
+    const note = await ensureCallerFunded(session, callerId, deposit1Near);
+    assert.ok(note, 'Note should be returned on top-up');
+    assert.match(note, /top-up: 1080000000000000000000000 yoctoNEAR/);
+
+    const fundedBal = BigInt((await session.provider.viewAccount({ accountId: callerId })).amount);
+    assert.equal(fundedBal, 1_200_000_000_000_000_000_000_000n, 'Caller should now have 1.2 NEAR');
+    assert.equal(session.totalTopUpAmount, 1_080_000_000_000_000_000_000_000n);
+
+    // 2. Second call with same deposit: now balance is sufficient, top-up NOT triggered
+    const note2 = await ensureCallerFunded(session, callerId, deposit1Near);
+    assert.equal(note2, null, 'Second call must return null (top-up not triggered when balance sufficient)');
+
+    // 3. Funder calling: funder does not fund itself
+    const noteFunder = await ensureCallerFunded(session, session.funderId, deposit1Near);
+    assert.equal(noteFunder, null, 'Funder account must not top-up itself');
+
+    // 4. Session limit enforcement
+    session.maxTopUpPerSession = 500_000_000_000_000_000_000_000n; // limit smaller than remaining needed
+    const hugeDeposit = 10_000_000_000_000_000_000_000_000n;
+    await assert.rejects(
+      async () => ensureCallerFunded(session, callerId, hugeDeposit),
+      /Total top-up per session exceeded limit/,
+      'Must reject when session top-up limit is exceeded'
+    );
+  } finally {
+    await session.closeSession();
+  }
 });

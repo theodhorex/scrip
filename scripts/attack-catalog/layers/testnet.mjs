@@ -556,6 +556,8 @@ export async function createTestnetSession(opts = {}) {
     port,
     mockEngine,
     closed: false,
+    totalTopUpAmount: 0n,
+    maxTopUpPerSession: opts.maxTopUpPerSession ?? MAX_SESSION_TOP_UP_YOCTO,
 
     async viewMandate(id) {
       if (dry) {
@@ -1084,6 +1086,88 @@ export function inferVmRejection({ method, deposit = 0n, callerIsContractItself 
   }
 
   return 'TX_FAILED';
+}
+
+export const TOP_UP_BUFFER_YOCTO = 200_000_000_000_000_000_000_000n; // 0.2 NEAR safety buffer for gas & storage
+export const MAX_SESSION_TOP_UP_YOCTO = 10_000_000_000_000_000_000_000_000n; // 10 NEAR cap per session
+
+/**
+ * Pure function: calculates the required top-up amount from funder to caller account.
+ * Top-up is required if current balance < deposit + buffer (0.2 NEAR).
+ * Returns 0n if deposit <= 0 or current balance is already sufficient.
+ *
+ * @param {bigint|string|number|object} currentBalance - Balance or { currentBalance, deposit, buffer }
+ * @param {bigint|string|number} [deposit] - Attached deposit
+ * @param {bigint|string|number} [buffer=TOP_UP_BUFFER_YOCTO] - Safety buffer
+ * @returns {bigint} Top-up amount to transfer in yoctoNEAR (0n if none required)
+ */
+export function calculateTopUpAmount(currentBalance, deposit, buffer = TOP_UP_BUFFER_YOCTO) {
+  let bal, dep, buf;
+  if (typeof currentBalance === 'object' && currentBalance !== null && !('length' in currentBalance)) {
+    bal = BigInt(currentBalance.currentBalance ?? 0n);
+    dep = BigInt(currentBalance.deposit ?? 0n);
+    buf = BigInt(currentBalance.buffer ?? TOP_UP_BUFFER_YOCTO);
+  } else {
+    bal = BigInt(currentBalance ?? 0n);
+    dep = BigInt(deposit ?? 0n);
+    buf = BigInt(buffer ?? TOP_UP_BUFFER_YOCTO);
+  }
+
+  if (dep <= 0n) return 0n;
+  const required = dep + buf;
+  if (bal < required) {
+    return required - bal;
+  }
+  return 0n;
+}
+
+/**
+ * Ensures caller account has at least deposit + 0.2 NEAR before calling the contract.
+ * If balance is insufficient, funds the difference from session.funderAcc.
+ * Tracks total top-up per session and enforces session limit.
+ *
+ * @param {object} session
+ * @param {string} callerAccountId
+ * @param {bigint|string} deposit
+ * @returns {Promise<string|null>} Note describing the top-up or null if no top-up needed
+ */
+export async function ensureCallerFunded(session, callerAccountId, deposit) {
+  if (!deposit || BigInt(deposit) <= 0n || !callerAccountId) return null;
+  if (callerAccountId === session.funderId || callerAccountId === session.funderAcc?.accountId) {
+    return null;
+  }
+
+  let acctInfo;
+  try {
+    acctInfo = await session.provider.viewAccount({ accountId: callerAccountId });
+  } catch {
+    return null;
+  }
+
+  const currentBal = BigInt(acctInfo?.amount ?? 0n);
+  const topUpNeeded = calculateTopUpAmount(currentBal, deposit);
+  if (topUpNeeded <= 0n) return null;
+
+  const maxLimit = session.maxTopUpPerSession ?? MAX_SESSION_TOP_UP_YOCTO;
+  const newTotal = (session.totalTopUpAmount ?? 0n) + topUpNeeded;
+  if (newTotal > maxLimit) {
+    throw new Error(`Total top-up per session exceeded limit (${newTotal} > ${maxLimit} yoctoNEAR)`);
+  }
+  session.totalTopUpAmount = newTotal;
+
+  if (session.isDry) {
+    const cur = session.mockEngine.balances.get(callerAccountId) ?? 0n;
+    session.mockEngine.balances.set(callerAccountId, cur + topUpNeeded);
+    const fCur = session.mockEngine.balances.get(session.funderId) ?? 0n;
+    session.mockEngine.balances.set(session.funderId, fCur - topUpNeeded);
+  } else {
+    await withRetry(() => session.funderAcc.signAndSendTransaction({
+      receiverId: callerAccountId,
+      actions: [actions.transfer(topUpNeeded)],
+    }));
+  }
+
+  return `top-up: ${topUpNeeded.toString()} yoctoNEAR from funder (deposit: ${deposit.toString()})`;
 }
 
 /**
@@ -1889,6 +1973,7 @@ export async function executeLayerE(c, session) {
   } : null;
 
   let actual;
+  let topUpNote = null;
 
   if (session.isDry) {
     // Simulated mock execution
@@ -2049,6 +2134,7 @@ export async function executeLayerE(c, session) {
         // Direct RPC calls (category 5) have no facilitator default; 60 Tgas covers withdraw's minimum.
         const gas = c.params?.gas ? BigInt(c.params.gas) : T(60);
         const deposit = c.params?.deposit ? BigInt(c.params.deposit) : 0n;
+        topUpNote = await ensureCallerFunded(session, callerAcc.accountId, deposit);
 
         try {
           const res = await callerAcc.callFunctionRaw({
@@ -2073,6 +2159,7 @@ export async function executeLayerE(c, session) {
         const deposit = c.params.deposit !== undefined ? BigInt(c.params.deposit) : 2_000_000_000_000_000_000_000n;
         const mappedArgs = { ...(c.params?.args || {}) };
         if (mappedArgs.mandate_id !== undefined) mappedArgs.mandate_id = mandateId;
+        topUpNote = await ensureCallerFunded(session, gAcc.accountId, deposit);
 
         try {
           const txRes = await gAcc.callFunctionRaw({
@@ -2122,6 +2209,7 @@ export async function executeLayerE(c, session) {
 
         const gas = c.params?.gas ? BigInt(c.params.gas) : T(30);
         const deposit = c.params?.deposit ? BigInt(c.params.deposit) : 0n;
+        topUpNote = await ensureCallerFunded(session, gAcc.accountId, deposit);
 
         try {
           const txRes = await gAcc.callFunctionRaw({
@@ -2258,6 +2346,7 @@ export async function executeLayerE(c, session) {
     }
   }
 
+  if (topUpNote) actual = { ...actual, note: `${actual.note ? actual.note + '; ' : ''}${topUpNote}` };
   return actual;
 }
 

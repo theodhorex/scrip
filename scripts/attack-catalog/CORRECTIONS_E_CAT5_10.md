@@ -60,3 +60,12 @@ Keterbatasan penurunan ini:
 | KAT-E-10-20 loosen recipient ke-17 | `BLOCKED` / `TOO_MANY_RECIPIENTS` | dengan setup nyata (1 recipient) penambahan ke-2 diterima -> `INERT` (723-729); `TOO_MANY_RECIPIENTS` hanya bila list sudah 16 | setup 16 recipient tidak ada; kode untuk kondisi "ke-17" sudah benar, jadi data tidak diubah |
 | KAT-E-10-21 resolve_stale belum stale | `BLOCKED` / `NOT_STALE_YET` (setelah koreksi) | tanpa `Pending`, cek 822 (`NO_SUCH_PENDING`) mendahului 825 | state prep pending/stale belum ada; kode kondisi "belum stale" sudah benar |
 | KAT-E-05-25 resolve_stale oleh guardian | `INERT` / null | tanpa pending/stale: `NO_SUCH_PENDING` (822) atau `NOT_STALE_YET` (825) | label harus berubah INERT -> BLOCKED; tugas melarang |
+
+## Dicakup di luar testnet
+
+`Pending` stale tidak bisa ditahan di testnet, jadi kedua kasus ini tidak diubah dan di lapis E tetap `SKIPPED`. Keduanya tidak dihitung lulus. Perilakunya dibuktikan oleh tes unit Rust di `contracts/amanat/src/tests.rs`:
+
+| kasus | tes Rust | yang dibuktikan |
+| --- | --- | --- |
+| KAT-E-10-21 resolve_stale belum stale | `resolve_stale_before_stale_blocks_panics_and_at_blocks_works` | `resolve_stale` sebelum batas stale ditolak, dan tepat di batas stale berjalan |
+| KAT-E-05-25 resolve_stale oleh guardian | `resolve_stale_transferred_true_settles` | guardian yang menyelesaikan `Pending` stale dengan `transferred=true` berhasil menyelesaikan state |
