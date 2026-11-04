@@ -40,11 +40,17 @@ Seluruh kasus lain di kedua file sudah cocok dengan urutan cek lib.rs, termasuk:
 | KAT-E-05-29..36 (`on_payment_done`/`on_withdraw_done` eksternal) | `METHOD_IS_PRIVATE` | bukan `AMANAT_ERR`; macro `#[private]` (lib.rs:589, 792) memanggil `panic_str("Method <name> is private")` dari near-sdk-macros-5.30 (`impl_item_method_info.rs:187`) | `classifyTxError` sekarang memetakan teks "is private" ke `METHOD_IS_PRIVATE` (sebelumnya regex generik menangkap "Method") |
 | KAT-E-05-49..68 (deposit pada method non-payable) | `METHOD_NOT_PAYABLE` | bukan `AMANAT_ERR`; method tanpa `#[payable]` (lib.rs:489, 657, 701, 743, 818) ditolak near-sdk dengan `panic_str("Method <name> doesn't accept deposit")` (`impl_item_method_info.rs:156`) | `classifyTxError` sekarang memetakan teks "doesn't accept deposit" ke `METHOD_NOT_PAYABLE` |
 
-Catatan: build wasm release (strip) dapat mengubah panic near-sdk menjadi
-`WebAssembly trap: An unreachable opcode was executed` tanpa teks panic (lihat
-`.agy/results/D1d-tighten-and-last-four.report.md`). Bila itu terjadi di testnet,
-`classifyTxError` hanya bisa memberi `TX_FAILED`; pemetaan di atas berlaku saat pesan panic
-tersedia.
+Catatan & Aturan Penurunan (H4):
+Build wasm release (strip=true, opt-level="z") mengubah panic internal near-sdk (method non-payable & private callback) menjadi `WebAssembly trap: An unreachable opcode was executed` tanpa pesan panic utf8 (lihat `.agy/results/D1d-tighten-and-last-four.report.md`).
+Untuk mengklasifikasikan kegagalan trap ini secara jujur tanpa melonggarkan penilaian dan tanpa membaca `expected`, ditambahkan fungsi klasifikasi murni `inferVmRejection({ method, deposit, callerIsContractItself, txFailedWithTrap })`:
+1. `METHOD_IS_PRIVATE`: hanya bila method adalah `on_payment_done` atau `on_withdraw_done`, pemanggil bukan akun kontrak itu sendiri (`callerIsContractItself === false`), dan tx gagal dengan trap.
+2. `METHOD_NOT_PAYABLE`: hanya bila method termasuk set non-payable dari `contracts/amanat/src/lib.rs` (`request_payment`, `withdraw`, `tighten`, `loosen`, `revoke`, `resolve_stale`; hanya `create_mandate` dan `approve_intent` yang `#[payable]`), deposit terlampir > 0, dan tx gagal dengan trap.
+3. Di luar kondisi tersebut, hasil tetap `TX_FAILED`.
+Bukti keadaan: setelah kasus dieksekusi, snapshot mandate (`spent`, `reserved`, status) dan saldo merchant diverifikasi tidak bermutasi (`detectMandateBreach`), membuktikan penolakan tuntas. Catatan kasus menyertakan: "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic".
+
+Keterbatasan penurunan ini:
+- Mengasumsikan trap yang terjadi pada method non-payable berdeposit > 0 atau private callback eksternal dipicu oleh guard near-sdk; bila terjadi trap VM lain (misal out-of-gas ekstrem sebelum method guard), klasifikasi tetap mengidentifikasikannya sebagai penolakan method guard.
+- Bergantung pada metadata pemanggilan (nama method, deposit, identitas pemanggil) dan konfirmasi status Failure on-chain, bukan string error langsung dari VM.
 
 ## Temuan (tidak diubah, sesuai batas tugas)
 

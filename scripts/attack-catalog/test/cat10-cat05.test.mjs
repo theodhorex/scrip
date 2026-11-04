@@ -10,6 +10,8 @@ import {
   routeMethod,
   callAsOwner,
   T,
+  mapCallerInArgs,
+  inferVmRejection,
 } from '../layers/testnet.mjs';
 import { generateCategory10Cases } from '../cases/layer_e/approval_lifecycle.mjs';
 import { generateCategory5Cases } from '../cases/layer_e/access_identity.mjs';
@@ -184,4 +186,160 @@ test('category 5 stranger uses a real valid key and is rejected by the contract'
   } finally {
     await session.closeSession();
   }
+});
+
+test('symbolic caller mapping for KAT-E-05-37 and 05-38, preserving 05-39', () => {
+  const realSigner = 'funder_real.testnet';
+  const cat5 = new Map(generateCategory5Cases().map((c) => [c.id, c]));
+
+  // KAT-E-05-37: owner == agent (caller: 'alice.testnet', args.agent: 'alice.testnet')
+  const c37 = cat5.get('KAT-E-05-37');
+  assert.equal(c37.params.senderId, 'alice.testnet');
+  assert.equal(c37.params.args.agent, 'alice.testnet');
+  const mappedArgs37 = mapCallerInArgs(c37.params.args, c37.params.senderId, realSigner);
+  assert.equal(mappedArgs37.agent, realSigner, '05-37 args.agent must map to real signer accountId');
+  assert.equal(mappedArgs37.guardian, c37.params.args.guardian, '05-37 guardian must not change');
+
+  // KAT-E-05-38: guardian == owner (caller: 'alice.testnet', args.guardian: 'alice.testnet')
+  const c38 = cat5.get('KAT-E-05-38');
+  assert.equal(c38.params.senderId, 'alice.testnet');
+  assert.equal(c38.params.args.guardian, 'alice.testnet');
+  const mappedArgs38 = mapCallerInArgs(c38.params.args, c38.params.senderId, realSigner);
+  assert.equal(mappedArgs38.guardian, realSigner, '05-38 args.guardian must map to real signer accountId');
+  assert.equal(mappedArgs38.agent, c38.params.args.agent, '05-38 agent must not change');
+
+  // KAT-E-05-39: guardian == agent (caller: 'alice.testnet', args.agent: 'bob.testnet', args.guardian: 'bob.testnet')
+  const c39 = cat5.get('KAT-E-05-39');
+  assert.equal(c39.params.senderId, 'alice.testnet');
+  assert.equal(c39.params.args.agent, 'bob.testnet');
+  assert.equal(c39.params.args.guardian, 'bob.testnet');
+  const mappedArgs39 = mapCallerInArgs(c39.params.args, c39.params.senderId, realSigner);
+  assert.equal(mappedArgs39.agent, 'bob.testnet', '05-39 args.agent must remain unchanged');
+  assert.equal(mappedArgs39.guardian, 'bob.testnet', '05-39 args.guardian must remain unchanged');
+
+  // Negative / safety checks: do not map strangers or mismatched callers
+  const customArgs = { agent: 'stranger.testnet', guardian: 'guardian.testnet', recipients: ['merchant.testnet'] };
+  const mappedCustom = mapCallerInArgs(customArgs, 'alice.testnet', realSigner);
+  assert.deepEqual(mappedCustom, customArgs, 'Mismatched caller name must not modify any arg');
+});
+
+test('inferVmRejection: positive tests for private callbacks and non-payable methods', () => {
+  // (i) #[private] callback methods called externally
+  assert.equal(
+    inferVmRejection({ method: 'on_payment_done', callerIsContractItself: false, txFailedWithTrap: true }),
+    'METHOD_IS_PRIVATE'
+  );
+  assert.equal(
+    inferVmRejection({ method: 'on_withdraw_done', callerIsContractItself: false, txFailedWithTrap: true }),
+    'METHOD_IS_PRIVATE'
+  );
+
+  // (ii) non-payable methods with deposit > 0
+  const nonPayable = ['request_payment', 'withdraw', 'tighten', 'loosen', 'revoke', 'resolve_stale'];
+  for (const m of nonPayable) {
+    assert.equal(
+      inferVmRejection({ method: m, deposit: 1n, txFailedWithTrap: true }),
+      'METHOD_NOT_PAYABLE',
+      `Method ${m} with deposit 1n should infer METHOD_NOT_PAYABLE`
+    );
+    assert.equal(
+      inferVmRejection({ method: m, deposit: '1000000000000000000000', txFailedWithTrap: true }),
+      'METHOD_NOT_PAYABLE',
+      `Method ${m} with deposit string should infer METHOD_NOT_PAYABLE`
+    );
+  }
+});
+
+test('inferVmRejection: negative tests ensuring classification cannot produce false positives', () => {
+  // Method payable + deposit + trap -> TX_FAILED (not METHOD_NOT_PAYABLE)
+  assert.equal(
+    inferVmRejection({ method: 'create_mandate', deposit: '50000000000000000000000', txFailedWithTrap: true }),
+    'TX_FAILED',
+    'Payable create_mandate with deposit + trap must NOT infer METHOD_NOT_PAYABLE'
+  );
+  assert.equal(
+    inferVmRejection({ method: 'approve_intent', deposit: 2000000000000000000000n, txFailedWithTrap: true }),
+    'TX_FAILED',
+    'Payable approve_intent with deposit + trap must NOT infer METHOD_NOT_PAYABLE'
+  );
+
+  // Method non-payable with deposit 0 + trap -> TX_FAILED
+  assert.equal(
+    inferVmRejection({ method: 'request_payment', deposit: 0n, txFailedWithTrap: true }),
+    'TX_FAILED',
+    'request_payment with deposit 0 must NOT infer METHOD_NOT_PAYABLE'
+  );
+  assert.equal(
+    inferVmRejection({ method: 'withdraw', deposit: '0', txFailedWithTrap: true }),
+    'TX_FAILED',
+    'withdraw with deposit 0 must NOT infer METHOD_NOT_PAYABLE'
+  );
+  assert.equal(
+    inferVmRejection({ method: 'tighten', deposit: null, txFailedWithTrap: true }),
+    'TX_FAILED',
+    'tighten with null deposit must NOT infer METHOD_NOT_PAYABLE'
+  );
+
+  // on_* called by the contract itself -> NOT METHOD_IS_PRIVATE
+  assert.equal(
+    inferVmRejection({ method: 'on_payment_done', callerIsContractItself: true, txFailedWithTrap: true }),
+    'TX_FAILED',
+    'on_payment_done called by contract itself must NOT infer METHOD_IS_PRIVATE'
+  );
+  assert.equal(
+    inferVmRejection({ method: 'on_withdraw_done', callerIsContractItself: true, txFailedWithTrap: true }),
+    'TX_FAILED',
+    'on_withdraw_done called by contract itself must NOT infer METHOD_IS_PRIVATE'
+  );
+
+  // Trap on other methods -> TX_FAILED
+  assert.equal(
+    inferVmRejection({ method: 'unknown_method', deposit: 100n, txFailedWithTrap: true }),
+    'TX_FAILED',
+    'Unknown method must return TX_FAILED'
+  );
+  assert.equal(
+    inferVmRejection({ method: 'get_mandate', deposit: 0n, txFailedWithTrap: true }),
+    'TX_FAILED'
+  );
+
+  // No trap -> TX_FAILED
+  assert.equal(
+    inferVmRejection({ method: 'request_payment', deposit: 100n, txFailedWithTrap: false }),
+    'TX_FAILED',
+    'Without trap, must return TX_FAILED'
+  );
+});
+
+test('classifyTxError integrates inferVmRejection on trap errors with caller context', async () => {
+  const trapErr = new Error('WebAssembly trap: An `unreachable` opcode was executed.');
+
+  // Non-payable method with deposit
+  const resPayable = await classifyTxError(trapErr, null, 'agent.testnet', {
+    method: 'request_payment',
+    deposit: 100n,
+    contractId: 'contract.testnet',
+  });
+  assert.equal(resPayable.label, 'BLOCKED');
+  assert.equal(resPayable.code, 'METHOD_NOT_PAYABLE');
+  assert.match(resPayable.note, /kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic/);
+
+  // Private callback method called externally
+  const resPrivate = await classifyTxError(trapErr, null, 'agent.testnet', {
+    method: 'on_payment_done',
+    deposit: 0n,
+    contractId: 'contract.testnet',
+  });
+  assert.equal(resPrivate.label, 'BLOCKED');
+  assert.equal(resPrivate.code, 'METHOD_IS_PRIVATE');
+  assert.match(resPrivate.note, /kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic/);
+
+  // Payable method with deposit on trap: must stay TX_FAILED
+  const resMandate = await classifyTxError(trapErr, null, 'alice.testnet', {
+    method: 'create_mandate',
+    deposit: 50000000000000000000000n,
+    contractId: 'contract.testnet',
+  });
+  assert.equal(resMandate.label, 'BLOCKED');
+  assert.equal(resMandate.code, 'TX_FAILED');
 });

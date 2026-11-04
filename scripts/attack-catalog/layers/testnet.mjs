@@ -1014,6 +1014,79 @@ export async function callAsOwner(session, methodName, args, { gas = T(30), depo
 }
 
 /**
+ * Recursively maps occurrences of a symbolic caller string within arguments to the
+ * actual signer account ID. Used so that cases with caller == agent (KAT-E-05-37) or
+ * guardian == caller (KAT-E-05-38) reflect the actual signer account on the real testnet path.
+ *
+ * @param {object} args
+ * @param {string} rawCaller
+ * @param {string} actualCallerId
+ * @returns {object}
+ */
+export function mapCallerInArgs(args, rawCaller, actualCallerId) {
+  if (!args || typeof args !== 'object' || !rawCaller || !actualCallerId) return args;
+  const mapValue = (val) => {
+    if (val === rawCaller) return actualCallerId;
+    if (Array.isArray(val)) return val.map(mapValue);
+    if (val && typeof val === 'object' && Object.getPrototypeOf(val) === Object.prototype) {
+      return Object.fromEntries(Object.entries(val).map(([k, v]) => [k, mapValue(v)]));
+    }
+    return val;
+  };
+  return mapValue(args);
+}
+
+/**
+ * Infers rejection code purely from the call signature and on-chain facts (lib.rs),
+ * never from expected. Used because release wasm builds (strip=true, opt-level="z")
+ * turn near-sdk panics into silent WebAssembly traps without panic strings.
+ *
+ * @param {object} params
+ * @param {string} params.method - Method called
+ * @param {bigint|string|number} [params.deposit=0n] - Attached deposit
+ * @param {boolean} [params.callerIsContractItself=false] - Whether caller is contract account
+ * @param {boolean} [params.txFailedWithTrap=false] - Whether tx failed with unreachable opcode trap
+ * @returns {string} - 'METHOD_IS_PRIVATE' | 'METHOD_NOT_PAYABLE' | 'TX_FAILED'
+ */
+export function inferVmRejection({ method, deposit = 0n, callerIsContractItself = false, txFailedWithTrap = false }) {
+  if (!txFailedWithTrap) {
+    return 'TX_FAILED';
+  }
+
+  // #[private] callback methods defined in contracts/amanat/src/lib.rs (lines 590, 793)
+  const PRIVATE_METHODS = new Set(['on_payment_done', 'on_withdraw_done']);
+  if (PRIVATE_METHODS.has(method) && !callerIsContractItself) {
+    return 'METHOD_IS_PRIVATE';
+  }
+
+  // Non-payable methods defined in contracts/amanat/src/lib.rs (without #[payable])
+  // #[payable] is present ONLY on create_mandate (lib.rs:385) and approve_intent (lib.rs:620).
+  const NON_PAYABLE_METHODS = new Set([
+    'request_payment',
+    'withdraw',
+    'tighten',
+    'loosen',
+    'revoke',
+    'resolve_stale',
+  ]);
+
+  let dep = 0n;
+  try {
+    if (deposit !== null && deposit !== undefined) {
+      dep = BigInt(deposit);
+    }
+  } catch {
+    dep = 0n;
+  }
+
+  if (NON_PAYABLE_METHODS.has(method) && dep > 0n) {
+    return 'METHOD_NOT_PAYABLE';
+  }
+
+  return 'TX_FAILED';
+}
+
+/**
  * Resolves the appropriate Account instance for a given caller role.
  */
 export function getCallerAccount(session, callerName, agentIdx = 0) {
@@ -1104,7 +1177,7 @@ export function classifyTxResult(txRes, defaultLabel = 'INERT') {
  * Classifies a transaction error thrown by near-api-js callFunctionRaw.
  * Extracts AMANAT_ERR from error messages, attached transactionResult logs, or on-chain tx lookup.
  */
-export async function classifyTxError(err, session = null, signerAccountId = null) {
+export async function classifyTxError(err, session = null, signerAccountId = null, callContext = {}) {
   const msg = err?.message || '';
   const failedRes = err?.transactionResult ?? null;
   const failedHash = failedRes?.transaction_outcome?.id ?? err?.context?.transactionHash ?? err?.transactionHash ?? null;
@@ -1118,6 +1191,31 @@ export async function classifyTxError(err, session = null, signerAccountId = nul
   }
   if (/\bis private\b/i.test(msg)) {
     return { label: 'BLOCKED', code: 'METHOD_IS_PRIVATE', txHash: failedHash ? String(failedHash) : null, note: msg };
+  }
+
+  // Release wasm builds (strip=true, opt-level="z") turn near-sdk panics into WebAssembly
+  // unreachable traps without panic text. In that case, infer the rejection code purely from
+  // the call signature and on-chain facts (lib.rs #[payable] / #[private]), never from expected.
+  const isTrap = /WebAssembly trap|unreachable opcode/i.test(msg)
+    || /WebAssembly trap|unreachable opcode/i.test(JSON.stringify(failedRes || {}));
+  const method = callContext?.method;
+  if (isTrap && method) {
+    const contractId = callContext?.contractId || session?.contractId;
+    const callerIsContractItself = Boolean(contractId && signerAccountId && signerAccountId === contractId);
+    const inferred = inferVmRejection({
+      method,
+      deposit: callContext?.deposit ?? 0n,
+      callerIsContractItself,
+      txFailedWithTrap: true,
+    });
+    if (inferred !== 'TX_FAILED') {
+      return {
+        label: 'BLOCKED',
+        code: inferred,
+        txHash: failedHash ? String(failedHash) : null,
+        note: 'kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic',
+      };
+    }
   }
 
   let match = msg.match(/AMANAT_ERR:([A-Za-z0-9_]+)/) || msg.match(/Smart contract panicked:\s*([A-Za-z0-9_]+)/);
@@ -1937,9 +2035,16 @@ export async function executeLayerE(c, session) {
 
       if (c.params?.transport === 'rpc') {
         // Direct RPC transmission using the appropriate caller account
-        const callerAcc = getCallerAccount(session, c.params?.senderId || c.params?.caller, c.params?.agentIndex ?? 0);
-        const mappedArgs = { ...(c.params?.args || {}) };
+        const callerName = c.params?.senderId || c.params?.caller;
+        const callerAcc = getCallerAccount(session, callerName, c.params?.agentIndex ?? 0);
+        let mappedArgs = { ...(c.params?.args || {}) };
         if (mappedArgs.mandate_id !== undefined) mappedArgs.mandate_id = mandateId;
+
+        // Map symbolic caller name in args to actual signer accountId so that
+        // owner == agent (05-37) or guardian == owner (05-38) matches the actual signer
+        if (callerName && callerAcc?.accountId) {
+          mappedArgs = mapCallerInArgs(mappedArgs, callerName, callerAcc.accountId);
+        }
 
         // Direct RPC calls (category 5) have no facilitator default; 60 Tgas covers withdraw's minimum.
         const gas = c.params?.gas ? BigInt(c.params.gas) : T(60);
@@ -1956,7 +2061,11 @@ export async function executeLayerE(c, session) {
           actual = classifyTxResult(res);
           txHash = actual.txHash;
         } catch (err) {
-          actual = await classifyTxError(err, session, callerAcc.accountId);
+          actual = await classifyTxError(err, session, callerAcc.accountId, {
+            method,
+            deposit,
+            contractId: session.contractId,
+          });
           txHash = actual.txHash;
         }
       } else if (route === 'approve_intent') {
@@ -1976,7 +2085,11 @@ export async function executeLayerE(c, session) {
           actual = classifyTxResult(txRes);
           txHash = actual.txHash;
         } catch (err) {
-          actual = await classifyTxError(err, session, gAcc.accountId);
+          actual = await classifyTxError(err, session, gAcc.accountId, {
+            method: 'approve_intent',
+            deposit,
+            contractId: session.contractId,
+          });
           txHash = actual.txHash;
         }
       } else if (route === 'owner') {
@@ -1994,7 +2107,11 @@ export async function executeLayerE(c, session) {
           actual = classifyTxResult(txRes);
           txHash = actual.txHash;
         } catch (err) {
-          actual = await classifyTxError(err, session, session.funderAcc.accountId);
+          actual = await classifyTxError(err, session, session.funderAcc.accountId, {
+            method,
+            deposit,
+            contractId: session.contractId,
+          });
           txHash = actual.txHash;
         }
       } else if (route === 'guardian') {
@@ -2017,7 +2134,11 @@ export async function executeLayerE(c, session) {
           actual = classifyTxResult(txRes);
           txHash = actual.txHash;
         } catch (err) {
-          actual = await classifyTxError(err, session, gAcc.accountId);
+          actual = await classifyTxError(err, session, gAcc.accountId, {
+            method,
+            deposit,
+            contractId: session.contractId,
+          });
           txHash = actual.txHash;
         }
       } else {
