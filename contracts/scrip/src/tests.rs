@@ -1557,6 +1557,56 @@ fn withdraw_unknown_mandate_panics() {
 // ---------- resolve_stale ----------
 
 #[test]
+fn resolve_stale_transferred_false_rejected_unprovable() {
+    let (mut c, id) = setup();
+    reserved_id(req(&mut c, id, SHOP, 40, 1));
+    let before = mandate(&c, id);
+    assert_eq!((before.spent, before.reserved, before.open_requests), (0, 40, 1));
+    assert!(c.get_pending(id, 1).is_some());
+    panics_with("STALE_REFUND_UNPROVABLE", || {
+        resolve_at(&mut c, GUARDIAN, stale_height(), id, 1, false);
+    });
+    // State is completely untouched!
+    let after = mandate(&c, id);
+    assert_eq!((after.spent, after.reserved, after.open_requests), (0, 40, 1));
+    assert!(c.get_pending(id, 1).is_some());
+}
+
+#[test]
+fn test_f4_attack_cannot_reopen_budget_via_false_guardian_claim() {
+    let (mut c, id) = setup(); // default budget 1000, cap 100
+    // Tighten so that the budget is nearly used up: budget 50, cap 50.
+    tighten_as(&mut c, OWNER, id, Change::PerPaymentCap(U128(50)));
+    tighten_as(&mut c, OWNER, id, Change::Budget(U128(50)));
+    reserved_id(req(&mut c, id, SHOP, 40, 1));
+    // Mandate has reserved=40, remaining budget = 50 - 40 = 10
+    // Transfer landed off-chain, but callback missing.
+    // Malicious/mistaken guardian attempts to claim transferred=false to reopen budget:
+    panics_with("STALE_REFUND_UNPROVABLE", || {
+        resolve_at(&mut c, GUARDIAN, stale_height(), id, 1, false);
+    });
+    // Verify budget is NOT reopened: reserved is still 40
+    let m = mandate(&c, id);
+    assert_eq!(m.reserved, 40);
+    assert_eq!(m.spent, 0);
+    // Agent tries to request another 40 tokens -> rejected OVER_BUDGET because 40 + 40 > 50
+    assert_eq!(rejected_code(req(&mut c, id, SHOP, 40, 2)), "OVER_BUDGET");
+}
+
+#[test]
+fn resolve_stale_transferred_true_settles_and_second_call_no_such_pending() {
+    let (mut c, id) = setup();
+    reserved_id(req(&mut c, id, SHOP, 40, 1));
+    resolve_at(&mut c, GUARDIAN, stale_height(), id, 1, true);
+    let m = mandate(&c, id);
+    assert_eq!((m.spent, m.reserved, m.open_requests), (40, 0, 0));
+    assert!(c.get_pending(id, 1).is_none());
+    panics_with("NO_SUCH_PENDING", || {
+        resolve_at(&mut c, GUARDIAN, stale_height(), id, 1, true);
+    });
+}
+
+#[test]
 fn resolve_stale_before_stale_blocks_panics_and_at_blocks_works() {
     let (mut c, id) = setup();
     reserved_id(req(&mut c, id, SHOP, 40, 1)); // Pending height 1000
@@ -1586,37 +1636,14 @@ fn resolve_stale_transferred_true_settles() {
 }
 
 #[test]
-fn resolve_stale_transferred_false_refunds() {
-    let (mut c, id) = setup();
-    reserved_id(req(&mut c, id, SHOP, 40, 1));
-    resolve_at(&mut c, GUARDIAN, stale_height(), id, 1, false);
-    let m = mandate(&c, id);
-    assert_eq!((m.spent, m.reserved, m.open_requests), (0, 0, 0));
-    assert_eq!(events(&get_logs())[0]["data"][0]["transferred"], false);
-}
-
-#[test]
-fn resolve_stale_second_call_and_unknown_request_panic() {
-    let (mut c, id) = setup();
-    reserved_id(req(&mut c, id, SHOP, 40, 1));
-    resolve_at(&mut c, GUARDIAN, stale_height(), id, 1, true);
-    panics_with("NO_SUCH_PENDING", || resolve_at(&mut c, GUARDIAN, stale_height(), id, 1, true));
-    panics_with("NO_SUCH_PENDING", || resolve_at(&mut c, GUARDIAN, stale_height(), id, 1, false));
-    panics_with("NO_SUCH_PENDING", || resolve_at(&mut c, GUARDIAN, stale_height(), id, 77, false));
-    panics_with("MANDATE_NOT_FOUND", || resolve_at(&mut c, GUARDIAN, stale_height(), 5, 1, false));
-    let m = mandate(&c, id);
-    assert_eq!((m.spent, m.reserved, m.open_requests), (40, 0, 0)); // counted once
-}
-
-#[test]
 fn resolve_stale_works_on_revoked_mandates_and_late_callback_is_a_no_op() {
     let (mut c, id) = world_revoked_with_pending();
-    resolve_at(&mut c, GUARDIAN, stale_height(), id, 1, false);
+    resolve_at(&mut c, GUARDIAN, stale_height(), id, 1, true);
     assert_eq!(mandate(&c, id).reserved, 0);
     set_callback(PromiseResult::Successful(vec![]));
     assert_eq!(c.on_payment_done(id, 1), PaymentResult::AlreadyResolved { request_id: 1 });
     let m = mandate(&c, id);
-    assert_eq!((m.spent, m.reserved, m.open_requests), (0, 0, 0));
+    assert_eq!((m.spent, m.reserved, m.open_requests), (10, 0, 0));
 }
 
 // ---------- role matrix: method x caller ----------
@@ -1758,7 +1785,12 @@ fn fund_conservation_holds_over_a_scripted_sequence() {
 
     tighten_as(&mut c, OWNER, id, Change::Budget(U128(800)));
     check_invariants(&c, id, held, 0);
-    resolve_at(&mut c, GUARDIAN, stale_height(), id, 3, false);
+    // F4: a guardian claim "transfer failed" can no longer release request 3. Its 50 stay
+    // reserved for good (the conservative direction): they are locked inside this mandate
+    // and no other mandate can be harmed by them.
+    panics_with("STALE_REFUND_UNPROVABLE", || {
+        resolve_at(&mut c, GUARDIAN, stale_height(), id, 3, false);
+    });
     check_invariants(&c, id, held, 0);
     resolve_at(&mut c, GUARDIAN, stale_height(), id, 4, true);
     held -= 20;
@@ -1768,7 +1800,7 @@ fn fund_conservation_holds_over_a_scripted_sequence() {
     revoke_as(&mut c, OWNER, id);
     check_invariants(&c, id, held, 0);
 
-    // free = 1000 - 60 spent = 940
+    // free = 1000 - 60 spent - 50 still reserved (request 3) = 890
     withdraw_as(&mut c, OWNER, id, 500);
     check_invariants(&c, id, held, 500);
     assert!(!withdraw_cb(&mut c, id, 500, PromiseResult::Failed)); // transfer failed
@@ -1778,12 +1810,14 @@ fn fund_conservation_holds_over_a_scripted_sequence() {
     assert!(withdraw_cb(&mut c, id, 500, PromiseResult::Successful(vec![])));
     held -= 500;
     check_invariants(&c, id, held, 0);
-    withdraw_as(&mut c, OWNER, id, 440);
-    assert!(withdraw_cb(&mut c, id, 440, PromiseResult::Successful(vec![])));
-    held -= 440;
+    withdraw_as(&mut c, OWNER, id, 390);
+    assert!(withdraw_cb(&mut c, id, 390, PromiseResult::Successful(vec![])));
+    held -= 390;
     check_invariants(&c, id, held, 0);
-    // everything is accounted: 60 paid to recipients + 940 back to the owner, nothing left
-    assert_eq!((held, mandate(&c, id).spent, mandate(&c, id).withdrawn), (0, 60, 940));
+    // accounted: 60 paid to recipients + 890 back to the owner; the 50 of request 3 stay
+    // locked as reserved (held == reserved == 50), never touching other mandates
+    assert_eq!((held, mandate(&c, id).spent, mandate(&c, id).withdrawn), (50, 60, 890));
+    assert_eq!(mandate(&c, id).reserved, 50);
     panics_with("AMOUNT_EXCEEDS_FREE", || withdraw_as(&mut c, OWNER, id, 1));
 }
 

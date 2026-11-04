@@ -1,7 +1,7 @@
 # K1 REPORT: contract core
 
 ## Result
-- `cargo test`: **49 passed, 0 failed** (`make -C /home/theo/Documents/dev/hackathon/scrip contract-test` passes). Red first: with signature stubs (`unimplemented!()`) the same suite was 0 passed / 49 failed; then implemented to green.
+- `cargo test`: **49 passed, 0 failed** (`make -C <repo> contract-test` passes). Red first: with signature stubs (`unimplemented!()`) the same suite was 0 passed / 49 failed; then implemented to green.
 - wasm: `contracts/scrip/target/wasm32-unknown-unknown/release/scrip.wasm` = 248,538 bytes (release profile opt-level z, lto, strip). Build about 15 s.
 - Big-endian check: changing `amount.to_le_bytes()` to `to_be_bytes()` made 2 tests fail (`intent_hash_matches_every_positive_vector`, `intent_hash_view_returns_hex_of_pure_function`); same for `mandate_id`. Both mutations reverted, suite green again.
 - `signer_account_id`: not used in `src/lib.rs`. It appears ONLY in `src/tests.rs`, in the context builder and in the test proving a signer==agent caller still panics (predecessor decides).

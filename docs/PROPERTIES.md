@@ -28,8 +28,8 @@ Dokumen ini memetakan seluruh invarian formal (P1..P10 per PRD v1.3 s4 / T-A) se
 | **F1** | Mandat ditarik (`withdrawn`) dapat dihidupkan kembali & menguras saldo mandat lain | `budget_ceiling_never_counts_tokens_already_withdrawn`, `loosen_budget_cannot_exceed_deposited_minus_withdrawn`, `withdraw_needs_an_explicit_revoke_even_after_expiry`, `revoke_after_inconsistent_accounting_does_not_underflow` | Teruji (Fix F1) |
 | **F2** | Fasilitator tidak memeriksa public key access key dari `senderId` | Fasilitator: `keycheck.test.mjs`, `relay.test.mjs` | Teruji (Fasilitator) |
 | **F3** | Penyimpanan `approvals` tidak berbayar dan tanpa batas mengunci NEAR kontrak | `approve_intent_needs_the_storage_deposit`, `approve_intent_refunds_excess_near_to_guardian`, `approve_intent_caps_entries_per_mandate` | Teruji (Fix F3 / K-C) |
-| **F4** | `resolve_stale(transferred=false)` membebaskan reservasi tanpa verifikasi | `resolve_stale_transferred_false_refunds`, `create_rejects_guardian_equal_owner` | Teruji (Batas diakui) |
-| **F5** | Kegagalan callback withdraw menahan dana tanpa jalur pemulihan | `withdraw_callback_failure_restores_withdrawn_and_emits_nothing`, `withdraw_needs_enough_prepaid_gas_for_the_callback` | Teruji (Batas diakui) |
+| **F4** | `resolve_stale(transferred=false)` membebaskan reservasi tanpa verifikasi | `resolve_stale_transferred_false_rejected_unprovable`, `test_f4_attack_cannot_reopen_budget_via_false_guardian_claim`, `create_rejects_guardian_equal_owner` | Ditutup (F45, 3 Nov 2026): `false` ditolak `STALE_REFUND_UNPROVABLE`; `true` tetap |
+| **F5** | Kegagalan callback withdraw menahan dana tanpa jalur pemulihan | `withdraw_callback_failure_restores_withdrawn_and_emits_nothing`, `withdraw_needs_enough_prepaid_gas_for_the_callback`, `p11_f5_callbacks_never_panic_and_invariants_hold`, `f45_callback_gas_margin_settle_refund_and_withdraw` (integrasi) | Dimitigasi (F45): callback tidak panik pada jalur yang dapat dicapai (tes properti) dan margin gas terukur >= 7x; residual diakui: callback yang hilang menahan dana milik owner itu sendiri |
 | **F6** | Approval tetap terkonsumsi meskipun transfer gagal | `audit_f6_refunded_request_leaves_approval_consumed` | Teruji |
 | **F7** | Penyimpanan per mandat dapat melebihi deposit 0.05 NEAR saat Pending penuh | `create_mandate_deposit_boundary_is_exactly_0_05_near` | Teruji (Batas desain) |
 | **F8** | Status sukses luar fasilitator vs kegagalan transaksi dalam | Fasilitator: pelabelan `outer_tx_succeeded` dan batas min gas | Teruji (Fasilitator) |
@@ -43,7 +43,7 @@ Dokumen ini memetakan seluruh invarian formal (P1..P10 per PRD v1.3 s4 / T-A) se
 |---|---|---|---|
 | **N-M1** | Pre-auth RPC amplification pada fasilitator | Fasilitator: rate limiter IP & decode offline | Teruji (Fasilitator) |
 | **N-M2** | Konkurensi relay berbagi satu nonce access key | Fasilitator: penanganan antrean relay / pengujian konkurensi | Teruji (Fasilitator) |
-| **N-L1** | Interaksi withdraw/guardian: `resolve_stale(false)` + `owner == guardian` | `create_rejects_guardian_equal_owner`, `resolve_stale_transferred_false_refunds` | Teruji |
+| **N-L1** | Interaksi withdraw/guardian: `resolve_stale(false)` + `owner == guardian` | `create_rejects_guardian_equal_owner`, `resolve_stale_transferred_false_rejected_unprovable` | Teruji (F4 ditutup di F45) |
 | **N-L2** | Ketiadaan deduplikasi signed delegate identik di fasilitator | Fasilitator: dedupe delegate berbasis basis data sqlite | Teruji (Fasilitator) |
 | **N-L3** | Approvals tidak pernah dihapus dan tanpa batas per mandat | `approve_intent_caps_entries_per_mandate` (K-C: batas 512, panic `TOO_MANY_APPROVALS`) | Teruji |
 | **N-L4** | Cache key-check dan amplifikasi RPC dari kunci palsu | Fasilitator: validasi cache TTL dan eviksi kunci | Teruji (Fasilitator) |

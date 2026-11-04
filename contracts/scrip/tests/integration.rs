@@ -1180,3 +1180,81 @@ async fn audit_f1_expired_mandate_cannot_withdraw_then_revive() -> Result<(), Bo
     Ok(())
 }
 
+
+// ------------------------------------------------- F45: callback gas margin (F5)
+
+/// Gas the contract pins for each callback (lib.rs CALLBACK_GAS / WITHDRAW_CALLBACK_GAS).
+const PINNED_CALLBACK_TGAS: u64 = 15;
+
+/// Gas burnt by the LAST receipt executed on the Scrip contract in this transaction, i.e. the
+/// callback (`on_payment_done` / `on_withdraw_done`) that runs after the token receipt.
+fn callback_gas_burnt(r: &ExecutionFinalResult, scrip_id: &str) -> u64 {
+    r.outcomes()
+        .into_iter()
+        .filter(|o| o.executor_id.as_str() == scrip_id)
+        .last()
+        .map(|o| o.gas_burnt.as_gas())
+        .expect("an Scrip receipt exists")
+}
+
+fn assert_margin(label: &str, burnt: u64) {
+    let pinned = PINNED_CALLBACK_TGAS * 1_000_000_000_000;
+    println!("F45 gas {label}: callback burnt {:.3} Tgas of {PINNED_CALLBACK_TGAS} pinned (margin {:.1}x)",
+        burnt as f64 / 1e12, pinned as f64 / burnt as f64);
+    assert!(burnt * 3 <= pinned, "{label}: callback burnt {burnt} gas; need margin >= 3x of {pinned}");
+}
+
+#[tokio::test(flavor = "current_thread")]
+async fn f45_callback_gas_margin_settle_refund_and_withdraw() -> Result<(), Box<dyn std::error::Error>> {
+    let env = setup().await?;
+    ft_register(&env, env.owner.id().as_str()).await?;
+    let mid = scenario_mandate(&env, BUDGET, CAP, CAP, &[], EXPIRY_MARGIN_MS).await?;
+    let scrip = env.scrip_id.as_str().to_string();
+
+    // settle path
+    let r = request(&env, mid, env.merchant_id.as_str(), 30, 1).await?;
+    assert!(r.is_success(), "settle: {r:?}");
+    assert_margin("on_payment_done settle", callback_gas_burnt(&r, &scrip));
+
+    // withdraw path (after revoke)
+    let rv = env.owner.call(&env.scrip_id, "revoke").args_json(json!({ "mandate_id": mid })).gas(GAS_150).transact().await?;
+    rv.must_have_no_failed_receipts();
+    let w = env.owner.call(&env.scrip_id, "withdraw")
+        .args_json(json!({ "mandate_id": mid, "amount": "100" })).gas(Gas::from_tgas(60)).transact().await?;
+    assert!(w.is_success(), "withdraw at the 60 Tgas floor: {w:?}");
+    assert_margin("on_withdraw_done success", callback_gas_burnt(&w, &scrip));
+
+    // refund path: receiver NOT registered with the FT, so ft_transfer fails
+    let env2 = setup().await?;
+    let (mid2, _) = create_mandate(&env2, BUDGET, CAP, CAP, &[env2.merchant_id.as_str()]).await?;
+    fund(&env2, mid2, DEPOSIT).await?.must_have_no_failed_receipts();
+    let rf = request(&env2, mid2, env2.merchant_id.as_str(), 30, 1).await?;
+    assert!(rf.is_success(), "refund: {rf:?}");
+    assert_margin("on_payment_done refund", callback_gas_burnt(&rf, env2.scrip_id.as_str()));
+    Ok(())
+}
+
+// ------------------------------- KAT-E-04-15 reproduction: approval expiry in the past
+
+#[tokio::test(flavor = "current_thread")]
+async fn approve_intent_with_expiry_in_the_past_is_rejected_with_its_code() -> Result<(), Box<dyn std::error::Error>> {
+    let env = setup().await?;
+    let mid = scenario_mandate(&env, BUDGET, CAP, 50, &[], EXPIRY_MARGIN_MS).await?;
+    let r = env
+        .guardian
+        .call(&env.scrip_id, "approve_intent")
+        .args_json(json!({
+            "mandate_id": mid,
+            "recipient": env.merchant_id.as_str(),
+            "amount": "500000",
+            "nonce": 21,
+            "approval_expires_at_ms": 1000,
+        }))
+        .deposit(NearToken::from_millinear(2))
+        .gas(Gas::from_tgas(30))
+        .transact()
+        .await?;
+    println!("KAT-E-04-15 repro: failures={:?} logs={:?}", r.failures(), r.logs());
+    assert_err_code(&r, "APPROVAL_NOT_IN_FUTURE");
+    Ok(())
+}

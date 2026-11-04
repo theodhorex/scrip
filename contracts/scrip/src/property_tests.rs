@@ -245,10 +245,11 @@ fn apply(c: &mut Scrip, id: u64, m: &mut Model, op: &Op, step: usize) {
         Op::ResolveStale { rid, transferred } => {
             let rid = *rid as u64;
             let existed = m.pending.contains_key(&rid);
+            let expected_ok = existed && *transferred;
             let r = try_call(|| resolve_at(c, GUARDIAN, STALE_SET_HEIGHT, id, rid, *transferred));
-            assert_eq!(r.is_ok(), existed, "{ctx}: resolve_stale accept/reject mismatch");
-            if existed {
-                settle_model(m, rid, *transferred);
+            assert_eq!(r.is_ok(), expected_ok, "{ctx}: resolve_stale accept/reject mismatch");
+            if expected_ok {
+                settle_model(m, rid, true);
             }
         }
         Op::Approve { amount, recipient, nonce } => {
@@ -810,5 +811,20 @@ proptest! {
         prop_assert!(try_call(|| resolve_at(&mut c, GUARDIAN, STALE_SET_HEIGHT, id, 1, stale_second)).is_err());
         prop_assert_eq!((mandate(&c, id).spent, mandate(&c, id).reserved, mandate(&c, id).open_requests), after);
         let _ = stale; // both interleavings are covered by the second-callback assertion
+    }
+
+    // F5 / P11
+    /// Proves F5 2(a): `on_payment_done` and `on_withdraw_done` cannot panic on reachable paths.
+    /// Under random interleaved operations, accounting invariants (reserved, spent, withdrawn, ledger)
+    /// strictly hold and callbacks never panic.
+    #[test]
+    fn p11_f5_callbacks_never_panic_and_invariants_hold(ops in arb_ops()) {
+        run_sequence(&ops, |c, m, step| {
+            let a = mandate(c, MANDATE);
+            assert!(a.spent + a.reserved <= a.budget, "step {step}: P1 spent+reserved <= budget");
+            assert!(a.spent + a.reserved + a.withdrawn <= a.deposited, "step {step}: fund conservation");
+            assert_eq!(m.ledger, a.deposited - a.spent - a.withdrawn, "step {step}: ledger conservation");
+            assert!(m.ledger >= a.reserved, "step {step}: ledger covers reserved");
+        });
     }
 }

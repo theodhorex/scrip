@@ -1,7 +1,7 @@
 # K3 IT_REPORT: sandbox integration tests of the real scrip.wasm
 
 ## Result
-- `make -C /home/theo/Documents/dev/hackathon/scrip contract-it`: **18 passed, 0 failed** (builds scrip.wasm release + tests/ft_mock wasm, then `cargo test --test integration -- --test-threads=1`). NOT part of `make test` (needs network for the sandbox binary; the binary itself is cached at `~/.near/near-sandbox-2.14.0`).
+- `make -C <repo> contract-it`: **18 passed, 0 failed** (builds scrip.wasm release + tests/ft_mock wasm, then `cargo test --test integration -- --test-threads=1`). NOT part of `make test` (needs network for the sandbox binary; the binary itself is cached at `~/.near/near-sandbox-2.14.0`).
 - Runtime ~4.5-5 min (sandbox-heavy tests). Run scenario groups separately if needed.
 
 ## Coverage matrix F1..F11 -> integration test
@@ -62,6 +62,11 @@ promise is chained on the transfer by the CONTRACT, not by the mock. Creating an
 artificial stale Pending without mocking Scrip itself is not possible, so per the task
 `resolve_stale` remains covered by the K2 unit tests (both branches, double call, revoked
 mandate) and the integration level asserts the INSUFFICIENT_GAS guard at 59/60 TGas.
+
+## F45 additions (3 Nov 2026)
+- `f45_callback_gas_margin_settle_refund_and_withdraw`: measures the gas burnt by the callback receipt on the Scrip contract in three paths and requires a margin of at least 3x against the 15 Tgas pinned. Measured: settle 2.133 Tgas (7.0x), withdraw success 1.779 Tgas (8.4x), refund 1.947 Tgas (7.7x). Constants were NOT changed.
+- `approve_intent_with_expiry_in_the_past_is_rejected_with_its_code`: reproduces KAT-E-04-15 in the sandbox. The contract logs `SCRIP_ERR:APPROVAL_NOT_IN_FUTURE` and then fails; the stripped wasm surfaces that failure only as a generic WebAssembly trap, so the code is read from the logs.
+- Runs on the F45 wasm: the full file passed 20 of 20 tests (before the repro test existed); the repro test then passed in its own run. A single full run of all 21 will be repeated at the freeze.
 
 ## Skills dipakai
 - planning-and-task-breakdown: this file starts with the coverage matrix F1..F11.

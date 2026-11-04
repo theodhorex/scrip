@@ -125,7 +125,7 @@ sequenceDiagram
 - **DelegateAction (NEP-366):** An off-chain signed payload containing actions that an authorized relayer wraps and submits to the blockchain, paying the transaction gas on behalf of the signer.
 - **Intent Hash:** Deterministic 32-byte SHA-256 digest binding `(mandate_id, recipient, amount, nonce, mandate_expiry)`. Ensures guardian approvals cannot be replayed or redirected to other recipients or amounts.
 - **Reservation (`reserved`):** Atomic hold placed on mandate funds immediately upon `request_payment` execution to guarantee that concurrent requests cannot exceed the cumulative budget.
-- **Stale Resolution (`resolve_stale`):** Fallback mechanism allowing the guardian to clear a pending reservation if an external token transfer callback does not finalize within a predefined block threshold.
+- **Stale Resolution (`resolve_stale`):** Fallback mechanism allowing the guardian to settle a pending reservation if an external token transfer callback does not finalize within a predefined block threshold. Only `transferred=true` (`reserved -> spent`) is accepted. `transferred=false` is rejected with `STALE_REFUND_UNPROVABLE`: no one's claim can reopen budget, so a wrong or dishonest guardian can only lock funds of its own mandate, never other mandates' funds (see `contracts/scrip/F45_RESOLUTION.md`).
 - **x402-style:** HTTP 402 payment flow utilizing Scrip's custom headers and endpoints (`/verify`, `/settle`, `/supported`) tailored for function-call keys and delegate actions, rather than the standard x402 `exact` scheme.
 
 ---

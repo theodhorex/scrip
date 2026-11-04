@@ -243,14 +243,15 @@ fn deterministic_ledger_invariant_two_tokens_multiple_mandates() {
     assert_eq!(c.get_token_ledger(acc(TOKEN_A)).0, 1120);
     assert_ledger_invariant_holds(&c, TOKEN_A, &all_m);
 
-    // 12. Stale resolution: request on m2 (20 Token A), resolve_stale transferred=false
+    // 12. Stale resolution: request on m2 (20 Token A), resolve_stale transferred=false is rejected (STALE_REFUND_UNPROVABLE)
     set(AGENT);
     let _ = c.request_payment(m2, acc(CAFE), U128(20), 3);
     assert_eq!(c.get_token_ledger(acc(TOKEN_A)).0, 1120);
     assert_ledger_invariant_holds(&c, TOKEN_A, &all_m);
 
-    resolve_at(&mut c, GUARDIAN, STALE_SET_HEIGHT + 100, m2, 3, false);
-    // transferred=false -> refunded: ledger unchanged
+    let res = try_call(|| resolve_at(&mut c, GUARDIAN, STALE_SET_HEIGHT + 100, m2, 3, false));
+    assert!(res.is_err(), "resolve_stale transferred=false must be rejected with STALE_REFUND_UNPROVABLE");
+    // State and ledger remain completely unchanged
     assert_eq!(c.get_token_ledger(acc(TOKEN_A)).0, 1120);
     assert_ledger_invariant_holds(&c, TOKEN_A, &all_m);
 

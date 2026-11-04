@@ -89,7 +89,7 @@ The remaining **12 warnings** are likewise absent from `wasm32-unknown-unknown` 
 
 ## Commands to Reproduce
 
-Run from the repository root (`/home/theo/Documents/dev/hackathon/scrip`):
+Run from the repository root (`<repo>`):
 
 ```bash
 # 1. Clippy static analysis across all targets (lib, unit/property tests, integration tests)

@@ -98,6 +98,8 @@ pub mod err {
     pub const TOO_MANY_APPROVALS: &str = "TOO_MANY_APPROVALS";
     /// K-3: token ledger insufficient for transfer.
     pub const LEDGER_INSUFFICIENT: &str = "LEDGER_INSUFFICIENT";
+    /// F4: stale refund without on-chain proof is rejected.
+    pub const STALE_REFUND_UNPROVABLE: &str = "STALE_REFUND_UNPROVABLE";
 }
 
 /// One rule change for `tighten` / `loosen` (PRD 3.2). JSON is serde's externally tagged
@@ -229,6 +231,7 @@ pub enum RejectCode {
     ApprovalUsed,
     ApprovalExpired,
     LedgerInsufficient,
+    StaleRefundUnprovable,
 }
 
 impl RejectCode {
@@ -244,6 +247,7 @@ impl RejectCode {
             RejectCode::ApprovalUsed => "APPROVAL_USED",
             RejectCode::ApprovalExpired => "APPROVAL_EXPIRED",
             RejectCode::LedgerInsufficient => "LEDGER_INSUFFICIENT",
+            RejectCode::StaleRefundUnprovable => "STALE_REFUND_UNPROVABLE",
         }
     }
 }
@@ -804,11 +808,13 @@ impl Scrip {
     }
 
     /// Guardian only. Resolves a `Pending` entry older than `STALE_BLOCKS` (typically a
-    /// callback that ran out of gas). The guardian first checks off-chain whether the
-    /// `ft_transfer` really landed and passes `transferred`: true behaves like settle
-    /// (`reserved -> spent`), false like refund (`reserved` released). Returning a stale
-    /// request blindly could double-spend the budget, hence the explicit flag. Works on
-    /// Revoked mandates too. A second call panics `NO_SUCH_PENDING`.
+    /// callback that ran out of gas).
+    /// F4 / F5: A guardian's unverified claim cannot reopen budget or release reserved
+    /// tokens (which could lead to double-spending or token pool deficit across mandates).
+    /// Therefore, `transferred=false` is rejected with `STALE_REFUND_UNPROVABLE`.
+    /// Only `transferred=true` is permitted: settles `reserved -> spent` and decrements
+    /// `token_ledger` (conservative direction: error only locks funds of this mandate,
+    /// never other mandates). Works on Revoked mandates too. A second call panics `NO_SUCH_PENDING`.
     pub fn resolve_stale(&mut self, mandate_id: u64, request_id: u64, transferred: bool) {
         let m = self.mandate_ref(mandate_id);
         require(env::predecessor_account_id() == m.guardian, err::UNAUTHORIZED_GUARDIAN);
@@ -818,6 +824,7 @@ impl Scrip {
             env::block_height().saturating_sub(p.height) >= STALE_BLOCKS,
             err::NOT_STALE_YET,
         );
+        require(transferred, err::STALE_REFUND_UNPROVABLE);
         self.pending.remove(&key);
         let m = self.mandates.get_mut(&mandate_id).expect("checked above");
         m.reserved = m.reserved.checked_sub(p.amount.0).expect("RESERVED_UNDERFLOW");

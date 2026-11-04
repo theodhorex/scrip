@@ -27,7 +27,7 @@ Rust, near-sdk 5.30.0 (pinned). Many mandates in one contract (PRD 3.1 to 3.6).
 | `revoke(mandate_id)` | owner or guardian | Active -> Revoked; in-flight requests still settle |
 | `withdraw(mandate_id, amount)` | owner only | Revoked only (`MANDATE_STILL_ACTIVE` otherwise); `amount <= deposited - spent - reserved - withdrawn`; needs >= 60 Tgas |
 | `on_withdraw_done(mandate_id, amount)` | contract itself (`#[private]`) | success: emit `withdrawn`; failure: restore `withdrawn` |
-| `resolve_stale(mandate_id, request_id, transferred)` | guardian only | Pending older than `STALE_BLOCKS` (200); also on Revoked mandates |
+| `resolve_stale(mandate_id, request_id, transferred)` | guardian only | Pending older than `STALE_BLOCKS` (200); requires `transferred=true` (`transferred=false` rejected with `STALE_REFUND_UNPROVABLE` to close F4); also on Revoked mandates |
 | `get_mandate`, `get_pending`, `get_stats`, `get_approval(hash_hex)`, `intent_hash(...)` | anyone | views |
 
 The agent can call exactly one state-changing method: `request_payment`.
@@ -80,7 +80,7 @@ Every `data[0]` has `mandate_id`, `recipient`, `amount` (decimal string), as the
 
 ## Gas assumptions (PRD 3.6, measured on testnet)
 
-`request_payment` requires prepaid gas >= 60 Tgas. `ft_transfer` gets a static 15 Tgas and the callback a static 15 Tgas, both with unused-gas weight 0. A valid payment burns about 7.3 Tgas in total. If the callback runs out of gas the transfer still lands while `reserved` and `Pending` stay stuck: that is what K2 `resolve_stale` is for. `ft_transfer` (never `ft_transfer_call`) with 1 yocto from the contract's own balance.
+`request_payment` requires prepaid gas >= 60 Tgas. `ft_transfer` gets a static 15 Tgas and the callback a static 15 Tgas, both with unused-gas weight 0. A valid payment burns about 7.3 Tgas in total. If the callback runs out of gas the transfer still lands while `reserved` and `Pending` stay stuck: that is what K2 `resolve_stale` is for (`transferred=true` settles conservatively; `transferred=false` is rejected as `STALE_REFUND_UNPROVABLE` to eliminate F4 cross-mandate theft). `ft_transfer` (never `ft_transfer_call`) with 1 yocto from the contract's own balance.
 
 ## Storage estimate (computed, not measured on chain)
 

@@ -2,7 +2,7 @@
 
 > Disposable spending envelopes and cryptographically enforced mandates for autonomous AI agents on NEAR Protocol.
 
-> **Status:** work in progress during the NEAR Hackathon window. The project was renamed from *Amanat* to **Scrip** on 2 Nov 2026 (crate `scrip`, folders `contracts/scrip`, `contracts/scrip_naive`). Recorded files in `results/` keep the names used when they were produced. Numbers marked TBD are not final.
+> **Status:** work in progress during the NEAR Hackathon window. The project was renamed from *Scrip* to **Scrip** on 2 Nov 2026 (crate `scrip`, folders `contracts/scrip`, `contracts/scrip_naive`). Recorded files in `results/` keep the names used when they were produced. Numbers marked TBD are not final.
 
 ## Problem & Solution
 
@@ -109,7 +109,7 @@ Claims in this repository are backed by deterministic test suites and execution 
 | **Local Pin & History Storage** | Contract code pins (`codePin`) and prior interaction logs are stored locally (`results/guard-demo/`) per client instance, not synchronized via a distributed network. |
 | **Shared NEP-141 Balance (K-3)** | All mandates on a single contract deployment share the contract's NEP-141 token pool. Isolation relies on contract bookkeeping. Mitigation: deploy one contract per tenant. |
 | **Contract Immutability** | The contract contains no `migrate` function and its full-access key was burnt upon initialization (ADR-002). Upgrades require deploying a new contract and withdrawing funds. |
-| **Stuck Callback Dependency** | Clearing an externally stalled token reservation requires the guardian key to invoke `resolve_stale` after `STALE_BLOCKS` (approx. 200 blocks). |
+| **Stuck Callback (residual)** | A payment callback is designed never to be lost: measured callback gas is about 1.8 to 2.1 Tgas against 15 Tgas pinned (a margin of 7x or more, `f45_callback_gas_margin_settle_refund_and_withdraw`). If it were ever lost anyway, only the guardian can settle the reservation, with `resolve_stale(..., transferred=true)` after `STALE_BLOCKS` (approx. 200 blocks). A claim that the transfer did NOT land (`transferred=false`) is rejected with `STALE_REFUND_UNPROVABLE`, because it cannot be verified on-chain; that amount stays locked inside its own mandate and can never affect another mandate. A lost guardian key leaves such an amount locked. See `contracts/scrip/F45_RESOLUTION.md`. |
 | **No External Third-Party Audit** | The codebase has undergone extensive unit, property, and mutation testing, but has not received a formal review from an independent security audit firm. |
 
 ## Repository Structure

@@ -1626,8 +1626,10 @@ pub(crate) fn build_category_10_cases() -> Vec<TestCaseDef> {
             set_context(AGENT, NearToken::from_yoctonear(0), 100, NOW, 100);
             let _ = c.request_payment(id, acc(SHOP), U128(25), 1074);
             set_context(GUARDIAN, NearToken::from_yoctonear(0), 100, NOW, 350);
-            // First resolution succeeds
-            c.resolve_stale(id, 1, false);
+            // First resolution succeeds. F45: only `transferred=true` is accepted now; `false`
+            // is rejected STALE_REFUND_UNPROVABLE (see KAT-A-10 stale-refund cases). The intent
+            // of this case (the SECOND call must fail NO_SUCH_PENDING) is unchanged.
+            c.resolve_stale(id, 1, true);
             let snap = take_snapshot(&c, id);
             // Second call with same request_id must fail
             let res = catch_unwind(AssertUnwindSafe(|| {
