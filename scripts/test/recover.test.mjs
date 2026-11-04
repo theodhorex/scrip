@@ -32,3 +32,21 @@ test('buildPlan sweeps balances, skips gone/foreign/duplicate accounts', () => {
   assert.deepEqual(p.actions.map((a) => [a.id, a.sweep]), [['a.funder.testnet', 500000n], ['b.funder.testnet', 0n]]);
   assert.deepEqual(p.skipped.map((s) => s.reason), ['already gone', 'not a sub-account of the funder', 'duplicate']);
 });
+
+import { isAccountMissingError, isTransientRpcError, withRpcRetry } from '../recover.mjs';
+test('recover: only an explicit missing-account error means "gone"; rate limits and network errors do not', () => {
+  assert.equal(isAccountMissingError({ type: 'AccountDoesNotExist' }), true);
+  assert.equal(isAccountMissingError(new Error('Account x.testnet does not exist at block height 5')), true);
+  assert.equal(isAccountMissingError(new Error('{"error":{"code":-429,"message":"Rate limits exceeded"}}')), false);
+  assert.equal(isAccountMissingError(new Error('fetch failed')), false);
+});
+test('recover: transient errors are retried, other errors are thrown at once', async () => {
+  assert.equal(isTransientRpcError(new Error('Rate limits exceeded 429')), true);
+  assert.equal(isTransientRpcError(new Error('UNAUTHORIZED')), false);
+  let n = 0;
+  const v = await withRpcRetry(async () => { n++; if (n < 3) throw new Error('429 rate limit'); return 'ok'; }, { sleep: async () => {} });
+  assert.equal(v, 'ok'); assert.equal(n, 3);
+  let m = 0;
+  await assert.rejects(withRpcRetry(async () => { m++; throw new Error('UNAUTHORIZED'); }, { sleep: async () => {} }));
+  assert.equal(m, 1);
+});

@@ -15,6 +15,29 @@ const USDC = '3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af';
 
 // ---- pure selection logic (unit tested) ----
 
+
+/** True only when the RPC error says the account does not exist. Rate limits and network errors are NOT "gone". */
+export function isAccountMissingError(e) {
+  const text = [e?.type, e?.name, e?.code, e?.message, e?.cause?.message].filter(Boolean).join(' ');
+  return /UNKNOWN_ACCOUNT|AccountDoesNotExist|does not exist|doesn'?t exist/i.test(text);
+}
+
+/** True for transient RPC failures worth retrying (429, 5xx, network). */
+export function isTransientRpcError(e) {
+  const text = [e?.message, e?.cause?.message].filter(Boolean).join(' ');
+  return /429|rate limit|fetch failed|ECONN|ETIMEDOUT|timeout|502|503|504|socket/i.test(text);
+}
+
+/** Retries a transient failure with a growing pause; any other error is thrown at once. */
+export async function withRpcRetry(fn, { tries = 8, baseMs = 1500, sleep = (ms) => new Promise((r) => setTimeout(r, ms)) } = {}) {
+  for (let i = 0; ; i++) {
+    try { return await fn(); } catch (e) {
+      if (i >= tries || !isTransientRpcError(e)) throw e;
+      await sleep(baseMs * (i + 1));
+    }
+  }
+}
+
 /** Parse a recovery file body; returns [{id,key}] with only well-formed entries. */
 export function parseRecovery(text) {
   let j;
@@ -62,14 +85,20 @@ async function main() {
 
   const { JsonRpcProvider, Account, KeyPair, KeyPairSigner } = await import('near-api-js');
   const provider = new JsonRpcProvider({ url: RPC });
-  const ftBal = async (id) => {
-    try { return BigInt(await provider.callFunction({ contractId: USDC, method: 'ft_balance_of', args: { account_id: id } }) || '0'); }
-    catch { return 0n; }
-  };
+  // A read that fails for any reason other than "account does not exist" aborts: guessing 0 USDC or "gone"
+  // could delete an account that still holds funds.
+  const ftBal = (id) => withRpcRetry(async () => BigInt(await provider.callFunction({ contractId: USDC, method: 'ft_balance_of', args: { account_id: id } }) || '0'));
   const state = {};
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   for (const e of entries) {
-    try { await provider.viewAccount({ accountId: e.id }); state[e.id] = { exists: true, usdc: await ftBal(e.id) }; }
-    catch { state[e.id] = { exists: false, usdc: 0n }; }
+    try {
+      await withRpcRetry(() => provider.viewAccount({ accountId: e.id }));
+      state[e.id] = { exists: true, usdc: await ftBal(e.id) };
+    } catch (err) {
+      if (!isAccountMissingError(err)) throw new Error(`cannot read state of ${e.id}: ${String(err.message ?? err).slice(0, 120)}`);
+      state[e.id] = { exists: false, usdc: 0n };
+    }
+    await sleep(400);
   }
   const plan = buildPlan(entries, FUNDER_ID, state);
   for (const s of plan.skipped) console.log('skip  ', s.id, '-', s.reason);
@@ -81,10 +110,11 @@ async function main() {
   for (const a of plan.actions) {
     const acct = new Account(a.id, provider, new KeyPairSigner(KeyPair.fromString(a.key)));
     try {
-      if (a.sweep > 0n) await acct.callFunctionRaw({ contractId: USDC, methodName: 'ft_transfer', args: { receiver_id: FUNDER_ID, amount: a.sweep.toString() }, gas: T(50), deposit: 1n });
+      if (a.sweep > 0n) await withRpcRetry(() => acct.callFunctionRaw({ contractId: USDC, methodName: 'ft_transfer', args: { receiver_id: FUNDER_ID, amount: a.sweep.toString() }, gas: T(50), deposit: 1n }));
     } catch (e) { clean = false; console.error('sweep failed', a.id, String(e.message).slice(0, 120)); continue; }
-    try { await acct.deleteAccount(FUNDER_ID); console.log('deleted', a.id); }
+    try { await withRpcRetry(() => acct.deleteAccount(FUNDER_ID)); console.log('deleted', a.id); }
     catch (e) { clean = false; console.error('delete failed', a.id, String(e.message).slice(0, 120)); }
+    await sleep(500);
   }
   if (clean) for (const f of files) unlinkSync(join(HERE, f));
   else console.error('NOT CLEAN: recovery files kept');
