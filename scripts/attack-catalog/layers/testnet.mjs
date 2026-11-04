@@ -241,23 +241,23 @@ export function createMockTestnetEngine(funderId) {
       if (methodName === 'request_payment') {
         const m = mandates.get(Number(args.mandate_id));
         if (m && senderId && senderId !== m.agent) {
-          return { error: 'UNAUTHORIZED_AGENT', transaction: { hash }, status: { Failure: 'AMANAT_ERR:UNAUTHORIZED_AGENT' } };
+          return { error: 'UNAUTHORIZED_AGENT', transaction: { hash }, status: { Failure: 'SCRIP_ERR:UNAUTHORIZED_AGENT' } };
         }
       }
       if (methodName === 'tighten') {
         const m = mandates.get(Number(args.mandate_id));
         if (m && senderId && senderId !== m.owner && senderId !== m.guardian) {
-          return { error: 'UNAUTHORIZED', transaction: { hash }, status: { Failure: 'AMANAT_ERR:UNAUTHORIZED' } };
+          return { error: 'UNAUTHORIZED', transaction: { hash }, status: { Failure: 'SCRIP_ERR:UNAUTHORIZED' } };
         }
         if (m && m.status !== 'Active') {
-          return { error: 'NOT_ACTIVE', transaction: { hash }, status: { Failure: 'AMANAT_ERR:NOT_ACTIVE' } };
+          return { error: 'NOT_ACTIVE', transaction: { hash }, status: { Failure: 'SCRIP_ERR:NOT_ACTIVE' } };
         }
         if (m && args.change?.ApprovalThreshold !== undefined) {
           m.approval_threshold = BigInt(args.change.ApprovalThreshold);
         }
         if (m && args.change?.Budget !== undefined) {
           const x = BigInt(args.change.Budget);
-          const fail = (code) => ({ error: code, transaction: { hash }, status: { Failure: `AMANAT_ERR:${code}` } });
+          const fail = (code) => ({ error: code, transaction: { hash }, status: { Failure: `SCRIP_ERR:${code}` } });
           if (x >= m.budget) return fail('NOT_STRICTER');
           if (x < m.spent + m.reserved) return fail('BUDGET_BELOW_COMMITTED');
           if (x < m.per_payment_cap) return fail('BUDGET_BELOW_CAP');
@@ -268,13 +268,13 @@ export function createMockTestnetEngine(funderId) {
       if (methodName === 'loosen') {
         const m = mandates.get(Number(args.mandate_id));
         if (m && senderId && senderId !== m.guardian) {
-          return { error: 'UNAUTHORIZED_GUARDIAN', transaction: { hash }, status: { Failure: 'AMANAT_ERR:UNAUTHORIZED_GUARDIAN' } };
+          return { error: 'UNAUTHORIZED_GUARDIAN', transaction: { hash }, status: { Failure: 'SCRIP_ERR:UNAUTHORIZED_GUARDIAN' } };
         }
         if (m && m.status !== 'Active') {
-          return { error: 'NOT_ACTIVE', transaction: { hash }, status: { Failure: 'AMANAT_ERR:NOT_ACTIVE' } };
+          return { error: 'NOT_ACTIVE', transaction: { hash }, status: { Failure: 'SCRIP_ERR:NOT_ACTIVE' } };
         }
         // Mirror the check order of lib.rs loosen (guarded constants: MAX_RECIPIENTS = 16).
-        const fail = (code) => ({ error: code, transaction: { hash }, status: { Failure: `AMANAT_ERR:${code}` } });
+        const fail = (code) => ({ error: code, transaction: { hash }, status: { Failure: `SCRIP_ERR:${code}` } });
         const change = args.change || {};
         if (m) {
           if (change.Budget !== undefined) {
@@ -309,7 +309,7 @@ export function createMockTestnetEngine(funderId) {
       }
       if (methodName === 'resolve_stale') {
         const m = mandates.get(Number(args.mandate_id));
-        const fail = (code) => ({ error: code, transaction: { hash }, status: { Failure: `AMANAT_ERR:${code}` } });
+        const fail = (code) => ({ error: code, transaction: { hash }, status: { Failure: `SCRIP_ERR:${code}` } });
         if (m && senderId && senderId !== m.guardian) return fail('UNAUTHORIZED_GUARDIAN');
         const key = `${Number(args.mandate_id)}:${Number(args.request_id)}`;
         const p = pending.get(key);
@@ -364,10 +364,10 @@ export function createMockTestnetEngine(funderId) {
       if (methodName === 'revoke') {
         const m = mandates.get(Number(args.mandate_id));
         if (m && senderId && senderId !== m.owner && senderId !== m.guardian) {
-          return { error: 'UNAUTHORIZED', transaction: { hash }, status: { Failure: 'AMANAT_ERR:UNAUTHORIZED' } };
+          return { error: 'UNAUTHORIZED', transaction: { hash }, status: { Failure: 'SCRIP_ERR:UNAUTHORIZED' } };
         }
         if (m && m.status !== 'Active') {
-          return { error: 'NOT_ACTIVE', transaction: { hash }, status: { Failure: 'AMANAT_ERR:NOT_ACTIVE' } };
+          return { error: 'NOT_ACTIVE', transaction: { hash }, status: { Failure: 'SCRIP_ERR:NOT_ACTIVE' } };
         }
         if (m) m.status = 'Revoked';
         return { transaction: { hash }, status: { SuccessValue: '' } };
@@ -375,10 +375,10 @@ export function createMockTestnetEngine(funderId) {
       if (methodName === 'withdraw') {
         const m = mandates.get(Number(args.mandate_id));
         if (m && senderId && senderId !== m.owner) {
-          return { error: 'UNAUTHORIZED_OWNER', transaction: { hash }, status: { Failure: 'AMANAT_ERR:UNAUTHORIZED_OWNER' } };
+          return { error: 'UNAUTHORIZED_OWNER', transaction: { hash }, status: { Failure: 'SCRIP_ERR:UNAUTHORIZED_OWNER' } };
         }
         if (m && m.status !== 'Revoked') {
-          return { error: 'MANDATE_STILL_ACTIVE', transaction: { hash }, status: { Failure: 'AMANAT_ERR:MANDATE_STILL_ACTIVE' } };
+          return { error: 'MANDATE_STILL_ACTIVE', transaction: { hash }, status: { Failure: 'SCRIP_ERR:MANDATE_STILL_ACTIVE' } };
         }
         const amount = BigInt(args.amount);
         if (m) {
@@ -1067,13 +1067,13 @@ export function inferVmRejection({ method, deposit = 0n, callerIsContractItself 
     return 'TX_FAILED';
   }
 
-  // #[private] callback methods defined in contracts/amanat/src/lib.rs (lines 590, 793)
+  // #[private] callback methods defined in contracts/scrip/src/lib.rs (lines 590, 793)
   const PRIVATE_METHODS = new Set(['on_payment_done', 'on_withdraw_done']);
   if (PRIVATE_METHODS.has(method) && !callerIsContractItself) {
     return 'METHOD_IS_PRIVATE';
   }
 
-  // Non-payable methods defined in contracts/amanat/src/lib.rs (without #[payable])
+  // Non-payable methods defined in contracts/scrip/src/lib.rs (without #[payable])
   // #[payable] is present ONLY on create_mandate (lib.rs:385) and approve_intent (lib.rs:620).
   const NON_PAYABLE_METHODS = new Set([
     'request_payment',
@@ -1234,7 +1234,7 @@ export function getCallerAccount(session, callerName, agentIdx = 0) {
 
 /**
  * Classifies a transaction result from near-api-js callFunctionRaw or RPC response.
- * Detects contract events, AMANAT_ERR in logs, or transaction Failure.
+ * Detects contract events, SCRIP_ERR in logs, or transaction Failure.
  */
 export function classifyTxResult(txRes, defaultLabel = 'INERT') {
   if (!txRes) {
@@ -1254,15 +1254,15 @@ export function classifyTxResult(txRes, defaultLabel = 'INERT') {
     return { label: 'BLOCKED', code: String(code), txHash, note: `Contract rejected: ${code}` };
   }
 
-  const errLog = logs.find((l) => typeof l === 'string' && l.startsWith('AMANAT_ERR:'));
+  const errLog = logs.find((l) => typeof l === 'string' && l.startsWith('SCRIP_ERR:'));
   if (errLog) {
-    const code = errLog.slice('AMANAT_ERR:'.length).trim();
-    return { label: 'BLOCKED', code, txHash, note: `AMANAT_ERR: ${code}` };
+    const code = errLog.slice('SCRIP_ERR:'.length).trim();
+    return { label: 'BLOCKED', code, txHash, note: `SCRIP_ERR: ${code}` };
   }
 
   if (txRes.status?.Failure) {
     const failureStr = JSON.stringify(txRes.status.Failure);
-    const match = failureStr.match(/AMANAT_ERR:([A-Za-z0-9_]+)/) || failureStr.match(/ExecutionError.*?([A-Z_]{4,})/);
+    const match = failureStr.match(/SCRIP_ERR:([A-Za-z0-9_]+)/) || failureStr.match(/ExecutionError.*?([A-Z_]{4,})/);
     return { label: 'BLOCKED', code: match ? match[1] : 'CALL_FAILED', txHash, note: `Failure: ${failureStr}` };
   }
 
@@ -1271,14 +1271,14 @@ export function classifyTxResult(txRes, defaultLabel = 'INERT') {
 
 /**
  * Classifies a transaction error thrown by near-api-js callFunctionRaw.
- * Extracts AMANAT_ERR from error messages, attached transactionResult logs, or on-chain tx lookup.
+ * Extracts SCRIP_ERR from error messages, attached transactionResult logs, or on-chain tx lookup.
  */
 export async function classifyTxError(err, session = null, signerAccountId = null, callContext = {}) {
   const msg = err?.message || '';
   const failedRes = err?.transactionResult ?? null;
   const failedHash = failedRes?.transaction_outcome?.id ?? err?.context?.transactionHash ?? err?.transactionHash ?? null;
 
-  // near-sdk method guards are NOT AMANAT_ERR codes: a non-payable method rejects any
+  // near-sdk method guards are NOT SCRIP_ERR codes: a non-payable method rejects any
   // attached deposit and a #[private] method rejects external callers. The contract marks
   // these methods with the macros (lib.rs:489/589/657/701/743/792/818) but the panic text
   // comes from near-sdk (near-sdk-macros-5.30 impl_item_method_info.rs:156/187).
@@ -1314,20 +1314,20 @@ export async function classifyTxError(err, session = null, signerAccountId = nul
     }
   }
 
-  let match = msg.match(/AMANAT_ERR:([A-Za-z0-9_]+)/) || msg.match(/Smart contract panicked:\s*([A-Za-z0-9_]+)/);
+  let match = msg.match(/SCRIP_ERR:([A-Za-z0-9_]+)/) || msg.match(/Smart contract panicked:\s*([A-Za-z0-9_]+)/);
 
   if (!match && failedRes) {
     const inline = failedRes.receipts_outcome?.flatMap((o) => o?.outcome?.logs ?? []) ?? [];
-    const l = inline.find((x) => typeof x === 'string' && x.startsWith('AMANAT_ERR:'));
-    if (l) match = [null, l.slice('AMANAT_ERR:'.length).trim()];
+    const l = inline.find((x) => typeof x === 'string' && x.startsWith('SCRIP_ERR:'));
+    if (l) match = [null, l.slice('SCRIP_ERR:'.length).trim()];
   }
 
   if (!match && failedHash && session?.provider && signerAccountId) {
     try {
       const failedTx = await withRetry(() => session.provider.sendJsonRpc('tx', [failedHash, signerAccountId]));
       const failedLogs = failedTx?.receipts_outcome?.flatMap((o) => o.outcome.logs) || [];
-      const l = failedLogs.find((x) => typeof x === 'string' && x.startsWith('AMANAT_ERR:'));
-      if (l) match = [null, l.slice('AMANAT_ERR:'.length).trim()];
+      const l = failedLogs.find((x) => typeof x === 'string' && x.startsWith('SCRIP_ERR:'));
+      if (l) match = [null, l.slice('SCRIP_ERR:'.length).trim()];
     } catch { /* keep generic fallback below */ }
   }
 
@@ -1465,7 +1465,7 @@ export async function prepareCaseState(c, session) {
   }
 
   // 1. TOO_MANY_APPROVALS (Family 7)
-  // MAX_APPROVALS_PER_MANDATE is 512 (contracts/amanat/src/lib.rs:45).
+  // MAX_APPROVALS_PER_MANDATE is 512 (contracts/scrip/src/lib.rs:45).
   // Creating 512 prior approvals on testnet is prohibitively slow and expensive; skip with reason.
   if (expectedCode === 'TOO_MANY_APPROVALS') {
     return {
@@ -1475,7 +1475,7 @@ export async function prepareCaseState(c, session) {
   }
 
   // 2. ALREADY_APPROVED via request_payment (Family 6)
-  // Contracts/amanat/src/lib.rs:632 shows ALREADY_APPROVED is only generated by approve_intent.
+  // Contracts/scrip/src/lib.rs:632 shows ALREADY_APPROVED is only generated by approve_intent.
   // request_payment cannot return ALREADY_APPROVED (RejectCode has only ApprovalUsed/ApprovalExpired/NeedsApproval).
   if (expectedCode === 'ALREADY_APPROVED' && method === 'request_payment') {
     return {
@@ -2002,7 +2002,7 @@ export async function executeLayerE(c, session) {
         senderId: gId,
       });
       if (res.error) {
-        actual = { label: 'BLOCKED', code: res.error, txHash, note: `Mock AMANAT_ERR: ${res.error}` };
+        actual = { label: 'BLOCKED', code: res.error, txHash, note: `Mock SCRIP_ERR: ${res.error}` };
       } else {
         actual = { label: 'INERT', txHash, note: 'Mock approve_intent accepted' };
       }
@@ -2096,7 +2096,7 @@ export async function executeLayerE(c, session) {
         senderId: gId,
       });
       actual = res.error
-        ? { label: 'BLOCKED', code: res.error, txHash, note: `Mock AMANAT_ERR: ${res.error}` }
+        ? { label: 'BLOCKED', code: res.error, txHash, note: `Mock SCRIP_ERR: ${res.error}` }
         : { label: 'INERT', code: null, txHash, note: `Mock loosen accepted for ${c.id}` };
     } else if (p.method === 'resolve_stale' && (p.pendingRequest !== undefined || p.isStale)) {
       const gId = session.guardianKeyPairs[p.agentIndex ?? 0]?.id;
@@ -2108,7 +2108,7 @@ export async function executeLayerE(c, session) {
         senderId: gId,
       });
       actual = res.error
-        ? { label: 'BLOCKED', code: res.error, txHash, note: `Mock AMANAT_ERR: ${res.error}` }
+        ? { label: 'BLOCKED', code: res.error, txHash, note: `Mock SCRIP_ERR: ${res.error}` }
         : { label: 'INERT', code: null, txHash, note: `Mock resolve_stale accepted for ${c.id}` };
     } else {
       actual = {

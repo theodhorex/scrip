@@ -12,7 +12,7 @@ import { loadPolicy } from '../../../facilitator/src/policy.mjs';
 import { generateCategory6Cases, generateCategory7Cases } from '../cases/layer_e/delegate_gas.mjs';
 import { generateCategory1Cases, generateCategory11Cases } from '../cases/layer_e/token_recipient.mjs';
 
-const CONTRACT = 'amanat-h6.testnet';
+const CONTRACT = 'scrip-h6.testnet';
 const AGENT = 'agent-h6.testnet';
 const T = 1_000_000_000_000n;
 const policy = loadPolicy({

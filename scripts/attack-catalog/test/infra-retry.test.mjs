@@ -8,7 +8,7 @@ test('isInfraError recognises rate limits and gateway errors only', () => {
   assert.equal(isInfraError('HTTP 502'), true);
   assert.equal(isInfraError('fetch failed'), true);
   assert.equal(isInfraError('OVER_BUDGET'), false);
-  assert.equal(isInfraError('AMANAT_ERR: UNAUTHORIZED_AGENT'), false);
+  assert.equal(isInfraError('SCRIP_ERR: UNAUTHORIZED_AGENT'), false);
 });
 
 test('withRetry retries infra errors then succeeds', async () => {

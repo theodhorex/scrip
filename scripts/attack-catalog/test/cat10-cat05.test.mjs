@@ -20,15 +20,15 @@ import {
 import { generateCategory10Cases } from '../cases/layer_e/approval_lifecycle.mjs';
 import { generateCategory5Cases } from '../cases/layer_e/access_identity.mjs';
 
-test('owner method mapping: classifyTxResult and classifyTxError detect AMANAT_ERR', async () => {
+test('owner method mapping: classifyTxResult and classifyTxError detect SCRIP_ERR', async () => {
   assert.equal(typeof classifyTxResult, 'function');
   assert.equal(typeof classifyTxError, 'function');
 
-  // Test classifyTxResult with AMANAT_ERR in logs
+  // Test classifyTxResult with SCRIP_ERR in logs
   const mockResLog = {
     transaction: { hash: 'TX_TEST_1' },
     receipts_outcome: [
-      { outcome: { logs: ['AMANAT_ERR: NOT_ACTIVE'] } },
+      { outcome: { logs: ['SCRIP_ERR: NOT_ACTIVE'] } },
     ],
   };
   const c1 = classifyTxResult(mockResLog);
@@ -48,7 +48,7 @@ test('owner method mapping: classifyTxResult and classifyTxError detect AMANAT_E
   assert.equal(c2.code, 'NOT_ACTIVE');
 
   // Test classifyTxError with panic message
-  const mockErrPanic = new Error('Smart contract panicked: AMANAT_ERR:UNAUTHORIZED_AGENT');
+  const mockErrPanic = new Error('Smart contract panicked: SCRIP_ERR:UNAUTHORIZED_AGENT');
   const c3 = await classifyTxError(mockErrPanic);
   assert.equal(c3.label, 'BLOCKED');
   assert.equal(c3.code, 'UNAUTHORIZED_AGENT');
@@ -57,7 +57,7 @@ test('owner method mapping: classifyTxResult and classifyTxError detect AMANAT_E
   const mockErrTrap = new Error('WebAssembly trap');
   mockErrTrap.transactionResult = {
     transaction_outcome: { id: 'TX_FAILED_HASH' },
-    receipts_outcome: [{ outcome: { logs: ['AMANAT_ERR: MANDATE_STILL_ACTIVE'] } }],
+    receipts_outcome: [{ outcome: { logs: ['SCRIP_ERR: MANDATE_STILL_ACTIVE'] } }],
   };
   const c4 = await classifyTxError(mockErrTrap);
   assert.equal(c4.label, 'BLOCKED');

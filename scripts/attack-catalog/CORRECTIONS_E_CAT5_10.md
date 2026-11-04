@@ -1,7 +1,7 @@
-# CORRECTIONS_E_CAT5_10 — expected.code kategori 10 & 5 vs `contracts/amanat/src/lib.rs`
+# CORRECTIONS_E_CAT5_10 — expected.code kategori 10 & 5 vs `contracts/scrip/src/lib.rs`
 
-Sumber kebenaran: `contracts/amanat/src/lib.rs` (urutan cek tiap method) dan tabel kode di
-`contracts/amanat/README.md` (baris 60-63, 48). Hanya `expected.code` yang diubah; label tidak
+Sumber kebenaran: `contracts/scrip/src/lib.rs` (urutan cek tiap method) dan tabel kode di
+`contracts/scrip/README.md` (baris 60-63, 48). Hanya `expected.code` yang diubah; label tidak
 pernah diubah. Semua baris di bawah berlabel `BLOCKED` sebelum dan sesudah koreksi.
 
 ## Koreksi
@@ -33,18 +33,18 @@ Seluruh kasus lain di kedua file sudah cocok dengan urutan cek lib.rs, termasuk:
 `APPROVAL_NOT_IN_FUTURE` (634), `NEEDS_APPROVAL`/`APPROVAL_USED`/`APPROVAL_EXPIRED` (541-546),
 `RECIPIENT_NOT_ALLOWED` (514-515).
 
-## Kode yang bukan `AMANAT_ERR` (dari near-sdk / VM)
+## Kode yang bukan `SCRIP_ERR` (dari near-sdk / VM)
 
 | kasus | kode | asal kode | tindakan |
 | --- | --- | --- | --- |
-| KAT-E-05-29..36 (`on_payment_done`/`on_withdraw_done` eksternal) | `METHOD_IS_PRIVATE` | bukan `AMANAT_ERR`; macro `#[private]` (lib.rs:589, 792) memanggil `panic_str("Method <name> is private")` dari near-sdk-macros-5.30 (`impl_item_method_info.rs:187`) | `classifyTxError` sekarang memetakan teks "is private" ke `METHOD_IS_PRIVATE` (sebelumnya regex generik menangkap "Method") |
-| KAT-E-05-49..68 (deposit pada method non-payable) | `METHOD_NOT_PAYABLE` | bukan `AMANAT_ERR`; method tanpa `#[payable]` (lib.rs:489, 657, 701, 743, 818) ditolak near-sdk dengan `panic_str("Method <name> doesn't accept deposit")` (`impl_item_method_info.rs:156`) | `classifyTxError` sekarang memetakan teks "doesn't accept deposit" ke `METHOD_NOT_PAYABLE` |
+| KAT-E-05-29..36 (`on_payment_done`/`on_withdraw_done` eksternal) | `METHOD_IS_PRIVATE` | bukan `SCRIP_ERR`; macro `#[private]` (lib.rs:589, 792) memanggil `panic_str("Method <name> is private")` dari near-sdk-macros-5.30 (`impl_item_method_info.rs:187`) | `classifyTxError` sekarang memetakan teks "is private" ke `METHOD_IS_PRIVATE` (sebelumnya regex generik menangkap "Method") |
+| KAT-E-05-49..68 (deposit pada method non-payable) | `METHOD_NOT_PAYABLE` | bukan `SCRIP_ERR`; method tanpa `#[payable]` (lib.rs:489, 657, 701, 743, 818) ditolak near-sdk dengan `panic_str("Method <name> doesn't accept deposit")` (`impl_item_method_info.rs:156`) | `classifyTxError` sekarang memetakan teks "doesn't accept deposit" ke `METHOD_NOT_PAYABLE` |
 
 Catatan & Aturan Penurunan (H4):
 Build wasm release (strip=true, opt-level="z") mengubah panic internal near-sdk (method non-payable & private callback) menjadi `WebAssembly trap: An unreachable opcode was executed` tanpa pesan panic utf8 (lihat `.agy/results/D1d-tighten-and-last-four.report.md`).
 Untuk mengklasifikasikan kegagalan trap ini secara jujur tanpa melonggarkan penilaian dan tanpa membaca `expected`, ditambahkan fungsi klasifikasi murni `inferVmRejection({ method, deposit, callerIsContractItself, txFailedWithTrap })`:
 1. `METHOD_IS_PRIVATE`: hanya bila method adalah `on_payment_done` atau `on_withdraw_done`, pemanggil bukan akun kontrak itu sendiri (`callerIsContractItself === false`), dan tx gagal dengan trap.
-2. `METHOD_NOT_PAYABLE`: hanya bila method termasuk set non-payable dari `contracts/amanat/src/lib.rs` (`request_payment`, `withdraw`, `tighten`, `loosen`, `revoke`, `resolve_stale`; hanya `create_mandate` dan `approve_intent` yang `#[payable]`), deposit terlampir > 0, dan tx gagal dengan trap.
+2. `METHOD_NOT_PAYABLE`: hanya bila method termasuk set non-payable dari `contracts/scrip/src/lib.rs` (`request_payment`, `withdraw`, `tighten`, `loosen`, `revoke`, `resolve_stale`; hanya `create_mandate` dan `approve_intent` yang `#[payable]`), deposit terlampir > 0, dan tx gagal dengan trap.
 3. Di luar kondisi tersebut, hasil tetap `TX_FAILED`.
 Bukti keadaan: setelah kasus dieksekusi, snapshot mandate (`spent`, `reserved`, status) dan saldo merchant diverifikasi tidak bermutasi (`detectMandateBreach`), membuktikan penolakan tuntas. Catatan kasus menyertakan: "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic".
 
@@ -63,7 +63,7 @@ Keterbatasan penurunan ini:
 
 ## Dicakup di luar testnet
 
-`Pending` stale tidak bisa ditahan di testnet, jadi kedua kasus ini tidak diubah dan di lapis E tetap `SKIPPED`. Keduanya tidak dihitung lulus. Perilakunya dibuktikan oleh tes unit Rust di `contracts/amanat/src/tests.rs`:
+`Pending` stale tidak bisa ditahan di testnet, jadi kedua kasus ini tidak diubah dan di lapis E tetap `SKIPPED`. Keduanya tidak dihitung lulus. Perilakunya dibuktikan oleh tes unit Rust di `contracts/scrip/src/tests.rs`:
 
 | kasus | tes Rust | yang dibuktikan |
 | --- | --- | --- |

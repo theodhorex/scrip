@@ -74,8 +74,8 @@ Perbaikan:
 
 ## Dicakup di luar testnet
 
-Cabang `ft_on_transfer` di (ii) dibuktikan oleh tes Rust: `contracts/amanat/src/tests.rs` bagian `// ---------- ft_on_transfer ----------`
-(baris 331 dst., termasuk msg bukan JSON baris 371) dan `contracts/amanat/src/attack_tests4.rs` (KAT-A-11-01..66: token palsu 66, sender
+Cabang `ft_on_transfer` di (ii) dibuktikan oleh tes Rust: `contracts/scrip/src/tests.rs` bagian `// ---------- ft_on_transfer ----------`
+(baris 331 dst., termasuk msg bukan JSON baris 371) dan `contracts/scrip/src/attack_tests4.rs` (KAT-A-11-01..66: token palsu 66, sender
 bukan owner 106, mandat tak ada 146, msg rusak 182, amount nol 229, mandat revoked 272; evaluator `evaluate_ft_on_transfer_inert` di
 `attack_tests.rs:280` menuntut refund penuh dan state tak berubah). Ini bukti tidak langsung; tidak ada klaim lulus lapis E.
 
