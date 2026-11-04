@@ -642,3 +642,36 @@ test('manual mutation proof: skipping the H3 state prep changes the four outcome
     await session.closeSession();
   }
 });
+
+test('state preparation: network error (fetch failed) during prep aborts execution and yields SKIPPED/INFRA_ERROR', async () => {
+  const session = await createTestnetSession({ dry: true, mandatesCount: 2 });
+  try {
+    const c = {
+      id: 'KAT-E-10-02',
+      category: 10,
+      layer: 'E',
+      title: 'Payment request on revoked mandate',
+      params: {
+        mandate_id: 1,
+        method: 'request_payment',
+        args: { mandate_id: 1, recipient: 'merchant.testnet', amount: '1000', nonce: 1 },
+      },
+      expected: {
+        label: 'BLOCKED',
+        code: 'NOT_ACTIVE',
+      },
+    };
+
+    // Simulate network failure (fetch failed) during state prep
+    session.viewMandate = async () => {
+      throw new TypeError('fetch failed');
+    };
+
+    const actual = await executeLayerE(c, session);
+    assert.equal(actual.label, 'SKIPPED', 'Case must NOT execute and must be SKIPPED');
+    assert.equal(actual.code, 'INFRA_ERROR', 'Code must be INFRA_ERROR');
+  } finally {
+    await session.closeSession();
+  }
+});
+

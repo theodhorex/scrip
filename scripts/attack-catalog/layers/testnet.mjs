@@ -571,6 +571,20 @@ export async function createTestnetSession(opts = {}) {
       }
     },
 
+    /** Like viewMandate but an RPC/network error propagates (never masked as null), so callers can mark INFRA_ERROR. */
+    async viewMandateStrict(id) {
+      if (dry) return mockEngine.callFunction({ contractId, method: 'get_mandate', args: { id } });
+      return provider.callFunction({ contractId, method: 'get_mandate', args: { id } });
+    },
+
+    /** Like viewFtBalance but a read error propagates instead of silently becoming 0n (used by FULL_REFUND proofs). */
+    async viewFtBalanceStrict(accountId) {
+      const res = await (dry ? mockEngine : provider).callFunction({ contractId: usdc, method: 'ft_balance_of', args: { account_id: accountId } });
+      return BigInt(res || '0');
+    },
+
+    usdcContractId: usdc,
+
     async viewFtBalance(accountId) {
       if (dry) {
         const balStr = await mockEngine.callFunction({ contractId: usdc, method: 'ft_balance_of', args: { account_id: accountId } });
@@ -1386,6 +1400,11 @@ export function getMandateIndexForCase(c, session) {
   return seq % numMandates;
 }
 
+/** Reads a mandate so that an RPC/network error throws (never null); a null would let prep skip steps silently. */
+function readMandateStrict(session, id) {
+  return (session.viewMandateStrict ?? session.viewMandate).call(session, id);
+}
+
 /** One legitimate payment through the facilitator relay, signed by the mandate's own agent function-call key. */
 async function relayLegitPayment(session, agent, mandateId, recipient, amount, customNonce) {
   const signer = new KeyPairSigner(agent.fcKey);
@@ -1445,7 +1464,7 @@ export async function prepareCaseState(c, session) {
         m.status = 'Revoked';
       }
     } else {
-      const m = await session.viewMandate(mandateId);
+      const m = await readMandateStrict(session, mandateId);
       if (m && m.status !== 'Revoked') {
         try {
           const res = await withRetry(() => session.funderAcc.callFunctionRaw({
@@ -1520,7 +1539,7 @@ export async function prepareCaseState(c, session) {
   // making NEEDS_APPROVAL impossible; skip with reason.
   // Otherwise tighten ApprovalThreshold to amount - 1.
   if (expectedCode === 'NEEDS_APPROVAL' && method === 'request_payment') {
-    const m0 = await session.viewMandate(mandateId);
+    const m0 = await readMandateStrict(session, mandateId);
     const cap = BigInt(m0?.per_payment_cap ?? 500_000n);
     if (amount > cap) {
       return {
@@ -1555,7 +1574,7 @@ export async function prepareCaseState(c, session) {
   // Tighten threshold, guardian approve_intent, agent pays ONCE with that nonce via relay,
   // so the approval is consumed and case payment triggers APPROVAL_USED.
   if (expectedCode === 'APPROVAL_USED' || p.approvalAlreadyUsed) {
-    const m0 = await session.viewMandate(mandateId);
+    const m0 = await readMandateStrict(session, mandateId);
     const cap = BigInt(m0?.per_payment_cap ?? 500_000n);
     if (amount > cap) {
       return { ok: false, reason: `amount (${amount}) > per_payment_cap (${cap})` };
@@ -1629,7 +1648,7 @@ export async function prepareCaseState(c, session) {
   // Tighten threshold, guardian approve_intent with expiry = now + 15s (> block timestamp),
   // wait until expired (poll viewBlock or clock + 10s margin).
   if (expectedCode === 'APPROVAL_EXPIRED' || p.approvalExpired) {
-    const m0 = await session.viewMandate(mandateId);
+    const m0 = await readMandateStrict(session, mandateId);
     const cap = BigInt(m0?.per_payment_cap ?? 500_000n);
     if (amount > cap) {
       return { ok: false, reason: `amount (${amount}) > per_payment_cap (${cap})` };
@@ -1695,7 +1714,7 @@ export async function prepareCaseState(c, session) {
 
   // 7. hasValidApproval
   if (p.hasValidApproval) {
-    const m0 = await session.viewMandate(mandateId);
+    const m0 = await readMandateStrict(session, mandateId);
     const newThreshold = amount > 0n ? amount - 1n : 0n;
     const curThreshold = BigInt(m0?.approval_threshold ?? 500_000n);
     if (newThreshold < curThreshold) {
@@ -1758,7 +1777,7 @@ export async function prepareCaseState(c, session) {
   // 9. remainingBudget (existing)
   if (p.remainingBudget !== undefined) {
     const target = BigInt(p.remainingBudget);
-    const m0 = await session.viewMandate(mandateId);
+    const m0 = await readMandateStrict(session, mandateId);
     if (!m0) return { ok: false, reason: `mandate ${mandateId} not found` };
     const free = (mm) => {
       const ceil = BigInt(mm.budget) < BigInt(mm.deposited) - BigInt(mm.withdrawn) ? BigInt(mm.budget) : BigInt(mm.deposited) - BigInt(mm.withdrawn);
@@ -1786,7 +1805,7 @@ export async function prepareCaseState(c, session) {
       if (!m || BigInt(m.reserved) > 0n) return { ok: false, reason: 'prep payment did not settle in time' };
       toSpend = free(m) - target;
     }
-    const mEnd = await session.viewMandate(mandateId);
+    const mEnd = await readMandateStrict(session, mandateId);
     if (!mEnd || free(mEnd) !== target) return { ok: false, reason: `prep ended with free ${mEnd && free(mEnd)} != target ${target}` };
     return { ok: true };
   }
@@ -1795,7 +1814,7 @@ export async function prepareCaseState(c, session) {
   // budget < x <= deposited - withdrawn (lib.rs:709-712). Tighten first so the case's loosen is real.
   if (p.loosenBudgetPrep !== undefined) {
     const target = BigInt(p.loosenBudgetPrep);
-    const m0 = await session.viewMandate(mandateId);
+    const m0 = await readMandateStrict(session, mandateId);
     if (!m0) return { ok: false, reason: `mandate ${mandateId} not found` };
     const cur = BigInt(m0.budget);
     if (target > cur) return { ok: false, reason: `loosenBudgetPrep ${target} is above current budget ${cur}` };
@@ -1829,7 +1848,7 @@ export async function prepareCaseState(c, session) {
   // calls so the case's own AddRecipient is the 17th and hits TOO_MANY_RECIPIENTS (lib.rs:727).
   if (p.recipientsCount !== undefined) {
     const target = Number(p.recipientsCount);
-    const m0 = await session.viewMandate(mandateId);
+    const m0 = await readMandateStrict(session, mandateId);
     if (!m0) return { ok: false, reason: `mandate ${mandateId} not found` };
     const have = m0.recipients.length;
     if (have >= target) return { ok: true };
@@ -1969,16 +1988,37 @@ export async function executeLayerE(c, session) {
   }
 
   // Bring the mandate into the state this case is written against; if that is impossible, do not fake a verdict.
-  const prep = await prepareCaseState(c, session);
+  // A network error while preparing (or reading the baseline) is infrastructure, not a verdict: the case is NOT executed.
+  const infraSkip = (e) => ({ label: 'SKIPPED', code: 'INFRA_ERROR', txHash: null, note: `state preparation hit RPC/network error: ${String(e?.message ?? e).slice(0, 160)}; case not executed, not a verdict, rerun` });
+  let prep;
+  try {
+    prep = await prepareCaseState(c, session);
+  } catch (e) {
+    if (isInfraError(e?.message)) return infraSkip(e);
+    throw e;
+  }
   if (!prep.ok) {
     const txHash = session.isDry ? `TX_E_DRY_${c.id}_${Date.now()}` : null;
+    if (isInfraError(prep.reason)) return infraSkip({ message: prep.reason });
     return { label: 'SKIPPED', code: 'STATE_PREP_UNAVAILABLE', txHash, note: prep.reason };
   }
-  await waitForSettlement(session, mandateId);
+  try {
+    await waitForSettlement(session, mandateId);
+  } catch (e) {
+    if (isInfraError(e?.message)) return infraSkip(e);
+    throw e;
+  }
 
   // Snapshot before
-  const beforeMandate = await session.viewMandate(mandateId);
-  const beforeMerchBal = await session.viewFtBalance(targetRecipient);
+  let beforeMandate;
+  let beforeMerchBal;
+  try {
+    beforeMandate = await readMandateStrict(session, mandateId);
+    beforeMerchBal = await session.viewFtBalance(targetRecipient);
+  } catch (e) {
+    if (isInfraError(e?.message)) return infraSkip(e);
+    throw e;
+  }
   const stateBefore = beforeMandate ? {
     ...beforeMandate,
     merchantBalance: beforeMerchBal,
