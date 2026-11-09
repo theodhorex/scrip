@@ -1,0 +1,2951 @@
+[
+  {
+    "id": "KAT-D-01-01",
+    "category": 1,
+    "layer": "D",
+    "title": "request_payment amount 0 below min 1",
+    "params": {
+      "mandate_id": 1,
+      "amount": "0"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_PER_PAYMENT_CAP"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_PER_PAYMENT_CAP"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-02",
+    "category": 1,
+    "layer": "D",
+    "title": "request_payment amount 101 exceeds cap 100",
+    "params": {
+      "mandate_id": 2,
+      "amount": "101",
+      "cap": "100"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_PER_PAYMENT_CAP"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_PER_PAYMENT_CAP"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-03",
+    "category": 1,
+    "layer": "D",
+    "title": "amount 101 with guardian approval blocked by per_payment_cap 100",
+    "params": {
+      "mandate_id": 3,
+      "amount": "101",
+      "cap": "100"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_PER_PAYMENT_CAP"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_PER_PAYMENT_CAP"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-04",
+    "category": 1,
+    "layer": "D",
+    "title": "amount threshold+1 (51) without approval rejected as NEEDS_APPROVAL",
+    "params": {
+      "mandate_id": 4,
+      "amount": "51",
+      "threshold": "50"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-05",
+    "category": 1,
+    "layer": "D",
+    "title": "boundary test: 50 succeeds, subsequent 51 without approval blocked",
+    "params": {
+      "mandate_id": 5,
+      "amount": "51",
+      "threshold": "50"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-06",
+    "category": 1,
+    "layer": "D",
+    "title": "remaining budget 30, request 31 rejected as OVER_BUDGET",
+    "params": {
+      "mandate_id": 6,
+      "amount": "31",
+      "remaining": "30"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-07",
+    "category": 1,
+    "layer": "D",
+    "title": "exhausted budget 0, request 1 rejected as OVER_BUDGET",
+    "params": {
+      "mandate_id": 7,
+      "amount": "1",
+      "budget_remaining": "0"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-08",
+    "category": 1,
+    "layer": "D",
+    "title": "deposited ceiling 40 < budget 1000, request 41 rejected as OVER_BUDGET",
+    "params": {
+      "mandate_id": 8,
+      "deposited": "40",
+      "amount": "41"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-09",
+    "category": 1,
+    "layer": "D",
+    "title": "deposited 40 spent, subsequent request 1 rejected as OVER_BUDGET",
+    "params": {
+      "mandate_id": 9,
+      "amount": "1"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-10",
+    "category": 1,
+    "layer": "D",
+    "title": "create_mandate budget 50 < cap 100 panics BUDGET_LESS_THAN_CAP",
+    "params": {
+      "budget": "50",
+      "cap": "100"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "BUDGET_LESS_THAN_CAP"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "BUDGET_LESS_THAN_CAP"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-11",
+    "category": 1,
+    "layer": "D",
+    "title": "create_mandate threshold 101 > cap 100 panics THRESHOLD_ABOVE_CAP",
+    "params": {
+      "cap": "100",
+      "threshold": "101"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "THRESHOLD_ABOVE_CAP"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "THRESHOLD_ABOVE_CAP"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-12",
+    "category": 1,
+    "layer": "D",
+    "title": "loosen budget to 101 > deposited 100 panics BUDGET_ABOVE_DEPOSITED",
+    "params": {
+      "mandate_id": 10,
+      "change": "Budget 101",
+      "deposited": "100"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "BUDGET_ABOVE_DEPOSITED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "BUDGET_ABOVE_DEPOSITED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-13",
+    "category": 1,
+    "layer": "D",
+    "title": "loosen cap to 101 > budget 100 panics CAP_ABOVE_BUDGET",
+    "params": {
+      "mandate_id": 11,
+      "change": "PerPaymentCap 101",
+      "budget": "100"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "CAP_ABOVE_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "CAP_ABOVE_BUDGET"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-14",
+    "category": 1,
+    "layer": "D",
+    "title": "loosen threshold to 51 > cap 50 panics THRESHOLD_ABOVE_CAP",
+    "params": {
+      "mandate_id": 12,
+      "change": "ApprovalThreshold 51",
+      "cap": "50"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "THRESHOLD_ABOVE_CAP"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "THRESHOLD_ABOVE_CAP"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-01-15",
+    "category": 1,
+    "layer": "D",
+    "title": "tighten budget to 49 < cap 50 panics BUDGET_BELOW_CAP",
+    "params": {
+      "mandate_id": 13,
+      "change": "Budget 49",
+      "cap": "50"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "BUDGET_BELOW_CAP"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "BUDGET_BELOW_CAP"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-01",
+    "category": 2,
+    "layer": "D",
+    "title": "request_payment to unauthorized stranger",
+    "params": {
+      "mandate_id": 14,
+      "bad_recipient": "dev-20261103085433-17914777353380.test.near"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-02",
+    "category": 2,
+    "layer": "D",
+    "title": "request_payment to uppercase recipient",
+    "params": {
+      "mandate_id": 14,
+      "bad_recipient": "MERCHANT.TESTNET"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "DESERIALIZATION"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "DESERIALIZATION",
+      "note": "Near-sdk AccountId JSON deserialization rejects uppercase recipient before contract validate_recipient (raw: WebAssembly trap: An `unreachable` opcode was executed.)"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-03",
+    "category": 2,
+    "layer": "D",
+    "title": "request_payment to recipient with leading space",
+    "params": {
+      "mandate_id": 14,
+      "bad_recipient": " merchant.testnet"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "DESERIALIZATION"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "DESERIALIZATION",
+      "note": "Near-sdk AccountId JSON deserialization rejects leading space before contract validate_recipient (raw: WebAssembly trap: An `unreachable` opcode was executed.)"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-04",
+    "category": 2,
+    "layer": "D",
+    "title": "request_payment to recipient with trailing space",
+    "params": {
+      "mandate_id": 14,
+      "bad_recipient": "merchant.testnet "
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "DESERIALIZATION"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "DESERIALIZATION",
+      "note": "Near-sdk AccountId JSON deserialization rejects trailing space before contract validate_recipient (raw: WebAssembly trap: An `unreachable` opcode was executed.)"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-05",
+    "category": 2,
+    "layer": "D",
+    "title": "request_payment to subaccount of merchant",
+    "params": {
+      "mandate_id": 14,
+      "bad_recipient": "sub.merchant.testnet"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-06",
+    "category": 2,
+    "layer": "D",
+    "title": "request_payment to parent account testnet",
+    "params": {
+      "mandate_id": 14,
+      "bad_recipient": "testnet"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-07",
+    "category": 2,
+    "layer": "D",
+    "title": "request_payment to lookalike merchant-fake.testnet",
+    "params": {
+      "mandate_id": 14,
+      "bad_recipient": "merchant-fake.testnet"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-08",
+    "category": 2,
+    "layer": "D",
+    "title": "request_payment to agent itself when not recipient",
+    "params": {
+      "mandate_id": 14,
+      "bad_recipient": "dev-20261103085433-26401004549522.test.near"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-09",
+    "category": 2,
+    "layer": "D",
+    "title": "request_payment to owner when not recipient",
+    "params": {
+      "mandate_id": 14,
+      "bad_recipient": "dev-20261103085432-54084261646441.test.near"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-10",
+    "category": 2,
+    "layer": "D",
+    "title": "request_payment to guardian when not recipient",
+    "params": {
+      "mandate_id": 14,
+      "bad_recipient": "dev-20261103085433-71202941685383.test.near"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-11",
+    "category": 2,
+    "layer": "D",
+    "title": "create_mandate duplicate recipient in list panics DUPLICATE_RECIPIENT",
+    "params": {
+      "recipients": [
+        "dev-20261103085434-63001067223944.test.near",
+        "dev-20261103085434-63001067223944.test.near"
+      ]
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "DUPLICATE_RECIPIENT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "DUPLICATE_RECIPIENT"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-12",
+    "category": 2,
+    "layer": "D",
+    "title": "create_mandate empty recipients panics EMPTY_RECIPIENTS",
+    "params": {
+      "recipients": []
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "EMPTY_RECIPIENTS"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "EMPTY_RECIPIENTS"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-13",
+    "category": 2,
+    "layer": "D",
+    "title": "create_mandate invalid recipient @ chars rejected by deserialization",
+    "params": {
+      "recipients": [
+        "invalid@recipient"
+      ]
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "DESERIALIZATION"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "DESERIALIZATION",
+      "note": "Near-sdk AccountId JSON deserialization rejects @ in recipient before contract validate_recipient (raw: WebAssembly trap: An `unreachable` opcode was executed.)"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-14",
+    "category": 2,
+    "layer": "D",
+    "title": "loosen add invalid recipient @ chars rejected by deserialization",
+    "params": {
+      "mandate_id": 14,
+      "recipient": "invalid@chars"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "DESERIALIZATION"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "DESERIALIZATION",
+      "note": "Near-sdk AccountId JSON deserialization rejects @ in recipient before contract validate_recipient (raw: WebAssembly trap: An `unreachable` opcode was executed.)"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-02-15",
+    "category": 2,
+    "layer": "D",
+    "title": "loosen add duplicate recipient already allowed panics DUPLICATE_RECIPIENT",
+    "params": {
+      "mandate_id": 14,
+      "recipient": "dev-20261103085434-63001067223944.test.near"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "DUPLICATE_RECIPIENT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "DUPLICATE_RECIPIENT"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-03-01",
+    "category": 3,
+    "layer": "D",
+    "title": "deposit wrong token B to mandate with token A refunded without mutation",
+    "params": {
+      "mandate_id": 15,
+      "token_sent": "dev-20261103085431-58129149421525.test.near"
+    },
+    "expected": {
+      "label": "INERT"
+    },
+    "actual": {
+      "label": "INERT",
+      "note": "Full refund returned, deposited stayed 0"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-03-02",
+    "category": 3,
+    "layer": "D",
+    "title": "deposit from stranger sender refunded inertly",
+    "params": {
+      "mandate_id": 16,
+      "sender": "dev-20261103085433-17914777353380.test.near"
+    },
+    "expected": {
+      "label": "INERT"
+    },
+    "actual": {
+      "label": "INERT",
+      "note": "Full refund returned, non-owner deposit inert"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-03-03",
+    "category": 3,
+    "layer": "D",
+    "title": "deposit to non-existent mandate 99999 refunded inertly",
+    "params": {
+      "mandate_id": 99999
+    },
+    "expected": {
+      "label": "INERT"
+    },
+    "actual": {
+      "label": "INERT",
+      "note": "Full refund returned on missing mandate"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-03-04",
+    "category": 3,
+    "layer": "D",
+    "title": "deposit with malformed msg refunded inertly",
+    "params": {
+      "msg": "invalid json msg"
+    },
+    "expected": {
+      "label": "INERT"
+    },
+    "actual": {
+      "label": "INERT",
+      "note": "Full refund returned on malformed msg"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-03-05",
+    "category": 3,
+    "layer": "D",
+    "title": "deposit to revoked mandate refunded inertly",
+    "params": {
+      "mandate_id": 17,
+      "status": "Revoked"
+    },
+    "expected": {
+      "label": "INERT"
+    },
+    "actual": {
+      "label": "INERT",
+      "note": "Full refund returned for revoked mandate"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-03-06",
+    "category": 3,
+    "layer": "D",
+    "title": "token ledger separation: token B ledger is 0 despite token A deposits",
+    "params": {
+      "ledger_a": 6420,
+      "ledger_b": 0
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "LEDGER_INSUFFICIENT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "LEDGER_INSUFFICIENT",
+      "note": "Ledger separation verified"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-03-07",
+    "category": 3,
+    "layer": "D",
+    "title": "request payment on unfunded token B mandate blocked as OVER_BUDGET",
+    "params": {
+      "mandate_id": 18,
+      "token": "dev-20261103085431-58129149421525.test.near",
+      "amount": "20"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-03-08",
+    "category": 3,
+    "layer": "D",
+    "title": "unfunded mandate cannot spend other token deposits in contract",
+    "params": {
+      "mandate_id": 19,
+      "amount": "10"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-03-09",
+    "category": 3,
+    "layer": "D",
+    "title": "withdraw with 0 deposited panics AMOUNT_EXCEEDS_FREE",
+    "params": {
+      "mandate_id": 20,
+      "amount": "10",
+      "free": "0"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-03-10",
+    "category": 3,
+    "layer": "D",
+    "title": "independent ledger integrity: token B ledger intact across operations",
+    "params": {
+      "ledger_a": 6420,
+      "ledger_b": 0
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "LEDGER_INSUFFICIENT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "LEDGER_INSUFFICIENT",
+      "note": "Ledger integrity holds"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-01",
+    "category": 4,
+    "layer": "D",
+    "title": "stranger calls request_payment panics UNAUTHORIZED_AGENT",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_AGENT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_AGENT"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-02",
+    "category": 4,
+    "layer": "D",
+    "title": "owner calls request_payment panics UNAUTHORIZED_AGENT",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_AGENT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_AGENT"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-03",
+    "category": 4,
+    "layer": "D",
+    "title": "guardian calls request_payment panics UNAUTHORIZED_AGENT",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_AGENT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_AGENT"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-04",
+    "category": 4,
+    "layer": "D",
+    "title": "stranger calls approve_intent panics UNAUTHORIZED_GUARDIAN",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-05",
+    "category": 4,
+    "layer": "D",
+    "title": "owner calls approve_intent panics UNAUTHORIZED_GUARDIAN",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-06",
+    "category": 4,
+    "layer": "D",
+    "title": "agent calls approve_intent panics UNAUTHORIZED_GUARDIAN",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-07",
+    "category": 4,
+    "layer": "D",
+    "title": "stranger calls tighten panics UNAUTHORIZED_OWNER_OR_GUARDIAN",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER_OR_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER_OR_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-08",
+    "category": 4,
+    "layer": "D",
+    "title": "agent calls tighten panics UNAUTHORIZED_OWNER_OR_GUARDIAN",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER_OR_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER_OR_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-09",
+    "category": 4,
+    "layer": "D",
+    "title": "stranger calls loosen panics UNAUTHORIZED_GUARDIAN",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-10",
+    "category": 4,
+    "layer": "D",
+    "title": "owner calls loosen panics UNAUTHORIZED_GUARDIAN",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-11",
+    "category": 4,
+    "layer": "D",
+    "title": "agent calls loosen panics UNAUTHORIZED_GUARDIAN",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-12",
+    "category": 4,
+    "layer": "D",
+    "title": "stranger calls revoke panics UNAUTHORIZED_OWNER_OR_GUARDIAN",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER_OR_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER_OR_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-13",
+    "category": 4,
+    "layer": "D",
+    "title": "agent calls revoke panics UNAUTHORIZED_OWNER_OR_GUARDIAN",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER_OR_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER_OR_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-14",
+    "category": 4,
+    "layer": "D",
+    "title": "stranger calls withdraw panics UNAUTHORIZED_OWNER",
+    "params": {
+      "mandate_id": 22
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-15",
+    "category": 4,
+    "layer": "D",
+    "title": "guardian calls withdraw panics UNAUTHORIZED_OWNER",
+    "params": {
+      "mandate_id": 23
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-16",
+    "category": 4,
+    "layer": "D",
+    "title": "agent calls withdraw panics UNAUTHORIZED_OWNER",
+    "params": {
+      "mandate_id": 24
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-17",
+    "category": 4,
+    "layer": "D",
+    "title": "stranger calls resolve_stale panics UNAUTHORIZED_GUARDIAN",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-18",
+    "category": 4,
+    "layer": "D",
+    "title": "owner calls resolve_stale panics UNAUTHORIZED_GUARDIAN",
+    "params": {
+      "mandate_id": 21
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-19",
+    "category": 4,
+    "layer": "D",
+    "title": "create_mandate owner == agent panics OWNER_IS_AGENT",
+    "params": {
+      "agent": "dev-20261103085432-54084261646441.test.near"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OWNER_IS_AGENT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OWNER_IS_AGENT"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-20",
+    "category": 4,
+    "layer": "D",
+    "title": "create_mandate guardian == agent panics GUARDIAN_IS_AGENT",
+    "params": {
+      "guardian": "dev-20261103085433-26401004549522.test.near"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "GUARDIAN_IS_AGENT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "GUARDIAN_IS_AGENT"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-04-21",
+    "category": 4,
+    "layer": "D",
+    "title": "create_mandate guardian == owner panics GUARDIAN_IS_OWNER",
+    "params": {
+      "guardian": "dev-20261103085432-54084261646441.test.near"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "GUARDIAN_IS_OWNER"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "GUARDIAN_IS_OWNER"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-05-01",
+    "category": 5,
+    "layer": "D",
+    "title": "create_mandate expiry in past panics EXPIRY_NOT_IN_FUTURE",
+    "params": {
+      "expires_at_ms": 1793696128529
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "EXPIRY_NOT_IN_FUTURE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "EXPIRY_NOT_IN_FUTURE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-05-02",
+    "category": 5,
+    "layer": "D",
+    "title": "create_mandate expiry at current time panics EXPIRY_NOT_IN_FUTURE",
+    "params": {
+      "expires_at_ms": 1793696139040
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "EXPIRY_NOT_IN_FUTURE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "EXPIRY_NOT_IN_FUTURE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-05-03",
+    "category": 5,
+    "layer": "D",
+    "title": "approve_intent expiry in past panics APPROVAL_NOT_IN_FUTURE",
+    "params": {
+      "mandate_id": 25
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "APPROVAL_NOT_IN_FUTURE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "APPROVAL_NOT_IN_FUTURE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-05-04",
+    "category": 5,
+    "layer": "D",
+    "title": "tighten expiry to past panics EXPIRY_NOT_IN_FUTURE",
+    "params": {
+      "mandate_id": 26
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "EXPIRY_NOT_IN_FUTURE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "EXPIRY_NOT_IN_FUTURE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-05-05",
+    "category": 5,
+    "layer": "D",
+    "title": "tighten expiry to later time panics NOT_STRICTER",
+    "params": {
+      "mandate_id": 27
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NOT_STRICTER"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NOT_STRICTER"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-05-06",
+    "category": 5,
+    "layer": "D",
+    "title": "loosen expiry to earlier time panics NOT_LOOSER",
+    "params": {
+      "mandate_id": 28
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NOT_LOOSER"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NOT_LOOSER"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-05-07",
+    "category": 5,
+    "layer": "D",
+    "title": "request_payment on expired mandate rejected as EXPIRED",
+    "params": {
+      "mandate_id": 29
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "EXPIRED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "EXPIRED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-05-08",
+    "category": 5,
+    "layer": "D",
+    "title": "request_payment with expired approval rejected as APPROVAL_EXPIRED",
+    "params": {
+      "mandate_id": 30
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "APPROVAL_EXPIRED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "APPROVAL_EXPIRED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-05-09",
+    "category": 5,
+    "layer": "D",
+    "title": "tightened expiry invalidates approval hash -> NEEDS_APPROVAL",
+    "params": {
+      "mandate_id": 31
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-05-10",
+    "category": 5,
+    "layer": "D",
+    "title": "request_payment on revoked mandate rejected as NOT_ACTIVE",
+    "params": {
+      "mandate_id": 32
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-05-11",
+    "category": 5,
+    "layer": "D",
+    "title": "tighten on revoked mandate panics NOT_ACTIVE",
+    "params": {
+      "mandate_id": 33
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-05-12",
+    "category": 5,
+    "layer": "D",
+    "title": "loosen on revoked mandate panics NOT_ACTIVE",
+    "params": {
+      "mandate_id": 34
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-06-01",
+    "category": 6,
+    "layer": "D",
+    "title": "replayed request with consumed approval rejected as APPROVAL_USED",
+    "params": {
+      "mandate_id": 35,
+      "nonce": 601
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "APPROVAL_USED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "APPROVAL_USED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-06-02",
+    "category": 6,
+    "layer": "D",
+    "title": "re-approving used intent hash panics ALREADY_APPROVED",
+    "params": {
+      "mandate_id": 35,
+      "nonce": 601
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "ALREADY_APPROVED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "ALREADY_APPROVED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-06-03",
+    "category": 6,
+    "layer": "D",
+    "title": "backward nonce mismatch rejected as NEEDS_APPROVAL",
+    "params": {
+      "mandate_id": 35,
+      "nonce_sent": 602,
+      "nonce_approved": 603
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-06-04",
+    "category": 6,
+    "layer": "D",
+    "title": "forward jump nonce without matching approval rejected as NEEDS_APPROVAL",
+    "params": {
+      "mandate_id": 35,
+      "nonce_sent": 699
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-06-05",
+    "category": 6,
+    "layer": "D",
+    "title": "amount mismatch against approved nonce rejected as NEEDS_APPROVAL",
+    "params": {
+      "mandate_id": 35,
+      "approved_amount": "65",
+      "requested": "66"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-06-06",
+    "category": 6,
+    "layer": "D",
+    "title": "recipient mismatch with unallowed recipient rejected as RECIPIENT_NOT_ALLOWED",
+    "params": {
+      "mandate_id": 35
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "RECIPIENT_NOT_ALLOWED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-06-07",
+    "category": 6,
+    "layer": "D",
+    "title": "mandate mismatch against approved nonce rejected as NEEDS_APPROVAL",
+    "params": {
+      "mandate_sent": 36,
+      "mandate_approved": 35
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NEEDS_APPROVAL"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-06-08",
+    "category": 6,
+    "layer": "D",
+    "title": "approved nonce requested on revoked mandate rejected as NOT_ACTIVE",
+    "params": {
+      "mandate_id": 37
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-06-09",
+    "category": 6,
+    "layer": "D",
+    "title": "re-approving active intent hash panics ALREADY_APPROVED",
+    "params": {
+      "mandate_id": 35,
+      "nonce": 609
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "ALREADY_APPROVED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "ALREADY_APPROVED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-06-10",
+    "category": 6,
+    "layer": "D",
+    "title": "zero amount with nonce rejected as OVER_PER_PAYMENT_CAP",
+    "params": {
+      "mandate_id": 35,
+      "amount": "0"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_PER_PAYMENT_CAP"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_PER_PAYMENT_CAP"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-01",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw on active mandate panics MANDATE_STILL_ACTIVE",
+    "params": {
+      "mandate_id": 38
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "MANDATE_STILL_ACTIVE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "MANDATE_STILL_ACTIVE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-02",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw amount 0 panics ZERO_AMOUNT",
+    "params": {
+      "mandate_id": 39
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "ZERO_AMOUNT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "ZERO_AMOUNT"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-03",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw 301 exceeding free remainder 300 panics AMOUNT_EXCEEDS_FREE",
+    "params": {
+      "mandate_id": 40,
+      "free": "300",
+      "amount": "301"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-04",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw after free exhausted panics AMOUNT_EXCEEDS_FREE",
+    "params": {
+      "mandate_id": 41
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-05",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw on non-existent mandate panics MANDATE_NOT_FOUND",
+    "params": {
+      "mandate_id": 99999
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "MANDATE_NOT_FOUND"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "MANDATE_NOT_FOUND"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-06",
+    "category": 7,
+    "layer": "D",
+    "title": "second revoke call panics ALREADY_REVOKED",
+    "params": {
+      "mandate_id": 42
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "ALREADY_REVOKED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "ALREADY_REVOKED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-07",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw prepaid gas below 60 Tgas panics INSUFFICIENT_GAS",
+    "params": {
+      "mandate_id": 43
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-08",
+    "category": 7,
+    "layer": "D",
+    "title": "loosen budget on revoked mandate panics NOT_ACTIVE",
+    "params": {
+      "mandate_id": 44
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-09",
+    "category": 7,
+    "layer": "D",
+    "title": "tighten budget on revoked mandate panics NOT_ACTIVE",
+    "params": {
+      "mandate_id": 45
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-10",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw 1 with free remainder 0 panics AMOUNT_EXCEEDS_FREE",
+    "params": {
+      "mandate_id": 46
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-11",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw called by stranger panics UNAUTHORIZED_OWNER",
+    "params": {
+      "mandate_id": 47
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-12",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw called by agent panics UNAUTHORIZED_OWNER",
+    "params": {
+      "mandate_id": 48
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-13",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw called by guardian panics UNAUTHORIZED_OWNER",
+    "params": {
+      "mandate_id": 49
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-14",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw partial amount 50 of 200 succeeds",
+    "params": {
+      "mandate_id": 50,
+      "amount": "50"
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Partial withdraw ok"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-15",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw second partial amount 100 of remaining 150 succeeds",
+    "params": {
+      "mandate_id": 50,
+      "amount": "100"
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Second withdraw ok"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-16",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw exact remaining 50 succeeds",
+    "params": {
+      "mandate_id": 50,
+      "amount": "50"
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Final withdraw ok"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-17",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw after remainder exhausted panics AMOUNT_EXCEEDS_FREE",
+    "params": {
+      "mandate_id": 50
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-18",
+    "category": 7,
+    "layer": "D",
+    "title": "request_payment on revoked mandate rejected as NOT_ACTIVE",
+    "params": {
+      "mandate_id": 51
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-19",
+    "category": 7,
+    "layer": "D",
+    "title": "approve_intent on revoked mandate panics NOT_ACTIVE",
+    "params": {
+      "mandate_id": 52
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NOT_ACTIVE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-20",
+    "category": 7,
+    "layer": "D",
+    "title": "revoke by guardian succeeds",
+    "params": {
+      "mandate_id": 53
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Guardian revoke ok"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-21",
+    "category": 7,
+    "layer": "D",
+    "title": "revoke by stranger panics UNAUTHORIZED_OWNER_OR_GUARDIAN",
+    "params": {
+      "mandate_id": 54
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER_OR_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER_OR_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-22",
+    "category": 7,
+    "layer": "D",
+    "title": "revoke by agent panics UNAUTHORIZED_OWNER_OR_GUARDIAN",
+    "params": {
+      "mandate_id": 55
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER_OR_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_OWNER_OR_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-23",
+    "category": 7,
+    "layer": "D",
+    "title": "revoke on non-existent mandate panics MANDATE_NOT_FOUND",
+    "params": {
+      "mandate_id": 88888
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "MANDATE_NOT_FOUND"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "MANDATE_NOT_FOUND"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-24",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw amount u128::MAX panics AMOUNT_EXCEEDS_FREE",
+    "params": {
+      "mandate_id": 56
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-25",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw exact remainder 400 after 100 spent succeeds",
+    "params": {
+      "mandate_id": 57,
+      "amount": "400"
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Withdraw remaining ok"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-07-26",
+    "category": 7,
+    "layer": "D",
+    "title": "withdraw 401 when free is 400 panics AMOUNT_EXCEEDS_FREE",
+    "params": {
+      "mandate_id": 58
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-01",
+    "category": 8,
+    "layer": "D",
+    "title": "4 parallel payments of 30 vs budget 60: exactly 2 settle and 2 blocked OVER_BUDGET",
+    "params": {
+      "settled": 2,
+      "blocked": 2
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-02",
+    "category": 8,
+    "layer": "D",
+    "title": "P1 invariant holds under concurrency: spent <= budget",
+    "params": {
+      "spent": 60,
+      "budget": 60
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET",
+      "note": "P1 preserved"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-03",
+    "category": 8,
+    "layer": "D",
+    "title": "P3 conservation: contract token balance strictly covers ledger",
+    "params": {
+      "contract_bal": 14560,
+      "ledger": 14560
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET",
+      "note": "P3 preserved"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-04",
+    "category": 8,
+    "layer": "D",
+    "title": "request after concurrent budget exhaustion rejected as OVER_BUDGET",
+    "params": {
+      "mandate_id": 59
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-05",
+    "category": 8,
+    "layer": "D",
+    "title": "concurrent requests sharing approval: exactly one consumes approval, other blocked",
+    "params": {
+      "mandate_id": 60
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "APPROVAL_USED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "APPROVAL_USED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-06",
+    "category": 8,
+    "layer": "D",
+    "title": "concurrent payments racing on deposited remainder strictly bound by deposit",
+    "params": {
+      "mandate_id": 61
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-07",
+    "category": 8,
+    "layer": "D",
+    "title": "secondary withdraw attempt racing on free remainder panics AMOUNT_EXCEEDS_FREE",
+    "params": {
+      "mandate_id": 62
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "AMOUNT_EXCEEDS_FREE"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-08",
+    "category": 8,
+    "layer": "D",
+    "title": "property: merchant received across concurrent batches never exceeds budget",
+    "params": {
+      "spent_final": 60
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET",
+      "note": "Conservation holds"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-09",
+    "category": 8,
+    "layer": "D",
+    "title": "3 parallel payments of 20 vs budget 40: exactly 2 settle, 1 blocked OVER_BUDGET",
+    "params": {
+      "settled": 2,
+      "blocked": 1
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-10",
+    "category": 8,
+    "layer": "D",
+    "title": "P1 invariant under 3 parallel requests: spent <= 40",
+    "params": {
+      "spent": 40,
+      "budget": 40
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET",
+      "note": "P1 preserved"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-11",
+    "category": 8,
+    "layer": "D",
+    "title": "2 parallel payments of 15 within budget 40: both settle",
+    "params": {
+      "mandate_id": 64
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Both settled"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-12",
+    "category": 8,
+    "layer": "D",
+    "title": "P2 ceiling invariant holds after concurrent settlement",
+    "params": {
+      "spent": 30,
+      "deposited": 40
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "P2 preserved"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-13",
+    "category": 8,
+    "layer": "D",
+    "title": "parallel payments to 2 distinct allowed recipients succeed",
+    "params": {
+      "mandate_id": 65
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Multi-recipient settled"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-14",
+    "category": 8,
+    "layer": "D",
+    "title": "concurrency: spent + reserved <= budget holds on multi-recipient mandate",
+    "params": {
+      "mandate_id": 65
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Invariants hold"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-15",
+    "category": 8,
+    "layer": "D",
+    "title": "parallel payment and loosen AddRecipient execute without interference",
+    "params": {
+      "mandate_id": 66
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Parallel loosen ok"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-16",
+    "category": 8,
+    "layer": "D",
+    "title": "parallel payment and tighten cap execute consistently",
+    "params": {
+      "mandate_id": 67
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Parallel tighten ok"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-17",
+    "category": 8,
+    "layer": "D",
+    "title": "parallel identical nonce requests on single approval: exactly 1 settles, 1 blocked",
+    "params": {
+      "settled": 1,
+      "blocked": 1
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "APPROVAL_USED"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "APPROVAL_USED"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-18",
+    "category": 8,
+    "layer": "D",
+    "title": "4 parallel payments of 10 vs budget 25: exactly 2 settle, 2 blocked OVER_BUDGET",
+    "params": {
+      "settled": 2,
+      "blocked": 2
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-19",
+    "category": 8,
+    "layer": "D",
+    "title": "P3 conservation: contract token balance strictly covers ledger post-concurrency",
+    "params": {
+      "bal": 15865,
+      "ledger": 15865
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET",
+      "note": "P3 preserved"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-20",
+    "category": 8,
+    "layer": "D",
+    "title": "post-concurrency view: open_requests is 0 after finalization",
+    "params": {
+      "open_requests": 0
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Open requests zeroed"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-21",
+    "category": 8,
+    "layer": "D",
+    "title": "post-concurrency view: reserved is 0 after finalization",
+    "params": {
+      "reserved": 0
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Reserved zeroed"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-22",
+    "category": 8,
+    "layer": "D",
+    "title": "concurrent payments on separate mandates execute without interference",
+    "params": {
+      "mid1": 70,
+      "mid2": 71
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Mandate isolation ok"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-23",
+    "category": 8,
+    "layer": "D",
+    "title": "parallel payment and revoke maintain money invariants",
+    "params": {
+      "mandate_id": 72
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Invariants maintained"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-08-24",
+    "category": 8,
+    "layer": "D",
+    "title": "property: parallel batch spent strictly bounded by mandate budget",
+    "params": {
+      "spent": 40,
+      "budget": 100
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "OVER_BUDGET",
+      "note": "Budget bounding holds"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-01",
+    "category": 9,
+    "layer": "D",
+    "title": "request_payment gas below 60 Tgas panics INSUFFICIENT_GAS",
+    "params": {
+      "mandate_id": 73
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-02",
+    "category": 9,
+    "layer": "D",
+    "title": "withdraw gas below 60 Tgas panics INSUFFICIENT_GAS",
+    "params": {
+      "mandate_id": 74
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-03",
+    "category": 9,
+    "layer": "D",
+    "title": "resolve_stale on non-existent pending panics NO_SUCH_PENDING",
+    "params": {
+      "mandate_id": 75
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NO_SUCH_PENDING"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NO_SUCH_PENDING"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-04",
+    "category": 9,
+    "layer": "D",
+    "title": "resolve_stale before stale panics NO_SUCH_PENDING or NOT_STALE_YET",
+    "params": {
+      "mandate_id": 76
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "NO_SUCH_PENDING"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "NO_SUCH_PENDING"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-05",
+    "category": 9,
+    "layer": "D",
+    "title": "resolve_stale by stranger panics UNAUTHORIZED_GUARDIAN",
+    "params": {
+      "mandate_id": 77
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-06",
+    "category": 9,
+    "layer": "D",
+    "title": "resolve_stale by owner panics UNAUTHORIZED_GUARDIAN",
+    "params": {
+      "mandate_id": 78
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-07",
+    "category": 9,
+    "layer": "D",
+    "title": "create_mandate deposit 0.049 NEAR panics INSUFFICIENT_STORAGE_DEPOSIT",
+    "params": {
+      "deposit_attached": "0.049 N"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_STORAGE_DEPOSIT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_STORAGE_DEPOSIT"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-08",
+    "category": 9,
+    "layer": "D",
+    "title": "approve_intent deposit 0.001 NEAR panics INSUFFICIENT_APPROVAL_DEPOSIT",
+    "params": {
+      "mandate_id": 79
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_APPROVAL_DEPOSIT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_APPROVAL_DEPOSIT"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-09",
+    "category": 9,
+    "layer": "D",
+    "title": "transfer failure to unregistered recipient safely refunded by callback",
+    "params": {
+      "mandate_id": 80,
+      "unregistered": "dev-20261103085741-77119443808891.test.near"
+    },
+    "expected": {
+      "label": "INERT"
+    },
+    "actual": {
+      "label": "INERT",
+      "note": "Transfer failed, reservation restored"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-10",
+    "category": 9,
+    "layer": "D",
+    "title": "idempotent callback when pending missing returns AlreadyResolved inertly",
+    "params": {
+      "mandate_id": 81
+    },
+    "expected": {
+      "label": "INERT"
+    },
+    "actual": {
+      "label": "INERT",
+      "note": "AlreadyResolved inert"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-11",
+    "category": 9,
+    "layer": "D",
+    "title": "withdraw with 30 Tgas panics INSUFFICIENT_GAS",
+    "params": {
+      "mandate_id": 82
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-12",
+    "category": 9,
+    "layer": "D",
+    "title": "request_payment with 30 Tgas panics INSUFFICIENT_GAS",
+    "params": {
+      "mandate_id": 83
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-13",
+    "category": 9,
+    "layer": "D",
+    "title": "request_payment with attached deposit blocked (not payable)",
+    "params": {
+      "mandate_id": 84
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "METHOD_NOT_PAYABLE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "METHOD_NOT_PAYABLE",
+      "note": "Near-sdk non-payable method rejects attached deposit (raw: WebAssembly trap: An `unreachable` opcode was executed.)"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-14",
+    "category": 9,
+    "layer": "D",
+    "title": "withdraw with attached deposit blocked (not payable)",
+    "params": {
+      "mandate_id": 85
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "METHOD_NOT_PAYABLE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "METHOD_NOT_PAYABLE",
+      "note": "Near-sdk non-payable method rejects attached deposit (raw: WebAssembly trap: An `unreachable` opcode was executed.)"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-15",
+    "category": 9,
+    "layer": "D",
+    "title": "resolve_stale with attached deposit blocked (not payable)",
+    "params": {
+      "mandate_id": 86
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "METHOD_NOT_PAYABLE"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "METHOD_NOT_PAYABLE",
+      "note": "Near-sdk non-payable method rejects attached deposit (raw: WebAssembly trap: An `unreachable` opcode was executed.)"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-16",
+    "category": 9,
+    "layer": "D",
+    "title": "resolve_stale called by agent panics UNAUTHORIZED_GUARDIAN",
+    "params": {
+      "mandate_id": 87
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "UNAUTHORIZED_GUARDIAN"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-17",
+    "category": 9,
+    "layer": "D",
+    "title": "resolve_stale on non-existent mandate panics MANDATE_NOT_FOUND",
+    "params": {
+      "mandate_id": 77777
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "MANDATE_NOT_FOUND"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "MANDATE_NOT_FOUND"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-18",
+    "category": 9,
+    "layer": "D",
+    "title": "create_mandate with exact 0.05 NEAR deposit succeeds",
+    "params": {
+      "deposit": "0.05 N"
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Exact deposit ok"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-19",
+    "category": 9,
+    "layer": "D",
+    "title": "create_mandate with 0 deposit panics INSUFFICIENT_STORAGE_DEPOSIT",
+    "params": {
+      "deposit": "0"
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_STORAGE_DEPOSIT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_STORAGE_DEPOSIT"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-20",
+    "category": 9,
+    "layer": "D",
+    "title": "approve_intent with exact 0.002 NEAR deposit succeeds",
+    "params": {
+      "mandate_id": 89
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Exact approval deposit ok"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-21",
+    "category": 9,
+    "layer": "D",
+    "title": "approve_intent with 0 deposit panics INSUFFICIENT_APPROVAL_DEPOSIT",
+    "params": {
+      "mandate_id": 90
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_APPROVAL_DEPOSIT"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_APPROVAL_DEPOSIT"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-22",
+    "category": 9,
+    "layer": "D",
+    "title": "request_payment with exact 60 Tgas succeeds without gas panic",
+    "params": {
+      "mandate_id": 91
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Exact 60 Tgas ok"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-23",
+    "category": 9,
+    "layer": "D",
+    "title": "withdraw with exact 60 Tgas succeeds without gas panic",
+    "params": {
+      "mandate_id": 92
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Exact 60 Tgas withdraw ok"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-24",
+    "category": 9,
+    "layer": "D",
+    "title": "request_payment with 10 Tgas panics INSUFFICIENT_GAS",
+    "params": {
+      "mandate_id": 93
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-25",
+    "category": 9,
+    "layer": "D",
+    "title": "withdraw with 10 Tgas panics INSUFFICIENT_GAS",
+    "params": {
+      "mandate_id": 94
+    },
+    "expected": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "actual": {
+      "label": "BLOCKED",
+      "code": "INSUFFICIENT_GAS"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-26",
+    "category": 9,
+    "layer": "D",
+    "title": "create_mandate with 1 NEAR deposit succeeds and refunds excess",
+    "params": {
+      "deposit": "1 N"
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Excess refunded"
+    },
+    "verdict": "PASS"
+  },
+  {
+    "id": "KAT-D-09-27",
+    "category": 9,
+    "layer": "D",
+    "title": "approve_intent with 10 mNEAR deposit succeeds and refunds excess",
+    "params": {
+      "mandate_id": 96
+    },
+    "expected": {
+      "label": "SETTLED"
+    },
+    "actual": {
+      "label": "SETTLED",
+      "note": "Excess refunded"
+    },
+    "verdict": "PASS"
+  }
+]
