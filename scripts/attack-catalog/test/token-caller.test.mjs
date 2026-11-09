@@ -33,3 +33,20 @@ test('token caller: mandate changed without a matching deposit is not a refund',
   const r = classifyTokenCallerOutcome({ ...base, mandateAfter: { ...M, status: 'Revoked' } });
   assert.notEqual(r.code, 'FULL_REFUND');
 });
+
+// KAT-E-11-06 sent the literal {"mandate_id":1} and so never targeted the mandate the harness had revoked.
+import { buildTokenCallerMsg } from '../layers/relay_attack.mjs';
+test('token caller msg: a revoked-mandate row targets the prepared mandate, not the literal id in the case', () => {
+  const msg = buildTokenCallerMsg({ msg: JSON.stringify({ mandate_id: 1 }) }, { mandateRevoked: true }, 7);
+  assert.deepEqual(JSON.parse(msg), { mandate_id: 7 });
+});
+test('token caller msg: a non-existent id row keeps its own id (999999 must stay non-existent)', () => {
+  const raw = JSON.stringify({ mandate_id: 999999 });
+  assert.equal(buildTokenCallerMsg({ msg: raw }, {}, 7), raw);
+});
+test('token caller msg: a malformed msg is passed through unchanged even when revoked is set', () => {
+  assert.equal(buildTokenCallerMsg({ msg: '{malformed_json}' }, { mandateRevoked: true }, 7), '{malformed_json}');
+});
+test('token caller msg: a missing msg becomes an empty string', () => {
+  assert.equal(buildTokenCallerMsg({}, {}, 7), '');
+});

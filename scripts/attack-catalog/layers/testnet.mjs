@@ -12,7 +12,7 @@ import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve, isAbsolute } from 'node:path';
 import * as nearApi from 'near-api-js';
-import { planRelayAttack, buildAttackDelegate, classifyFtOnTransfer, isLegitTokenCaller, classifyTokenCallerOutcome } from './relay_attack.mjs';
+import { planRelayAttack, buildAttackDelegate, classifyFtOnTransfer, isLegitTokenCaller, classifyTokenCallerOutcome, buildTokenCallerMsg } from './relay_attack.mjs';
 
 const {
   Account,
@@ -2196,7 +2196,7 @@ export async function executeLayerE(c, session) {
             txRes = await withRetry(() => session.funderAcc.callFunctionRaw({
               contractId: tokenId,
               methodName: 'ft_transfer_call',
-              args: { receiver_id: session.contractId, amount: amountStr, msg: String(tcArgs.msg ?? '') },
+              args: { receiver_id: session.contractId, amount: amountStr, msg: buildTokenCallerMsg(tcArgs, c.params, mandateId) },
               gas: T(150),
               deposit: 1n,
             }), { tries: 3 });

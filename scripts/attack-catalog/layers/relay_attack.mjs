@@ -161,3 +161,17 @@ export function classifyTokenCallerOutcome({ amount, senderBefore, senderAfter, 
   }
   return { label: 'BREACH', code: 'PARTIAL_OR_UNEXPLAINED', note: `unexpected outcome: senderDelta=${senderDelta} contractDelta=${contractDelta} depositedEvent=${depositedEvent} mandateChanged=${mandateChanged}` };
 }
+
+/**
+ * Builds the `msg` for a REAL ft_transfer_call. Rows that need a revoked mandate carry a placeholder id in the case;
+ * the real mandate prepared (and revoked) for the row must be used, or the row tests an unrelated Active mandate.
+ * A row that deliberately names another id (e.g. 999999, "does not exist") or a malformed msg is left untouched.
+ */
+export function buildTokenCallerMsg(args, params, mandateId) {
+  const raw = String(args?.msg ?? '');
+  if (!params?.mandateRevoked) return raw;
+  let parsed;
+  try { parsed = JSON.parse(raw); } catch { return raw; }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return raw;
+  return JSON.stringify({ ...parsed, mandate_id: mandateId });
+}
