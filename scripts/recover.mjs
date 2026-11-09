@@ -8,7 +8,7 @@
 // recovery files. No key is ever printed. Testnet only; refuses ids that are not sub-accounts of the funder.
 import { readFileSync, readdirSync, unlinkSync, statSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const USDC = '3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af';
@@ -100,6 +100,7 @@ async function main() {
   // could delete an account that still holds funds.
   const ftBal = (id) => withRpcRetry(async () => BigInt(await provider.callFunction({ contractId: USDC, method: 'ft_balance_of', args: { account_id: id } }) || '0'));
   const state = {};
+  let done = 0;
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   for (const e of entries) {
     try {
@@ -110,6 +111,7 @@ async function main() {
       state[e.id] = { exists: false, usdc: 0n };
     }
     await sleep(400);
+    if (++done % 50 === 0) console.log(`read ${done}/${entries.length} accounts`);
   }
   const plan = buildPlan(entries, FUNDER_ID, state);
   for (const s of plan.skipped) console.log('skip  ', s.id, '-', s.reason);
@@ -131,6 +133,6 @@ async function main() {
   else console.error('NOT CLEAN: recovery files kept');
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   main().catch((e) => { console.error('RECOVER ERROR:', String(e.message ?? e).slice(0, 300)); process.exit(1); });
 }
