@@ -1,0 +1,9 @@
+# Configuration for cargo-mutants in Scrip contract.
+# Only contract production code in src/lib.rs is targeted; test suites and non-production harnesses are excluded.
+
+# Exclude test modules and files from mutation targets (test logic, property testing generators, integration harnesses).
+exclude_globs = [
+    "src/*tests*.rs",
+    "src/property_tests.rs",
+    "tests/**",
+]
