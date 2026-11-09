@@ -1,4 +1,4 @@
-.PHONY: setup test contract-test contract-build demo-test static mutants verify-links script-test ci
+.PHONY: setup test contract-test contract-build demo-test static mutants verify-links verify-onchain script-test ci
 # Fresh clone: install pinned JS deps from the lockfiles (needs network once).
 setup:
 	cd client && npm ci
@@ -43,6 +43,10 @@ mutants:
 # Read-only: checks every tx hash in results/*.json against the public testnet RPC (needs network).
 verify-links:
 	cd scripts && node verify-links.mjs
+
+# Read-only: verify every tx recorded in results/*.json against testnet RPC (no keys/npm deps).
+verify-onchain:
+	node scripts/verify-onchain.mjs
 
 # What CI runs: offline tests + static analysis + wasm build.
 ci: test static contract-build
