@@ -15,6 +15,7 @@ export function Nav() {
             <NavLink href="/mandates">Mandates</NavLink>
             <NavLink href="/attack">Attack demo</NavLink>
             <NavLink href="/mandates/new">+ New mandate</NavLink>
+            <NavLink href="/verify">Verify</NavLink>
           </nav>
         </div>
         <Link href="/" className="bp-app-link bp-app-back">
