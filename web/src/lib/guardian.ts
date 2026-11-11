@@ -12,6 +12,8 @@ export type GuardianRejectCode =
   | "NOT_LOOSER"
   | "BUDGET_BELOW_COMMITTED"
   | "BUDGET_ABOVE_DEPOSITED"
+  | "BUDGET_BELOW_CAP"
+  | "CAP_BELOW_THRESHOLD"
   | "CAP_ABOVE_BUDGET"
   | "THRESHOLD_ABOVE_CAP"
   | "EXPIRY_NOT_IN_FUTURE"
@@ -156,6 +158,10 @@ export function applyChange(
         if (parsed.value < committed) {
           return { ok: false, code: "BUDGET_BELOW_COMMITTED" };
         }
+        // K-A (contract): the budget may not drop below the per-payment cap
+        if (parsed.value < toBigInt(mandate.perPaymentCap)) {
+          return { ok: false, code: "BUDGET_BELOW_CAP" };
+        }
         return {
           ok: true,
           mandate: {
@@ -169,6 +175,10 @@ export function applyChange(
         const currentCap = toBigInt(mandate.perPaymentCap);
         if (parsed.value >= currentCap) {
           return { ok: false, code: "NOT_STRICTER" };
+        }
+        // K-A (contract): the cap may not drop below the approval threshold
+        if (parsed.value < toBigInt(mandate.approvalThreshold)) {
+          return { ok: false, code: "CAP_BELOW_THRESHOLD" };
         }
         return {
           ok: true,
