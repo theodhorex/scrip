@@ -328,10 +328,12 @@ export function GuardianSection() {
                 <span className="text-bp-muted">Contract policy readout</span>
                 {lastRejectedCode ? (
                   <span className="px-2 py-0.5 rounded-xs bg-bp-reject-dim text-bp-reject border border-bp-reject/50 font-semibold">
+                    <span aria-hidden="true">✕ </span>
                     {lastRejectedCode}
                   </span>
                 ) : (
                   <span className="px-2 py-0.5 rounded-xs bg-bp-pass-dim text-bp-pass border border-bp-pass/40 font-semibold">
+                    <span aria-hidden="true">✓ </span>
                     INVARIANT OK
                   </span>
                 )}
@@ -360,7 +362,9 @@ export function GuardianSection() {
                     rejections.budget ? "text-bp-reject" : "text-bp-pass"
                   }`}
                 >
+                  <span aria-hidden="true">{rejections.budget ? "✕ " : "✓ "}</span>
                   {formatUsdc6(String(mandate.budget))} USDC
+                  <span className="sr-only">{rejections.budget ? " (rule violated)" : " (rule ok)"}</span>
                 </div>
               </div>
               <div>
@@ -370,7 +374,9 @@ export function GuardianSection() {
                     rejections.perPaymentCap ? "text-bp-reject" : "text-bp-pass"
                   }`}
                 >
+                  <span aria-hidden="true">{rejections.perPaymentCap ? "✕ " : "✓ "}</span>
                   {formatUsdc6(String(mandate.perPaymentCap))} USDC
+                  <span className="sr-only">{rejections.perPaymentCap ? " (rule violated)" : " (rule ok)"}</span>
                 </div>
               </div>
               <div>
@@ -380,7 +386,9 @@ export function GuardianSection() {
                     rejections.approvalThreshold ? "text-bp-reject" : "text-bp-pass"
                   }`}
                 >
+                  <span aria-hidden="true">{rejections.approvalThreshold ? "✕ " : "✓ "}</span>
                   {formatUsdc6(String(mandate.approvalThreshold))} USDC
+                  <span className="sr-only">{rejections.approvalThreshold ? " (rule violated)" : " (rule ok)"}</span>
                 </div>
               </div>
             </div>

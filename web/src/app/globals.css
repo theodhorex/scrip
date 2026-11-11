@@ -327,6 +327,8 @@
 @media (max-width: 639px) {
   .bp-scene-host { overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; scrollbar-color: var(--bp-line-strong) transparent; }
   .bp-scene-host svg[role="img"][viewBox], .bp-scene-host svg[role="group"][viewBox] { min-width: 620px; }
+  /* Panels and captions that share the host with the diorama stay pinned in view while only the scene scrolls. */
+  .bp-scene-host > :not(svg):not(.bp-hero-parallax) { position: sticky; left: 0; }
 }
 
 /* ------------------------------------------------------------------ */

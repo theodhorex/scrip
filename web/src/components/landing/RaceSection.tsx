@@ -205,8 +205,8 @@ export function RaceSection({ data }: Props) {
             <p className="text-[13px] font-mono text-bp-muted leading-relaxed pt-1 border-t border-bp-line">
               {data.totalAttempts} pre-signed payments, ~{burstSecondsRounded} s
               burst, recorded on NEAR {data.network},{" "}
-              <code className="text-bp-ink">results/attack.json</code>; run
-              before the audit fixes.
+              <code className="text-bp-ink">results/attack.json</code>, on 30 Oct 2026,
+              before later contract changes; a re-run is planned before the final freeze.
             </p>
           </div>
 

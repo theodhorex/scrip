@@ -22,7 +22,7 @@ const fraunces = Fraunces({
 });
 
 const DESCRIPTION =
-  "Capped spending mandates for AI agents on NEAR testnet: keys can be stolen, funds can't.";
+  "Capped spending mandates for AI agents on NEAR testnet: keys can be stolen, losses are capped by the budget you set.";
 
 export const metadata: Metadata = {
   title: "Scrip | Agent spending mandates",

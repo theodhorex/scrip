@@ -36,7 +36,7 @@ export function ClosingSection() {
       <div className="bp-container">
         <h2 className={`bp-section-title font-serif text-5xl md:text-7xl tracking-tight text-bp-ink leading-[1.05] ${styles.title}`}>
           Keys can be stolen.
-          <br /> Funds can&apos;t.
+          <br /> Losses are capped.
         </h2>
         <p className={`text-bp-muted font-mono text-sm ${styles.sub}`} data-reveal-item>
           The agent holds a key that can call one method. The contract holds the rules.

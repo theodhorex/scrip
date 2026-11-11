@@ -58,7 +58,7 @@ export function HeroSection({ data }: Props) {
             <span>NEAR testnet · capped mandates for AI agents</span>
           </div>
 
-          <h1 className="bp-display bp-hero-title">Keys can be stolen. Funds can&apos;t.</h1>
+          <h1 className="bp-display bp-hero-title">Keys can be stolen. Losses are capped.</h1>
 
           <p className="mt-6 text-lg bp-prose">
             Your agent holds a key that can call exactly one method,{" "}

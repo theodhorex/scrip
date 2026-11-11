@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Scrip: keys can be stolen, funds can't";
+export const alt = "Scrip: keys can be stolen, losses are capped";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -12,7 +12,7 @@ export default function Image() {
           <div style={{ fontSize: 28, color: "#2dd4bf", letterSpacing: 2 }}>NEAR TESTNET</div>
           <div style={{ fontSize: 96, fontFamily: "serif", marginTop: 24, lineHeight: 1.05 }}>Scrip</div>
           <div style={{ fontSize: 44, fontFamily: "serif", marginTop: 24, color: "#95a7c4" }}>Keys can be stolen.</div>
-          <div style={{ fontSize: 44, fontFamily: "serif", color: "#e8eef7" }}>Funds can&apos;t.</div>
+          <div style={{ fontSize: 44, fontFamily: "serif", color: "#e8eef7" }}>Losses are capped.</div>
         </div>
         <svg width="320" height="360" viewBox="-80 -90 160 180">
           <polygon points="0,-80 69.3,-40 0,0 -69.3,-40" fill="#6f94f0" />

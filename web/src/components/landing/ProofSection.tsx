@@ -144,7 +144,7 @@ export function ProofSection({ data = PROOF_DATA }: Props) {
 
           <p className="mt-5 text-base bp-prose" style={{ maxWidth: "44ch" }}>
             Every step from contract deployment to final reconciliation was recorded on
-            NEAR testnet: real receipts, enforced invariants, no funds left behind.
+            NEAR testnet: real receipts, enforced invariants, no leftover accounts recorded in gate.json.
           </p>
 
           <dl
@@ -424,8 +424,8 @@ export function ProofSection({ data = PROOF_DATA }: Props) {
             </div>
 
             <p className="mt-3 pt-2.5 border-t border-bp-line font-mono text-[13px] text-bp-muted">
-              Reconciliation verified in gate.json. Zero orphaned state and funder
-              capital fully preserved.
+              Reconciliation recorded in gate.json: no leftover accounts, funder USDC
+              unchanged. The funder paid a small amount of NEAR for gas.
             </p>
           </BlueprintFrame>
 

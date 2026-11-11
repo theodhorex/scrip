@@ -298,12 +298,12 @@ export function RuleMachineSection() {
           </div>
 
           <h2 className="bp-display bp-section-title max-w-[14ch]">
-            Three gates. One microsecond verdict.
+            Three gates. One verdict.
           </h2>
 
           <p className="mt-4 bp-prose text-[15px] sm:text-base max-w-[55ch]">
-            Every payment is tested on-chain before a single cent moves. Transactions
-            pass through three sequential policy gates: allowlisted recipient,
+            The contract is designed to check every payment before any funds move.
+            This diorama mirrors those rules in your browser. Payments pass through three sequential policy gates: allowlisted recipient,
             per-payment cap, and cumulative budget. If any gate trips, execution
             halts atomically and the payment is rejected.
           </p>
@@ -381,7 +381,7 @@ export function RuleMachineSection() {
                       : "text-bp-muted"
                 }
               >
-                ▶
+                <span aria-hidden="true">{activeCode ? "✕" : gateStates[0] === "pass" ? "✓" : "▶"}</span>
               </span>
               <span className="text-bp-ink leading-relaxed break-words">
                 {machineState.lastMessage}
@@ -459,11 +459,11 @@ export function RuleMachineSection() {
                     <div className="flex items-center gap-2">
                       {h.result.ok ? (
                         <span className="text-bp-pass font-bold">
-                          ACCEPTED (Rem: {h.remainingUsdc} USDC)
+                          <span aria-hidden="true">✓ </span>ACCEPTED (Rem: {h.remainingUsdc} USDC)
                         </span>
                       ) : (
                         <span className="text-bp-reject font-bold">
-                          REJECTED: {h.result.code}
+                          <span aria-hidden="true">✕ </span>REJECTED: {h.result.code}
                         </span>
                       )}
                     </div>
