@@ -242,8 +242,9 @@ fn extract_rejection(r: &ExecutionFinalResult) -> Option<String> {
 
 fn extract_err_code(r: &ExecutionFinalResult) -> Option<String> {
     for log in r.logs() {
-        if let Some(pos) = log.find("SCRIP_ERR:") {
-            let rest = &log[pos + 11..];
+        const ERR_PREFIX: &str = "SCRIP_ERR:";
+        if let Some(pos) = log.find(ERR_PREFIX) {
+            let rest = &log[pos + ERR_PREFIX.len()..];
             let code = rest.split_whitespace().next().unwrap_or(rest);
             return Some(code.trim_matches(|c: char| !c.is_ascii_alphanumeric() && c != '_').to_string());
         }
