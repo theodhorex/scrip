@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const RESULTS = join(HERE, '..', 'results');
-const RPC = process.env.RPC_URL ?? 'https://rpc.testnet.fastnear.com';
+const RPC = process.env.RPC_URL ?? 'https://archival-rpc.testnet.fastnear.com';
 const B58_HASH = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/;
 const ACCOUNT = /[a-z0-9_.-]+\.testnet/g;
 const HASH_IN_TEXT = /[1-9A-HJ-NP-Za-km-z]{43,44}/g;
