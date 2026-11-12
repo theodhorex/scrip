@@ -214,7 +214,7 @@ Claims are backed by deterministic test suites, offline attack catalogs, and exe
 
 ### 2. Mutation Testing Scores
 
-Contract (cargo-mutants, `contracts/scrip/src/lib.rs`): **99.4%** caught (175 of 176 mutants), full report and the one survivor in [`contracts/scrip/MUTATION.md`](contracts/scrip/MUTATION.md).
+Contract (cargo-mutants, `contracts/scrip/src/lib.rs`): **99.4%** caught (176 of 177 decided mutants; clean rerun 10 to 12 Nov 2026), full report and the one survivor in [`contracts/scrip/MUTATION.md`](contracts/scrip/MUTATION.md).
 
 Client and facilitator (Stryker) against test suites:
 - **`client/src/counterparty.mjs`:** **93.55%** mutation score (492 killed, 1 timeout, 34 survived) <!-- source: results/mutation-scores.md:2 -->

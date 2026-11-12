@@ -1,36 +1,36 @@
 # Mutation testing: `contracts/scrip/src/lib.rs`
 
-Generated 2026-10-30 16:48 by `.agy/mutation/report.py` from the saved cargo-mutants results.
+Clean rerun, 10 to 12 Nov 2026 (the October run is superseded). Results are from `cargo mutants` output, not hand-edited.
 
 ## Result
 
 | Outcome | Mutants |
 |---|---|
-| Total generated | 197 |
-| Caught (a test failed) | 175 |
+| Total generated | 198 |
+| Caught (a test failed) | 176 |
 | Missed (all tests passed) | 1 |
 | Timeout (not decided) | 0 |
 | Unviable (did not compile) | 21 |
 | Not tested | 0 |
 
-Mutation score on decided viable mutants: **175/176 = 99.4%** (timeouts and untested excluded; unviable excluded as they cannot be run).
+Mutation score on decided viable mutants: **176/177 = 99.4%** (unviable excluded as they cannot be run).
 
 ## How it was run (honest account)
 
-- Tool: `cargo mutants` on `lib.rs`, tests = `cargo test --lib` (unit and property tests), `--timeout 120`, 2 jobs, in a copy of the repo tree because the tests read `docs/vectors/`.
-- The first run (`out/`) was interrupted by a laptop reboot after 183 of 197 mutants; its partial results were saved in the project folder.
-- A second run (`out2/`, `--timeout 300`) re-ran the 14 untested mutants and the 25 that timed out under heavy CPU load. The final status above takes the second run when it exists.
-- This is therefore a merge of two runs, not one clean run. A clean full rerun is planned after the code freeze.
+- Tool: `cargo mutants` on `lib.rs`, tests = `cargo test --lib` (138 unit and property tests), in a copy of the repo tree because the tests read `docs/vectors/`. Baseline: 138 tests pass on the unmutated tree.
+- It was one logical run split across three invocations of `cargo mutants --iterate`: the first was stopped after about 106 mutants (owner left the machine), the later ones resumed and skipped mutants already caught or unviable.
+- Under heavy CPU load, 5 to 7 mutants in `request_payment` and `approve_intent` hit the 300 s timeout. They were re-run with longer timeouts (600 s, then 900 s) and every one was caught. Timeouts were never counted as caught.
+- Integration tests (`tests/`) need a prebuilt `ft_mock.wasm` and are not part of this mutation run.
 
 ## Missed mutants
 
-- `contracts/scrip/src/lib.rs:322:40: replace | with ^ in from_hex32` **(equivalent mutant)**
+- `contracts/scrip/src/lib.rs:331:40: replace | with ^ in from_hex32` **(equivalent mutant)**
 
-An equivalent mutant cannot be killed by any test: in `from_hex32` the high nibble is shifted left by 4 bits, so its low bits are zero and `|`, `^` and `+` give the same result.
+An equivalent mutant cannot be killed by any test: in `from_hex32` the high nibble is shifted left by 4 bits, so its low bits are zero and `|` and `^` give the same result.
 
 ## Timeouts
 
-None.
+None remaining.
 
 ## Not tested
 
