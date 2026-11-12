@@ -61,17 +61,18 @@ export function parseClaimedTxs(docsMap) {
       ].filter((a) => a.endsWith('.testnet'))),
     ];
 
-    if (file === 'demo.json') {
-      // Invoices
+    if (file === 'demo.json' || file === 'demo-llm.json') {
+      // Invoices (demo.json) or recorded model decisions (demo-llm.json): same fields per row
       const agents = doc.agents ?? {};
       for (const [agentName, agentData] of Object.entries(agents)) {
-        for (let idx = 0; idx < (agentData.invoices ?? []).length; idx++) {
-          const inv = agentData.invoices[idx];
+        const rows = agentData.invoices ?? agentData.decisions ?? [];
+        for (let idx = 0; idx < rows.length; idx++) {
+          const inv = rows[idx];
           if (!inv.txHash || !B58_HASH.test(inv.txHash)) continue;
           const isSuccess = inv.paid === true && !inv.rejectionCode;
           items.push({
             file,
-            label: `agents.${agentName}.invoices[${idx}]`,
+            label: `agents.${agentName}.${agentData.invoices ? 'invoices' : 'decisions'}[${idx}]`,
             txHash: inv.txHash,
             expectedStatus: isSuccess ? 'SUCCESS' : 'REJECTED',
             expectedCode: inv.rejectionCode ?? null,
@@ -435,7 +436,7 @@ async function main() {
   const rpcUrl = process.env.NEAR_RPC ?? DEFAULT_RPC;
 
   // Load results files
-  const fileNames = ['demo.json', 'gate.json', 'attack.json'];
+  const fileNames = ['demo.json', 'demo-llm.json', 'gate.json', 'attack.json'];
   const docsMap = {};
   for (const name of fileNames) {
     const p = join(RESULTS_DIR, name);

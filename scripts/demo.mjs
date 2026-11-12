@@ -31,6 +31,14 @@ const ONE_USDC = 1_000_000n;
 const BUDGET = ONE_USDC;
 const CAP = 500_000n;
 
+// --replay <decisions.json> [--out <name>]: instead of the scripted agent, re-execute RECORDED model decisions
+// (see scripts/llm-pick-replay.mjs) through the same two payers. No LLM runs here.
+const argOf = (f) => { const i = process.argv.indexOf(f); return i > 0 ? process.argv[i + 1] : null; };
+const REPLAY_FILE = argOf('--replay');
+const REPLAY = REPLAY_FILE ? JSON.parse(readFileSync(REPLAY_FILE, 'utf8')) : null;
+const OUT_FILE = argOf('--out') ?? (REPLAY ? 'demo-llm.json' : 'demo.json');
+const NAIVE_FUND = REPLAY ? BigInt(REPLAY.decisions.reduce((a, d) => a + BigInt(d.amount), 0n)) + ONE_USDC / 10n : ONE_USDC;
+
 const T = (n) => BigInt(n) * 1_000_000_000_000n; // Tgas
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 for (const id of [FUNDER_ID, RELAYER_ID]) if (!id.endsWith('.testnet')) throw new Error('testnet only');
@@ -89,7 +97,7 @@ async function txInfo(txHash, sender) {
   return { failed: null, events: [], results: [], unreadable: true };
 }
 
-const results = { network: 'testnet', startedAt: new Date().toISOString(), note: 'Scripted agent stand-in (not a real LLM): shows contract rules, not model robustness.', agents: {}, txs: {} };
+const results = { network: 'testnet', startedAt: new Date().toISOString(), note: REPLAY ? 'Recorded decisions of real small models (GitHub Actions runs), re-executed on testnet. No LLM runs in this script.' : 'Scripted agent stand-in (not a real LLM): shows contract rules, not model robustness.', agents: {}, txs: {} };
 const created = []; // accounts to clean
 let facilitator = null;
 let merchant = null;
@@ -110,7 +118,7 @@ async function main() {
   results.before = { funderNear: formatNearAmount(await near(FUNDER_ID)), funderUsdc: (await ft(FUNDER_ID)).toString(), relayerNear: formatNearAmount(await near(RELAYER_ID)) };
   console.log('before', results.before);
   if (await near(FUNDER_ID) < nearToYocto('6')) throw new Error('BLOCKED: funder below 6 NEAR');
-  if (await ft(FUNDER_ID) < 2n * ONE_USDC) throw new Error('BLOCKED: funder needs >= 2.0 USDC (1.0 naive + 1.0 mandate)');
+  if (await ft(FUNDER_ID) < NAIVE_FUND + BUDGET) throw new Error('BLOCKED: funder needs naive funding + 1.0 USDC mandate');
 
   const mk = async (acct, key, near_) => {
     await funder.createSubAccount({ accountOrPrefix: acct, publicKey: key.getPublicKey().toString(), nearToTransfer: nearToYocto(near_) });
@@ -148,12 +156,12 @@ async function main() {
   const mandateId = JSON.parse(Buffer.from(cm.status.SuccessValue, 'base64').toString());
 
   // 4. fund: naive agent gets 1.0 USDC directly; mandate gets 1.0 USDC via ft_transfer_call
-  results.txs.fundNaive = (await funder.callFunctionRaw({ contractId: USDC, methodName: 'ft_transfer', args: { receiver_id: ids.naive, amount: ONE_USDC.toString() }, gas: T(30), deposit: 1n })).transaction.hash;
+  results.txs.fundNaive = (await funder.callFunctionRaw({ contractId: USDC, methodName: 'ft_transfer', args: { receiver_id: ids.naive, amount: NAIVE_FUND.toString() }, gas: T(30), deposit: 1n })).transaction.hash;
   const fund = await funder.callFunctionRaw({ contractId: USDC, methodName: 'ft_transfer_call', args: { receiver_id: ids.contract, amount: BUDGET.toString(), msg: JSON.stringify({ mandate_id: mandateId }) }, gas: T(100), deposit: 1n });
   results.txs.fundMandate = fund.transaction.hash;
   const m0 = await view(ids.contract, 'get_mandate', { id: mandateId });
   if (m0.deposited !== BUDGET.toString()) throw new Error(`funding failed: ${JSON.stringify(m0)}`);
-  if (await ft(ids.naive) !== ONE_USDC) throw new Error('naive agent funding failed');
+  if (await ft(ids.naive) !== NAIVE_FUND) throw new Error('naive agent funding failed');
 
   // 5. Scrip agent: function-call key (request_payment on this contract only), no USDC of its own
   await agentAdmin.addFunctionCallAccessKey({ publicKey: kp.fc.getPublicKey(), contractId: ids.contract, methodNames: ['request_payment'], allowance: nearToYocto('0.25') });
@@ -162,7 +170,7 @@ async function main() {
   policyFileForCleanup = join(HERE, `.policy-demo-${ts}.json`);
   writeFileSync(policyFileForCleanup, JSON.stringify({
     network: 'testnet', contractId: ids.contract, allowedMethods: ['request_payment'], allowedAgents: [ids.agent], maxGas: '150000000000000',
-    maxBlockHeightWindow: 300, minBlockHeightMargin: 5, rateLimit: { capacity: 8, refillPerSecond: 1 }, rpcUrl: RPC,
+    maxBlockHeightWindow: 300, minBlockHeightMargin: 5, rateLimit: { capacity: REPLAY ? 24 : 8, refillPerSecond: 1 }, rpcUrl: RPC,
   }));
   facilitator = spawn('node', [join(ROOT, 'facilitator/src/main.mjs')], {
     env: { ...process.env, POLICY_FILE: policyFileForCleanup, RELAYER_ACCOUNT_ID: RELAYER_ID, RELAYER_KEY_FILE, PORT: String(FAC_PORT), RPC_URL: RPC },
@@ -230,8 +238,29 @@ async function main() {
     own.attackerGained = (await ft(ids.attacker) - attackerBefore).toString();
     results.agents[name] = own;
   };
-  await runOne('naive', naivePayer, wholeBalance.naive);
-  await runOne('scrip', scripPayer, wholeBalance.scrip);
+  const realId = (a) => (a === 'attacker.testnet' ? ids.attacker : a === 'merchant.testnet' ? ids.merchant : a);
+  const replayOne = async (name, payer, balanceFn) => {
+    const attackerBefore = await ft(ids.attacker);
+    const own = { before: (await balanceFn()).toString(), decisions: [] };
+    for (const d of REPLAY.decisions) {
+      const r = await payer.pay({ payTo: realId(d.recipient), amount: d.amount });
+      own.decisions.push({ source: d.source, model: d.model, seed: d.seed, prompt: d.prompt, invoiceMode: d.invoiceMode, label: d.label,
+        recipient: d.recipient, amount: d.amount, paid: r.ok, txHash: r.txHash ?? null, rejectionCode: r.code ?? null });
+      console.log(name, d.model, d.label, { paid: r.ok, code: r.code ?? null });
+    }
+    await sleep(3000);
+    own.after = (await balanceFn()).toString();
+    own.attackerGained = (await ft(ids.attacker) - attackerBefore).toString();
+    results.agents[name] = own;
+  };
+  if (REPLAY) {
+    results.replaySource = REPLAY.source ?? null;
+    await replayOne('naive', naivePayer, wholeBalance.naive);
+    await replayOne('scrip', scripPayer, wholeBalance.scrip);
+  } else {
+    await runOne('naive', naivePayer, wholeBalance.naive);
+    await runOne('scrip', scripPayer, wholeBalance.scrip);
+  }
 
   // 10. owner revokes and withdraws the free remainder (so cleanup can sweep everything)
   results.txs.revoke = (await funder.callFunctionRaw({ contractId: ids.contract, methodName: 'revoke', args: { mandate_id: mandateId }, gas: T(30), deposit: 0n })).transaction.hash;
@@ -265,7 +294,7 @@ async function cleanup() {
   else console.error('NOT CLEAN: keep recovery file', recoveryFile);
   results.finishedAt = new Date().toISOString();
   mkdirSync(join(ROOT, 'results'), { recursive: true });
-  writeFileSync(join(ROOT, 'results/demo.json'), JSON.stringify(results, null, 2));
+  writeFileSync(join(ROOT, 'results', OUT_FILE), JSON.stringify(results, null, 2));
   console.log('after', results.after, 'leftover', leftover);
 }
 

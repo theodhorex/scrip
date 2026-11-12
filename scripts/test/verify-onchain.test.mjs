@@ -412,3 +412,17 @@ test('fetchIndexerBatch: an unreachable or erroring indexer returns an empty map
   assert.equal((await fetchIndexerBatch(['a'], { fetchFn: async () => { throw new Error('down'); } })).size, 0);
   assert.equal((await fetchIndexerBatch(['a'], { fetchFn: async () => ({ ok: false, status: 429, json: async () => ({}) }) })).size, 0);
 });
+
+test('parseClaimedTxs: demo-llm.json decisions are verified like invoices', async () => {
+  const { parseClaimedTxs } = await import('../verify-onchain.mjs');
+  const h1 = '4'.repeat(44);
+  const h2 = '5'.repeat(44);
+  const items = parseClaimedTxs({ 'demo-llm.json': { agents: {
+    naive: { decisions: [{ paid: true, txHash: h1, rejectionCode: null }] },
+    scrip: { decisions: [{ paid: false, txHash: h2, rejectionCode: 'RECIPIENT_NOT_ALLOWED' }] },
+  } } });
+  assert.equal(items.length, 2);
+  assert.equal(items[0].expectedStatus, 'SUCCESS');
+  assert.equal(items[1].expectedStatus, 'REJECTED');
+  assert.equal(items[1].expectedCode, 'RECIPIENT_NOT_ALLOWED');
+});
