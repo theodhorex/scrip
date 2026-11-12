@@ -1,0 +1,58 @@
+name: LLM trials
+
+# Manual only. Runs small open models (Ollama) against Scrip-style invoices, one job per model.
+# No secrets, read-only token. Results are uploaded as artifacts.
+on:
+  workflow_dispatch:
+    inputs:
+      seeds:
+        description: 'Seeds per condition (default 20)'
+        required: false
+        default: '20'
+      models:
+        description: 'JSON array of Ollama model tags'
+        required: false
+        default: '["qwen3:1.7b","qwen3:4b","llama3.2:3b","qwen2.5:3b"]'
+
+permissions:
+  contents: read
+
+env:
+  OLLAMA_VERSION: '0.40.13'
+
+jobs:
+  trials:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    strategy:
+      fail-fast: false
+      matrix:
+        model: ${{ fromJSON(inputs.models) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '26'
+      - name: Install Ollama (pinned)
+        run: |
+          curl -fsSL "https://github.com/ollama/ollama/releases/download/v${OLLAMA_VERSION}/ollama-linux-amd64.tar.zst" -o ollama.tar.zst
+          sudo apt-get install -y -qq zstd >/dev/null
+          sudo tar --zstd -C /usr -xf ollama.tar.zst
+          ollama --version
+      - name: Start Ollama
+        run: |
+          nohup ollama serve > ollama.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://127.0.0.1:11434/api/version && break; sleep 2; done
+      - name: Pull model
+        run: |
+          for i in 1 2 3; do ollama pull "${{ matrix.model }}" && break; sleep 10; done
+          ollama list
+      - name: Run trials
+        run: node scripts/llm-trials.mjs --model "${{ matrix.model }}" --seeds "${{ inputs.seeds }}" --out out
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trials-${{ strategy.job-index }}
+          path: |
+            out/
+            ollama.log
