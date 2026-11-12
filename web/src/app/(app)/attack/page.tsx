@@ -1,21 +1,67 @@
 import Link from "next/link";
 import {
   loadAttackResults,
+  parseAttackResults,
   loadAttackCatalog,
+  parseAttackCatalog,
   formatUsdcUnits,
-  buildCategoryMatrix,
+  buildLayerMatrix,
+  totalsByLayer,
+  LAYERS,
+  VERDICTS,
+  type VerdictCounts,
+  type Verdict,
   getOutOfScopeCases,
   CATEGORY_NAMES,
 } from "@/lib/attack-data";
+import bundledAttackRun from "@/data/attack.json";
+import bundledCatalog from "@/data/attack-catalog.json";
+
+const VERDICT_MARK: Record<Verdict, string> = { PASS: "\u2713", FAIL: "\u2715", SKIPPED: "\u2013", BREACH: "\u26A0" };
+const VERDICT_CLASS: Record<Verdict, string> = {
+  PASS: "bp-app-chip-pass",
+  FAIL: "bp-app-chip-reject",
+  SKIPPED: "",
+  BREACH: "bp-app-chip-reject",
+};
+
+function VerdictCell({ counts }: { counts?: VerdictCounts }) {
+  if (!counts || counts.total === 0) {
+    return (
+      <span className="text-bp-muted bp-app-mono" title="Belum dijalankan / tidak ada kasus">
+        <span aria-hidden="true">&ndash;</span>
+        <span className="sr-only">belum dijalankan</span>
+      </span>
+    );
+  }
+  return (
+    <span className="flex flex-wrap gap-1">
+      {VERDICTS.filter((v) => counts[v] > 0).map((v) => (
+        <span key={v} className={`bp-app-chip ${VERDICT_CLASS[v]}`}>
+          <span aria-hidden="true">{VERDICT_MARK[v]}</span>
+          {v} {counts[v]}
+        </span>
+      ))}
+      {counts.other > 0 && <span className="bp-app-chip">? {counts.other}</span>}
+    </span>
+  );
+}
 
 export default function AttackPage() {
-  const results = loadAttackResults();
-  const catalog = loadAttackCatalog();
+  // A deploy rooted at web/ has no ../results folder, so fall back to the
+  // recorded run bundled in src/data (same run as results/attack.json).
+  const results = loadAttackResults() ?? parseAttackResults(bundledAttackRun);
+  const catalog = loadAttackCatalog() ?? parseAttackCatalog(bundledCatalog);
 
   const naive = results?.naive ?? null;
   const scrip = results?.scrip ?? null;
 
-  const catalogMatrix = catalog ? buildCategoryMatrix(catalog.cases) : [];
+  const catalogMatrix = catalog ? buildLayerMatrix(catalog.cases) : [];
+  const layerTotals = totalsByLayer(catalogMatrix);
+  const layersWithData = LAYERS.filter((l) => layerTotals[l].total > 0);
+  const layersMissing = LAYERS.filter((l) => layerTotals[l].total === 0);
+  const grand = catalogMatrix.reduce((n, r) => n + r.total.total, 0);
+  const grandBreach = catalogMatrix.reduce((n, r) => n + r.total.BREACH, 0);
   const outOfScopeCases = catalog ? getOutOfScopeCases(catalog.cases) : [];
 
   return (
@@ -60,8 +106,8 @@ export default function AttackPage() {
                 <th scope="col" style={{ width: "36%" }}>Metric</th>
                 <th scope="col">
                   Naive contract
-                  <span className="block text-[11px] font-normal normal-case tracking-normal text-bp-muted">
-                    Direct transfer without reservation
+                  <span className="block text-[11px] font-normal normal-case tracking-normal text-bp-reject">
+                    Post-transfer balance check
                   </span>
                 </th>
                 <th scope="col">
@@ -74,7 +120,7 @@ export default function AttackPage() {
             </thead>
             <tbody>
               <tr>
-                <th scope="row">Parallel requests</th>
+                <th scope="row">Transactions</th>
                 <td className="bp-app-mono">
                   {naive ? `${naive.broadcast.n} broadcast (${naive.broadcast.burstMs} ms)` : <span className="text-bp-muted">&ndash;</span>}
                 </td>
@@ -83,7 +129,7 @@ export default function AttackPage() {
                 </td>
               </tr>
               <tr>
-                <th scope="row">Configured budget</th>
+                <th scope="row">Budget cap</th>
                 <td className="bp-app-mono">
                   {naive ? formatUsdcUnits(naive.budget) : <span className="text-bp-muted">&ndash;</span>}
                 </td>
@@ -92,10 +138,10 @@ export default function AttackPage() {
                 </td>
               </tr>
               <tr>
-                <th scope="row">Saldo merchant (Received)</th>
+                <th scope="row">Merchant received</th>
                 <td className="bp-app-mono">
                   {naive ? (
-                    <span className="text-bp-reject font-semibold">
+                    <span className="text-bp-reject font-bold">
                       {formatUsdcUnits(naive.merchantReceived)}
                     </span>
                   ) : (
@@ -104,7 +150,7 @@ export default function AttackPage() {
                 </td>
                 <td className="bp-app-mono">
                   {scrip ? (
-                    <span className="text-bp-pass font-semibold">
+                    <span className="text-bp-pass font-bold">
                       {formatUsdcUnits(scrip.merchantReceived)}
                     </span>
                   ) : (
@@ -113,74 +159,69 @@ export default function AttackPage() {
                 </td>
               </tr>
               <tr>
-                <th scope="row">Spent vs budget</th>
+                <th scope="row">Budget exceeded</th>
                 <td className="bp-app-mono">
                   {naive ? (
-                    <span>
-                      {formatUsdcUnits(naive.spent)} / {formatUsdcUnits(naive.budget)}
-                    </span>
+                    naive.exceededBudget ? (
+                      <span className="bp-app-chip bp-app-chip-reject">
+                        EXCEEDED (+{formatUsdcUnits(naive.overBudgetBy)})
+                      </span>
+                    ) : (
+                      <span className="text-bp-pass font-semibold">NO</span>
+                    )
                   ) : (
                     <span className="text-bp-muted">&ndash;</span>
                   )}
                 </td>
                 <td className="bp-app-mono">
                   {scrip ? (
-                    <span>
-                      {formatUsdcUnits(scrip.spent)} / {formatUsdcUnits(scrip.budget)}
-                    </span>
+                    scrip.exceededBudget ? (
+                      <span className="bp-app-chip bp-app-chip-reject">
+                        EXCEEDED (+{formatUsdcUnits(scrip.overBudgetBy)})
+                      </span>
+                    ) : (
+                      <span className="text-bp-pass font-semibold">
+                        HELD ({formatUsdcUnits(scrip.overBudgetBy)} over)
+                      </span>
+                    )
                   ) : (
                     <span className="text-bp-muted">&ndash;</span>
                   )}
                 </td>
               </tr>
               <tr>
-                <th scope="row">Budget overrun / deficit</th>
+                <th scope="row">Payments completed</th>
                 <td className="bp-app-mono">
-                  {naive ? (
-                    <span className="bp-app-chip bp-app-chip-reject">
-                      +{formatUsdcUnits(naive.overBudgetBy)} over budget
-                    </span>
-                  ) : (
-                    <span className="text-bp-muted">&ndash;</span>
-                  )}
+                  {naive ? `${naive.paymentsPaid} payments` : <span className="text-bp-muted">&ndash;</span>}
                 </td>
                 <td className="bp-app-mono">
-                  {scrip ? (
-                    <span className="bp-app-chip bp-app-chip-pass">
-                      +{formatUsdcUnits(scrip.overBudgetBy)} (0 overdraw)
-                    </span>
-                  ) : (
-                    <span className="text-bp-muted">&ndash;</span>
-                  )}
+                  {scrip ? `${scrip.paymentsPaid} payments` : <span className="text-bp-muted">&ndash;</span>}
                 </td>
               </tr>
               <tr>
-                <th scope="row">Permintaan diterima / ditolak</th>
+                <th scope="row">Spent (contract)</th>
                 <td className="bp-app-mono">
-                  {naive ? (
-                    <span>
-                      {naive.paymentsPaid} diterima / {naive.broadcast.n - Number(naive.paymentsPaid)} ditolak
-                    </span>
-                  ) : (
-                    <span className="text-bp-muted">&ndash;</span>
-                  )}
+                  {naive ? formatUsdcUnits(naive.spent) : <span className="text-bp-muted">&ndash;</span>}
                 </td>
                 <td className="bp-app-mono">
-                  {scrip ? (
-                    <span>
-                      {scrip.paymentsPaid} diterima / {scrip.broadcast.n - Number(scrip.paymentsPaid)} ditolak
-                    </span>
-                  ) : (
-                    <span className="text-bp-muted">&ndash;</span>
-                  )}
+                  {scrip ? formatUsdcUnits(scrip.spent) : <span className="text-bp-muted">&ndash;</span>}
                 </td>
               </tr>
               <tr>
-                <th scope="row">Invariant preserved</th>
+                <th scope="row">Pending reservations</th>
+                <td className="bp-app-mono">
+                  {naive ? `${formatUsdcUnits(naive.reserved)} (${naive.openRequests} open)` : <span className="text-bp-muted">&ndash;</span>}
+                </td>
+                <td className="bp-app-mono">
+                  {scrip ? `${formatUsdcUnits(scrip.reserved)} (${scrip.openRequests} open)` : <span className="text-bp-muted">&ndash;</span>}
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Defense verdict</th>
                 <td>
                   {naive ? (
                     <span className="bp-app-chip bp-app-chip-reject">
-                      BROKEN
+                      VULNERABLE (drain bypasses cap)
                     </span>
                   ) : (
                     <span className="text-bp-muted">&ndash;</span>
@@ -218,58 +259,57 @@ export default function AttackPage() {
             </p>
           </div>
         ) : (
-          <div className="bp-plate bp-app-table-wrap">
-            <table className="bp-app-table">
-              <thead>
-                <tr>
-                  <th scope="col" style={{ width: "35%" }}>Kategori</th>
-                  <th scope="col" style={{ width: "13%" }}>BLOCKED</th>
-                  <th scope="col" style={{ width: "13%" }}>INERT</th>
-                  <th scope="col" style={{ width: "13%" }}>OUT_OF_SCOPE</th>
-                  <th scope="col" style={{ width: "13%" }}>BREACH</th>
-                  <th scope="col" style={{ width: "13%" }}>Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {catalogMatrix.map((row) => (
-                  <tr key={row.category}>
-                    <th scope="row">
-                      <span>{row.categoryName}</span>
-                    </th>
-                    <td className="bp-app-mono">
-                      {row.blocked > 0 ? (
-                        <span className="text-bp-pass font-semibold">{row.blocked}</span>
-                      ) : (
-                        <span className="text-bp-muted">0</span>
-                      )}
-                    </td>
-                    <td className="bp-app-mono">
-                      {row.inert > 0 ? (
-                        <span>{row.inert}</span>
-                      ) : (
-                        <span className="text-bp-muted">0</span>
-                      )}
-                    </td>
-                    <td className="bp-app-mono">
-                      {row.outOfScope > 0 ? (
-                        <span className="text-bp-muted font-medium">{row.outOfScope}</span>
-                      ) : (
-                        <span className="text-bp-muted">0</span>
-                      )}
-                    </td>
-                    <td className="bp-app-mono">
-                      {row.breach > 0 ? (
-                        <span className="text-bp-reject font-bold">{row.breach}</span>
-                      ) : (
-                        <span className="text-bp-muted">0</span>
-                      )}
-                    </td>
-                    <td className="bp-app-mono font-semibold">{row.total}</td>
+          <>
+            <p className="text-xs text-bp-muted mb-3 max-w-2xl leading-relaxed">
+              Sumber: <code className="bp-app-chip">results/attack-catalog.json</code>. {grand} kasus tercatat; label PASS, FAIL, SKIPPED, dan BREACH ditampilkan apa adanya dari katalog.
+              {layersMissing.length > 0 && (
+                <> Lapis {layersMissing.join(", ")} belum punya data dan ditandai &quot;belum dijalankan&quot;, bukan nol yang lolos.</>
+              )}
+            </p>
+            <div className="bp-plate bp-app-table-wrap">
+              <table className="bp-app-table">
+                <thead>
+                  <tr>
+                    <th scope="col">Kategori</th>
+                    {LAYERS.map((l) => (
+                      <th scope="col" key={l}>Lapis {l}</th>
+                    ))}
+                    <th scope="col">Total</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {catalogMatrix.map((row) => (
+                    <tr key={row.category}>
+                      <th scope="row">{row.categoryName}</th>
+                      {LAYERS.map((l) => (
+                        <td key={l}>
+                          <VerdictCell counts={row.cells[l]} />
+                        </td>
+                      ))}
+                      <td><VerdictCell counts={row.total} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr>
+                    <th scope="row">Semua kategori</th>
+                    {LAYERS.map((l) => (
+                      <td key={l}>
+                        <VerdictCell counts={layerTotals[l]} />
+                      </td>
+                    ))}
+                    <td>
+                      <span className="bp-app-mono">{grand}</span>
+                      {grandBreach > 0 && <span className="bp-app-chip bp-app-chip-reject ml-2">&#9888; {grandBreach} BREACH</span>}
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            <p className="text-[11px] text-bp-muted mt-2" aria-hidden={layersWithData.length === 0}>
+              Legenda: {VERDICTS.map((v) => `${VERDICT_MARK[v]} ${v}`).join(" · ")} · &ndash; tidak ada kasus
+            </p>
+          </>
         )}
       </section>
 

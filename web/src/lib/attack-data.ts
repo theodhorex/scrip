@@ -130,6 +130,69 @@ export function buildCategoryMatrix(cases: AttackCatalogCase[]): CategoryMatrixR
   });
 }
 
+export const LAYERS = ["A", "B", "C", "D", "E"] as const;
+export const VERDICTS = ["PASS", "FAIL", "SKIPPED", "BREACH"] as const;
+export type Verdict = (typeof VERDICTS)[number];
+export type VerdictCounts = Record<Verdict, number> & { other: number; total: number };
+
+export type LayerMatrixRow = {
+  category: string;
+  categoryName: string;
+  cells: Record<string, VerdictCounts>;
+  total: VerdictCounts;
+};
+
+function emptyCounts(): VerdictCounts {
+  return { PASS: 0, FAIL: 0, SKIPPED: 0, BREACH: 0, other: 0, total: 0 };
+}
+
+function addVerdict(counts: VerdictCounts, verdict: string) {
+  counts.total++;
+  if ((VERDICTS as readonly string[]).includes(verdict)) counts[verdict as Verdict]++;
+  else counts.other++;
+}
+
+/** Category x layer matrix of verdicts, exactly as recorded in the catalog. */
+export function buildLayerMatrix(cases: AttackCatalogCase[]): LayerMatrixRow[] {
+  const map = new Map<string, LayerMatrixRow>();
+  for (const c of cases) {
+    const catKey = String(c.category);
+    let row = map.get(catKey);
+    if (!row) {
+      row = {
+        category: catKey,
+        categoryName: CATEGORY_NAMES[catKey] ?? `Kategori ${catKey}`,
+        cells: {},
+        total: emptyCounts(),
+      };
+      map.set(catKey, row);
+    }
+    const layer = c.layer.toUpperCase();
+    row.cells[layer] ??= emptyCounts();
+    addVerdict(row.cells[layer], c.verdict);
+    addVerdict(row.total, c.verdict);
+  }
+  return Array.from(map.values()).sort((a, b) => {
+    const na = Number(a.category);
+    const nb = Number(b.category);
+    if (!isNaN(na) && !isNaN(nb)) return na - nb;
+    return a.category.localeCompare(b.category);
+  });
+}
+
+export function totalsByLayer(rows: LayerMatrixRow[]): Record<string, VerdictCounts> {
+  const out: Record<string, VerdictCounts> = {};
+  for (const l of LAYERS) out[l] = emptyCounts();
+  for (const r of rows)
+    for (const [l, c] of Object.entries(r.cells)) {
+      out[l] ??= emptyCounts();
+      for (const v of VERDICTS) out[l][v] += c[v];
+      out[l].other += c.other;
+      out[l].total += c.total;
+    }
+  return out;
+}
+
 export function getOutOfScopeCases(cases: AttackCatalogCase[]): AttackCatalogCase[] {
   return cases.filter(
     (c) => c.actual?.label === "OUT_OF_SCOPE" || c.expected?.label === "OUT_OF_SCOPE",
@@ -220,7 +283,7 @@ export function parseAttackResults(raw: unknown): AttackRunResult | null {
     if (!item || typeof item !== "object") return null;
     const c = item as Record<string, unknown>;
 
-    if (c.contract !== "naive" && c.contract !== "scrip") return null;
+    if (c.contract !== "naive" && c.contract !== "scrip" && c.contract !== "amanat") return null;
     if (typeof c.budget !== "string" || typeof c.merchantReceived !== "string") return null;
     if (typeof c.exceededBudget !== "boolean" || typeof c.overBudgetBy !== "string") return null;
     if (typeof c.paymentsPaid !== "string" && typeof c.paymentsPaid !== "number") return null;
@@ -238,8 +301,10 @@ export function parseAttackResults(raw: unknown): AttackRunResult | null {
       burstMs: b.burstMs,
     };
 
+    const contract: "naive" | "scrip" = c.contract === "naive" ? "naive" : "scrip";
+
     const parsedCase: AttackCaseResult = {
-      contract: c.contract,
+      contract,
       broadcast,
       budget: c.budget,
       merchantReceived: c.merchantReceived,
