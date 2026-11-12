@@ -12,6 +12,7 @@ Everything is real on testnet (accounts, USDC, contract, facilitator, tx hashes)
 
 ## Honest limits
 - The agent (`demo/agent.mjs`) is a deterministic SCRIPT standing in for an injectable LLM, NOT a real LLM. It always obeys the injection. The demo shows what the contract enforces when an agent is compromised, not how robust any model is.
+- Real small LLMs are tested separately: `demo/llm-agent.mjs` and `scripts/llm-trials.mjs` (Ollama tool calls, labels, rule-mirror impact), run by the manual workflow `.github/workflows/llm-trials.yml`. Their recorded decisions can be replayed on testnet with `node scripts/demo.mjs --replay results/llm-replay-input.json` (needs funder keys). See "Real model trials" in the main README.
 - Testnet only. The merchant verifies payment by reading the transaction from chain (USDC `ft_transfer` event or Scrip `settled` event to the invoiced account).
 - Needs a funder with >= 2.0 testnet USDC and the relayer account (see `scripts/gate.mjs`).
 
