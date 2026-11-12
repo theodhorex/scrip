@@ -28,4 +28,4 @@ All environment variables are optional. No private keys, seed phrases, or sensit
 
 ## 3. Verification Page
 
-The client-side verification page (`/verify`) queries the public NEAR testnet RPC directly from the browser without requiring any API keys or server-side relays.
+The client-side verification page (`/verify`) queries the public FastNear transactions indexer (`https://tx.test.fastnear.com/v0/transactions`) directly from the browser, and falls back to the public archival RPC (`https://archival-rpc.testnet.fastnear.com`). It needs no API key, no environment variable and no server-side relay, and nothing is paid for. Both endpoints answer cross-origin browser requests; neither is documented as a guaranteed free tier, so an unanswered check is shown as `UNVERIFIABLE`, never as a pass.

@@ -6,6 +6,7 @@ import { EXPLORER_TX_BASE } from "@/lib/network";
 import {
   extractVerificationItems,
   fetchAndVerifyTx,
+  FASTNEAR_INDEXER_URL,
   runWithConcurrencyLimit,
   type VerificationItem,
   type VerificationResult,
@@ -57,6 +58,7 @@ export default function VerifyPage() {
           txHash: item.txHash,
           senderId: item.senderId,
           claim: item.claim,
+          indexerUrl: FASTNEAR_INDEXER_URL,
           rpcUrl: "https://archival-rpc.testnet.fastnear.com",
           timeoutMs: 10_000,
         });
@@ -289,7 +291,7 @@ export default function VerifyPage() {
           </pre>
 
           <div className="mt-4 text-xs font-mono text-bp-muted space-y-1">
-            <p>Target endpoint: https://archival-rpc.testnet.fastnear.com (public archival node, no API key needed; the regular RPC no longer keeps old transactions)</p>
+            <p>Sources: FastNear indexer (tx.test.fastnear.com) first, public archival RPC as fallback; no API key, no payment</p>
             <p>JSON-RPC Method: EXPERIMENTAL_tx_status</p>
             <p>Explorer fallback: https://testnet.nearblocks.io/txns/{SAMPLE_TX}</p>
           </div>
