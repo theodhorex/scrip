@@ -31,6 +31,8 @@ export interface VerificationResult {
   verdict: VerificationVerdict;
   reason?: string;
   claim?: Claim;
+  /** Where the transaction data came from: the FastNear indexer or a JSON-RPC node. */
+  source?: "indexer" | "rpc";
 }
 
 const KNOWN_CODES = [
@@ -92,6 +94,40 @@ function parseFailureObject(failure: unknown): { errorCode?: string; rawError: s
 }
 
 /**
+ * Scrip does not panic on a refused payment: the contract returns `{"Rejected":{"code":...}}` as the
+ * receipt's SuccessValue (and emits a `rejected` NEP-297 event). A refusal is therefore a successful
+ * receipt that carries a rejection code, and must be read as a refusal, not as a payment.
+ */
+export function decodeRejection(outcome: Record<string, unknown> | undefined): string | undefined {
+  if (!outcome) return undefined;
+  const status = outcome.status as Record<string, unknown> | undefined;
+  const value = status?.SuccessValue;
+  if (typeof value === "string" && value.length > 0) {
+    try {
+      const parsed = JSON.parse(atob(value)) as { Rejected?: { code?: unknown } };
+      if (typeof parsed?.Rejected?.code === "string") return parsed.Rejected.code;
+    } catch {
+      // not JSON: an ordinary return value
+    }
+  }
+  const logs = outcome.logs;
+  if (Array.isArray(logs)) {
+    for (const log of logs) {
+      if (typeof log === "string" && log.startsWith("EVENT_JSON:")) {
+        try {
+          const ev = JSON.parse(log.slice("EVENT_JSON:".length)) as { event?: string; data?: Array<{ code?: unknown }> };
+          const code = ev?.data?.[0]?.code;
+          if (ev?.event === "rejected" && typeof code === "string") return code;
+        } catch {
+          // ignore malformed event
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
  * Pure function: Classifies NEAR RPC EXPERIMENTAL_tx_status response.
  */
 export function classifyRpcResponse(body: unknown): TxClassification {
@@ -136,6 +172,10 @@ export function classifyRpcResponse(body: unknown): TxClassification {
       if (recStatus?.Failure) {
         const parsed = parseFailureObject(recStatus.Failure);
         return { type: "FAILURE", errorCode: parsed.errorCode, rawError: parsed.rawError };
+      }
+      const rejected = decodeRejection(outcome);
+      if (rejected) {
+        return { type: "FAILURE", errorCode: rejected, rawError: `Rejected(${rejected})` };
       }
     }
   }
@@ -197,10 +237,66 @@ export function compareClaim(
   return { verdict: "VERIFIED" };
 }
 
+/**
+ * Converts a FastNear Transactions API response (`POST /v0/transactions`) into the JSON-RPC result shape,
+ * so one classifier reads both sources. Returns an UNVERIFIABLE reason when the hash is unknown.
+ */
+export function indexerToRpcBody(body: unknown, txHash: string): { body?: unknown; reason?: string } {
+  const list = (body as { transactions?: unknown[] } | null)?.transactions;
+  if (!Array.isArray(list) || list.length === 0) return { reason: "Indexer does not know this transaction yet" };
+  const tx = list.find((t) => (t as { execution_outcome?: { id?: string } })?.execution_outcome?.id === txHash) as
+    | { execution_outcome?: Record<string, unknown>; receipts?: Array<{ execution_outcome?: Record<string, unknown> }> }
+    | undefined;
+  if (!tx?.execution_outcome) return { reason: "Indexer returned no outcome for this transaction" };
+  const receiptsOutcome = (tx.receipts ?? [])
+    .map((r) => r.execution_outcome)
+    .filter((o): o is Record<string, unknown> => !!o);
+  return {
+    body: {
+      result: {
+        final_execution_status: "FINAL",
+        status: { SuccessValue: "" },
+        transaction_outcome: tx.execution_outcome,
+        receipts_outcome: receiptsOutcome,
+      },
+    },
+  };
+}
+
+export const FASTNEAR_INDEXER_URL = "https://tx.test.fastnear.com/v0/transactions";
+
+async function fetchViaIndexer(
+  fetcher: typeof fetch,
+  indexerUrl: string,
+  txHash: string,
+  timeoutMs: number,
+): Promise<{ body?: unknown; reason?: string }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetcher(indexerUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tx_hashes: [txHash] }),
+      signal: controller.signal,
+    });
+    if (response.status === 429) return { reason: "Indexer rate limited (HTTP 429)" };
+    if (!response.ok) return { reason: `Indexer responded with HTTP ${response.status}` };
+    return indexerToRpcBody(await response.json(), txHash);
+  } catch (err: unknown) {
+    const timedOut = (err instanceof Error && err.name === "AbortError") || controller.signal.aborted;
+    return { reason: timedOut ? `Indexer timed out after ${Math.round(timeoutMs / 1000)}s` : `Indexer network error: ${err instanceof Error ? err.message : String(err)}` };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export interface FetchAndVerifyOptions {
   txHash: string;
   senderId?: string;
   rpcUrl?: string;
+  /** When set, the indexer is asked first (no sender account needed); the RPC is the fallback. */
+  indexerUrl?: string;
   claim?: Claim;
   fetchFn?: typeof fetch;
   timeoutMs?: number;
@@ -213,6 +309,16 @@ export interface FetchAndVerifyOptions {
 export async function fetchAndVerifyTx(options: FetchAndVerifyOptions): Promise<VerificationResult> {
   const { txHash, senderId, claim, rpcUrl = "https://archival-rpc.testnet.fastnear.com", timeoutMs = 10_000 } = options;
   const fetcher = options.fetchFn ?? fetch;
+
+  if (options.indexerUrl) {
+    const viaIndexer = await fetchViaIndexer(fetcher, options.indexerUrl, txHash, timeoutMs);
+    if (viaIndexer.body) {
+      const classification = classifyRpcResponse(viaIndexer.body);
+      const comparison = compareClaim(classification, claim);
+      return { txHash, senderId, classification, verdict: comparison.verdict, reason: comparison.reason, claim, source: "indexer" };
+    }
+    // Indexer could not answer: fall through to the RPC node below.
+  }
 
   if (!senderId || !senderId.trim()) {
     const unverified: TxClassification = {
@@ -324,6 +430,7 @@ export async function fetchAndVerifyTx(options: FetchAndVerifyOptions): Promise<
     verdict: comparison.verdict,
     reason: comparison.reason,
     claim,
+    source: "rpc",
   };
 }
 
@@ -496,27 +603,35 @@ export function extractVerificationItems(): VerificationItem[] {
     }
   }
 
-  // 6. From gate.json: Extra facilitator txs (second payment, budget overflow)
+  // 6. From gate.json: Extra facilitator txs. The run makes a second payment (settles) and then a third
+  // request that overflows the budget; steps.budget.thirdRejected says the last one is refused.
   if (Array.isArray(gateJson?.facilitatorLog)) {
+    const extras: Array<{ tx: string; agent?: string; code?: string }> = [];
     for (const line of gateJson.facilitatorLog) {
-      if (typeof line === "string") {
-        try {
-          const parsed = JSON.parse(line) as { tx?: string; agent?: string; code?: string };
-          if (parsed.tx && !items.some((it) => it.txHash === parsed.tx)) {
-            items.push({
-              id: `gate-log-${parsed.tx.slice(0, 8)}`,
-              source: "gate.json",
-              label: `Gate log tx (${parsed.code || "tx"})`,
-              txHash: parsed.tx,
-              senderId: parsed.agent,
-              claim: { expectedSuccess: true },
-            });
-          }
-        } catch {
-          // ignore
+      if (typeof line !== "string") continue;
+      try {
+        const parsed = JSON.parse(line) as { tx?: string; agent?: string; code?: string };
+        if (parsed.tx && !items.some((it) => it.txHash === parsed.tx) && !extras.some((e) => e.tx === parsed.tx)) {
+          extras.push({ tx: parsed.tx, agent: parsed.agent, code: parsed.code });
         }
+      } catch {
+        // ignore
       }
     }
+    const budgetSteps = (gateJson as { steps?: { budget?: { thirdRejected?: unknown } } }).steps?.budget;
+    const thirdRejected = Array.isArray(budgetSteps?.thirdRejected) ? (budgetSteps?.thirdRejected as unknown[]) : [];
+    const refusedCode = typeof thirdRejected[0] === "string" ? thirdRejected[0] : undefined;
+    extras.forEach((e, idx) => {
+      const isRefused = Boolean(refusedCode) && idx === extras.length - 1 && extras.length >= 2;
+      items.push({
+        id: `gate-log-${e.tx.slice(0, 8)}`,
+        source: "gate.json",
+        label: isRefused ? `Gate budget attack (${refusedCode})` : `Gate log tx (${e.code || "tx"})`,
+        txHash: e.tx,
+        senderId: e.agent,
+        claim: isRefused ? { expectedSuccess: false, expectedErrorCode: refusedCode } : { expectedSuccess: true },
+      });
+    });
   }
 
   return items;

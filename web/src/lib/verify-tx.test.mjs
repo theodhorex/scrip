@@ -6,6 +6,8 @@ import {
   fetchAndVerifyTx,
   extractVerificationItems,
   runWithConcurrencyLimit,
+  decodeRejection,
+  indexerToRpcBody,
 } from "./verify-tx.ts";
 
 test("classifyRpcResponse: classifies SuccessValue as SUCCESS", () => {
@@ -259,4 +261,90 @@ test("runWithConcurrencyLimit: respects limit of 3 concurrent requests", async (
   assert.equal(results.length, 7);
   assert.deepEqual(results, [10, 20, 30, 40, 50, 60, 70]);
   assert(maxActive <= 3, `Expected maxActive <= 3, got ${maxActive}`);
+});
+
+const rejectedValue = Buffer.from(JSON.stringify({ Rejected: { code: "RECIPIENT_NOT_ALLOWED" } })).toString("base64");
+const HASH = "4dAYztmoCoGoCVuS38gaJPM2sskVfpeW5YH6r2mFPHL5";
+
+test("decodeRejection: reads Rejected code from SuccessValue and from the rejected event", () => {
+  assert.equal(decodeRejection({ status: { SuccessValue: rejectedValue } }), "RECIPIENT_NOT_ALLOWED");
+  assert.equal(
+    decodeRejection({ status: { SuccessValue: "" }, logs: ['EVENT_JSON:{"event":"rejected","data":[{"code":"OVER_BUDGET"}]}'] }),
+    "OVER_BUDGET",
+  );
+  assert.equal(decodeRejection({ status: { SuccessValue: "" }, logs: [] }), undefined);
+  assert.equal(decodeRejection({ status: { SuccessValue: Buffer.from("not json").toString("base64") } }), undefined);
+});
+
+test("classifyRpcResponse: a Scrip refusal (successful receipt carrying Rejected) is a FAILURE with its code", () => {
+  const out = classifyRpcResponse({
+    result: { status: { SuccessValue: "" }, receipts_outcome: [{ outcome: { status: { SuccessValue: rejectedValue }, logs: [] } }] },
+  });
+  assert.deepEqual(out, { type: "FAILURE", errorCode: "RECIPIENT_NOT_ALLOWED", rawError: "Rejected(RECIPIENT_NOT_ALLOWED)" });
+});
+
+test("indexerToRpcBody: unknown hash and empty list are reported, known hash is converted", () => {
+  assert.ok(indexerToRpcBody({ transactions: [] }, HASH).reason);
+  assert.ok(indexerToRpcBody(null, HASH).reason);
+  const ok = indexerToRpcBody(
+    { transactions: [{ execution_outcome: { id: HASH, outcome: { status: { SuccessReceiptId: "r" } } }, receipts: [{ execution_outcome: { outcome: { status: { SuccessValue: rejectedValue } } } }] }] },
+    HASH,
+  );
+  assert.equal(classifyRpcResponse(ok.body).errorCode, "RECIPIENT_NOT_ALLOWED");
+});
+
+function indexerResponse(status) {
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({ transactions: [{ execution_outcome: { id: HASH, outcome: { status: { SuccessReceiptId: "r" } } }, receipts: [{ execution_outcome: { outcome: { status } } }] }] }),
+  };
+}
+
+test("fetchAndVerifyTx: indexer answers without a sender account and the RPC is never called", async () => {
+  const calls = [];
+  const fetchFn = async (url) => { calls.push(String(url)); return indexerResponse({ SuccessValue: rejectedValue }); };
+  const res = await fetchAndVerifyTx({
+    txHash: HASH,
+    claim: { expectedSuccess: false, expectedErrorCode: "RECIPIENT_NOT_ALLOWED" },
+    indexerUrl: "https://indexer.test/v0/transactions",
+    rpcUrl: "https://rpc.test",
+    fetchFn,
+  });
+  assert.equal(res.verdict, "VERIFIED");
+  assert.equal(res.source, "indexer");
+  assert.deepEqual(calls, ["https://indexer.test/v0/transactions"]);
+});
+
+test("fetchAndVerifyTx: indexer failure falls back to the RPC when a sender is known", async () => {
+  const calls = [];
+  const fetchFn = async (url) => {
+    calls.push(String(url));
+    if (String(url).includes("indexer")) return { ok: false, status: 429, json: async () => ({}) };
+    return { ok: true, status: 200, json: async () => ({ result: { status: { SuccessValue: "" }, receipts_outcome: [] } }) };
+  };
+  const res = await fetchAndVerifyTx({
+    txHash: HASH,
+    senderId: "relayer.testnet",
+    claim: { expectedSuccess: true },
+    indexerUrl: "https://indexer.test/v0/transactions",
+    rpcUrl: "https://rpc.test",
+    fetchFn,
+  });
+  assert.equal(res.verdict, "VERIFIED");
+  assert.equal(res.source, "rpc");
+  assert.equal(calls.length, 2);
+});
+
+test("fetchAndVerifyTx: indexer failure without a sender stays UNVERIFIABLE, never a pass", async () => {
+  const fetchFn = async () => { throw new Error("offline"); };
+  const res = await fetchAndVerifyTx({ txHash: HASH, claim: { expectedSuccess: true }, indexerUrl: "https://indexer.test/x", fetchFn });
+  assert.equal(res.verdict, "UNVERIFIABLE");
+});
+
+test("extractVerificationItems: the gate budget overflow is claimed as a refusal, not a payment", () => {
+  const refused = extractVerificationItems().filter((i) => i.label.startsWith("Gate budget attack"));
+  assert.equal(refused.length, 1);
+  assert.equal(refused[0].claim.expectedSuccess, false);
+  assert.equal(refused[0].claim.expectedErrorCode, "OVER_BUDGET");
 });
