@@ -11,6 +11,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
 const RESULTS_DIR = join(ROOT, 'results');
 const DEFAULT_RPC = 'https://archival-rpc.testnet.fastnear.com';
+export const DEFAULT_INDEXER = 'https://tx.test.fastnear.com/v0/transactions';
 const B58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 const B58_HASH = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/;
 const ACCOUNT_REGEX = /[a-z0-9_.-]+\.testnet/g;
@@ -262,6 +263,52 @@ export function summarizeResults(items) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/** Convert one FastNear indexer transaction into the JSON-RPC result shape that classifyOnchainResult reads. */
+export function indexerTxToRpcResult(tx) {
+  if (!tx?.execution_outcome) return null;
+  return {
+    final_execution_status: 'FINAL',
+    status: { SuccessValue: '' },
+    transaction_outcome: tx.execution_outcome,
+    receipts_outcome: (tx.receipts ?? []).map((r) => r.execution_outcome).filter(Boolean),
+  };
+}
+
+/**
+ * Ask the FastNear indexer for many hashes at once (20 per request). Returns Map(hash -> rpc-shaped result).
+ * Never throws: on any failure the hashes are simply missing from the map and the RPC fallback handles them.
+ */
+export async function fetchIndexerBatch(hashes, options = {}) {
+  const fetchFn = options.fetchFn ?? globalThis.fetch;
+  const url = options.indexerUrl ?? process.env.INDEXER_URL ?? DEFAULT_INDEXER;
+  const out = new Map();
+  for (let i = 0; i < hashes.length; i += 20) {
+    const batch = hashes.slice(i, i + 20);
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), options.timeoutMs ?? 15000);
+    try {
+      const res = await fetchFn(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ tx_hashes: batch }),
+        signal: ctl.signal,
+      });
+      if (!res.ok) continue;
+      const data = await res.json().catch(() => null);
+      for (const tx of data?.transactions ?? []) {
+        const id = tx?.execution_outcome?.id;
+        const result = indexerTxToRpcResult(tx);
+        if (id && result) out.set(id, result);
+      }
+    } catch {
+      // indexer unreachable: leave these hashes to the RPC fallback
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  return out;
+}
+
 /** Query RPC with retries for 429/5xx and timeout */
 export async function queryTxStatus(txHash, candidateSenders, options = {}) {
   const fetchFn = options.fetchFn ?? globalThis.fetch;
@@ -384,6 +431,7 @@ export async function checkContractAccount(contractId, rpcUrl, fetchFn = globalT
 async function main() {
   const args = process.argv.slice(2);
   const isJson = args.includes('--json');
+  const rpcOnly = args.includes('--rpc-only');
   const rpcUrl = process.env.NEAR_RPC ?? DEFAULT_RPC;
 
   // Load results files
@@ -404,11 +452,20 @@ async function main() {
   const results = [];
 
   if (!isJson) {
-    console.log(`Checking ${items.length} recorded transactions against ${rpcUrl} ...\n`);
+    console.log(
+      rpcOnly
+        ? `Checking ${items.length} recorded transactions against ${rpcUrl} ...\n`
+        : `Checking ${items.length} recorded transactions: FastNear indexer first, ${rpcUrl} as fallback ...\n`,
+    );
   }
 
+  const indexed = rpcOnly ? new Map() : await fetchIndexerBatch(items.map((i) => i.txHash));
+
   for (const item of items) {
-    const onchain = await queryTxStatus(item.txHash, item.candidateSenders, { rpcUrl });
+    const viaIndexer = indexed.get(item.txHash);
+    const onchain = viaIndexer
+      ? { ...classifyOnchainResult(viaIndexer), via: 'indexer' }
+      : await queryTxStatus(item.txHash, item.candidateSenders, { rpcUrl });
     const matched = matchClaimWithOnchain(item, onchain);
     const shortHash = `${item.txHash.slice(0, 8)}...${item.txHash.slice(-6)}`;
 

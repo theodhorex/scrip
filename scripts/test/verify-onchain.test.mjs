@@ -7,6 +7,8 @@ import {
   matchClaimWithOnchain,
   summarizeResults,
   queryTxStatus,
+  indexerTxToRpcResult,
+  fetchIndexerBatch,
 } from '../verify-onchain.mjs';
 
 test('toBase58 encodes binary buffers correctly', () => {
@@ -378,4 +380,35 @@ test('checkContractAccount handles locked contract, full access keys, and missin
 
   const chk3 = await checkContractAccount('deleted.testnet', 'https://rpc.example.com', fakeFetchMissing);
   assert.equal(chk3.exists, false);
+});
+
+const rejectedB64 = Buffer.from(JSON.stringify({ Rejected: { code: 'OVER_BUDGET' } })).toString('base64');
+const indexerTx = (id, status) => ({
+  execution_outcome: { id, outcome: { status: { SuccessReceiptId: 'r' } } },
+  receipts: [{ execution_outcome: { outcome: { status } } }],
+});
+
+test('indexerTxToRpcResult: a Scrip refusal from the indexer classifies as REJECTED with its code', () => {
+  const r = indexerTxToRpcResult(indexerTx('h1', { SuccessValue: rejectedB64 }));
+  assert.deepEqual(classifyOnchainResult(r), { status: 'REJECTED', code: 'OVER_BUDGET', error: null });
+  assert.equal(indexerTxToRpcResult({}), null);
+});
+
+test('fetchIndexerBatch: sends hashes in batches of 20 and keys results by hash', async () => {
+  const hashes = Array.from({ length: 45 }, (_, i) => `hash${i}`);
+  const sizes = [];
+  const fetchFn = async (_url, init) => {
+    const batch = JSON.parse(init.body).tx_hashes;
+    sizes.push(batch.length);
+    return { ok: true, status: 200, json: async () => ({ transactions: batch.map((h) => indexerTx(h, { SuccessValue: '' })) }) };
+  };
+  const map = await fetchIndexerBatch(hashes, { fetchFn, indexerUrl: 'https://indexer.test' });
+  assert.deepEqual(sizes, [20, 20, 5]);
+  assert.equal(map.size, 45);
+  assert.equal(classifyOnchainResult(map.get('hash7')).status, 'SUCCESS');
+});
+
+test('fetchIndexerBatch: an unreachable or erroring indexer returns an empty map instead of throwing', async () => {
+  assert.equal((await fetchIndexerBatch(['a'], { fetchFn: async () => { throw new Error('down'); } })).size, 0);
+  assert.equal((await fetchIndexerBatch(['a'], { fetchFn: async () => ({ ok: false, status: 429, json: async () => ({}) }) })).size, 0);
 });
