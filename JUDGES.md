@@ -8,7 +8,7 @@ All offline verification commands run on a fresh clone with Node.js 22.18+ (Node
 
 | # | Claim | Command to Verify | Expected Output | Evidence / Source File |
 |---|---|---|---|---|
-| 01 | **Contract Unit & Invariant Suite**<br>138 contract tests verifying accounting invariants (P1-P10), token conservation, role-based authorization, and state transitions. | `cd contracts/scrip && cargo test --lib` | `test result: ok. 127 passed; 0 failed; 0 ignored` | `contracts/scrip/src/lib.rs`<br>`contracts/scrip/src/tests.rs`<br>`contracts/scrip/src/property_tests.rs` |
+| 01 | **Contract Unit & Invariant Suite**<br>138 contract tests verifying accounting invariants (P1-P10), token conservation, role-based authorization, and state transitions. | `cd contracts/scrip && cargo test --lib` | `test result: ok. 138 passed; 0 failed; 0 ignored` | `contracts/scrip/src/lib.rs`<br>`contracts/scrip/src/tests.rs`<br>`contracts/scrip/src/property_tests.rs` |
 | 02 | **Client SDK Test Suite**<br>163 tests verifying canonical intent hashing, guarded signing policies, x402 header parsing, and counterparty evaluation algorithms. | `cd client && node --test test/` | `tests 163, pass 163, fail 0` | `client/test/` |
 | 03 | **Facilitator Relayer Test Suite**<br>293 tests verifying NEP-366 meta-transaction validation, access key permissions, 64-position bit-flip signature resilience, rate limiting, and deduplication. | `cd facilitator && node --test test/` | `tests 293, pass 293, fail 0` | `facilitator/test/` |
 | 04 | **Scripts & Recovery Test Suite**<br>41 tests verifying CLI argument parsing, testnet sub-account recovery sweeps, on-chain transaction verifier, and link extraction. | `cd scripts && node --test test/` | `tests 41, pass 41, fail 0` | `scripts/test/` |
