@@ -15,7 +15,7 @@ import {
 const SAMPLE_TX = "9UpU5SNwVwasrD2thdMtyoh9vdTkBcgjWLKMM7xV3k78";
 const SAMPLE_SENDER = "dma42992.envtest-theo-1747.testnet";
 
-const CURL_SAMPLE = `curl -X POST https://rpc.testnet.fastnear.com \\
+const CURL_SAMPLE = `curl -X POST https://archival-rpc.testnet.fastnear.com \\
   -H "Content-Type: application/json" \\
   -d '{
     "jsonrpc": "2.0",
@@ -57,7 +57,7 @@ export default function VerifyPage() {
           txHash: item.txHash,
           senderId: item.senderId,
           claim: item.claim,
-          rpcUrl: "https://rpc.testnet.fastnear.com",
+          rpcUrl: "https://archival-rpc.testnet.fastnear.com",
           timeoutMs: 10_000,
         });
         return { item, res };
@@ -289,7 +289,7 @@ export default function VerifyPage() {
           </pre>
 
           <div className="mt-4 text-xs font-mono text-bp-muted space-y-1">
-            <p>Target endpoint: https://rpc.testnet.fastnear.com (Public, no API key needed)</p>
+            <p>Target endpoint: https://archival-rpc.testnet.fastnear.com (public archival node, no API key needed; the regular RPC no longer keeps old transactions)</p>
             <p>JSON-RPC Method: EXPERIMENTAL_tx_status</p>
             <p>Explorer fallback: https://testnet.nearblocks.io/txns/{SAMPLE_TX}</p>
           </div>

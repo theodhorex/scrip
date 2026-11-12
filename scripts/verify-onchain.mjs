@@ -10,7 +10,7 @@ import crypto from 'node:crypto';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..');
 const RESULTS_DIR = join(ROOT, 'results');
-const DEFAULT_RPC = 'https://rpc.testnet.fastnear.com';
+const DEFAULT_RPC = 'https://archival-rpc.testnet.fastnear.com';
 const B58_ALPHABET = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
 const B58_HASH = /^[1-9A-HJ-NP-Za-km-z]{43,44}$/;
 const ACCOUNT_REGEX = /[a-z0-9_.-]+\.testnet/g;

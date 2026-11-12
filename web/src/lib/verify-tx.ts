@@ -211,7 +211,7 @@ export interface FetchAndVerifyOptions {
  * Never throws: all failures/timeouts/missing senders map cleanly to UNVERIFIABLE.
  */
 export async function fetchAndVerifyTx(options: FetchAndVerifyOptions): Promise<VerificationResult> {
-  const { txHash, senderId, claim, rpcUrl = "https://rpc.testnet.fastnear.com", timeoutMs = 10_000 } = options;
+  const { txHash, senderId, claim, rpcUrl = "https://archival-rpc.testnet.fastnear.com", timeoutMs = 10_000 } = options;
   const fetcher = options.fetchFn ?? fetch;
 
   if (!senderId || !senderId.trim()) {
