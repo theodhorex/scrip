@@ -175,7 +175,7 @@ Each invariant has a property test (`proptest`) and regression tests; the mappin
 |---|---|---|---|---|
 | 01 | Recipient | Homoglyphs, uppercase, empty, over 64 bytes | Client regex and the contract allowlist | KAT-A-01, KAT-C-01 |
 | 02 | Amount | Zero, negative, decimals, u128 overflow | Canonical decimal validator, cap check | KAT-A-02, KAT-C-02 |
-| 03 | Intent hash | Altering intent fields while keeping the signature | Domain-separated SHA-256 (`scrip/v1`) over length-prefixed fields | `p8_intent_hash_is_deterministic_and_field_sensitive` |
+| 03 | Intent hash | Altering intent fields while keeping the signature | Domain-separated SHA-256 (tag `amanat/v1`, the project's earlier working name, kept because the deployed contract hashes with it) over length-prefixed fields | `p8_intent_hash_is_deterministic_and_field_sensitive` |
 | 04 | Nonce and replay | Resubmitting delegates, stale block heights | Relayer dedup store, nonce monotonicity, expiry window | KAT-A-04, KAT-B-04 |
 | 05 | Authorization | Calling owner or guardian methods as agent or stranger | `predecessor_account_id` checks, `#[private]` callbacks | `role_matrix_allowed_and_denied` |
 | 06 | Access keys | Full-access keys, foreign receivers, zero allowance | Relayer inspects the key over RPC, accepts only the right function-call key | KAT-B-06, KAT-E-06 |
