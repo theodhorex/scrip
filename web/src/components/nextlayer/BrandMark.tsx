@@ -1,6 +1,6 @@
 /**
- * TEMPORARY mark: the S/bolt geometry from the design prompt, used only as a placeholder.
- * Theo must decide the final Scrip logo. aria-label lives on the link that wraps it.
+ * Scrip mark (S/bolt), the same geometry as app/icon.svg and the Open Graph image.
+ * aria-label lives on the link that wraps it.
  */
 export function BrandMark() {
   return (
