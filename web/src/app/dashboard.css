@@ -313,17 +313,17 @@ html:has(.nl-app), body:has(.nl-app) { background: #050505; }
 .nl-app .nl-owner .bp-chapter-label { margin-bottom: 8px; }
 .nl-app .nl-owner .bp-app-section-title { margin-bottom: 8px; }
 .nl-app .nl-owner { gap: 16px; }
-.nl-steps { list-style: none; margin: 0; padding: 0; counter-reset: step 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
-@media (max-width: 1000px) { .nl-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 600px) { .nl-steps { grid-template-columns: minmax(0, 1fr); } }
-.nl-steps li { counter-increment: step; display: grid; gap: 8px; padding: 20px; border: 1px dashed var(--line-strong); border-radius: 16px; color: var(--muted); min-width: 0; }
-.nl-steps li::before { content: "Step " counter(step); font-family: var(--mono); font-size: 12px; color: var(--strip); }
-.nl-steps b { font-weight: 500; font-size: 16px; color: var(--ink); }
-.nl-steps span { font-size: 13.5px; line-height: 1.6; }
+.nl-csteps { list-style: none; margin: 0; padding: 0; counter-reset: step 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 1000px) { .nl-csteps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .nl-csteps { grid-template-columns: minmax(0, 1fr); } }
+.nl-csteps li { counter-increment: step; display: grid; gap: 8px; padding: 20px; border: 1px dashed var(--line-strong); border-radius: 16px; color: var(--muted); min-width: 0; }
+.nl-csteps li::before { content: "Step " counter(step); font-family: var(--mono); font-size: 12px; color: var(--strip); }
+.nl-csteps b { font-weight: 500; font-size: 16px; color: var(--ink); }
+.nl-csteps span { font-size: 13.5px; line-height: 1.6; }
 .nl-owner-sim { margin-top: 0; padding-top: 0; border-top: 0; }
 .nl-verify-sum, .nl-verify-sec { margin-bottom: clamp(40px, 5vw, 72px); }
 .nl-of { font-size: .5em; color: var(--strip); margin-left: 2px; }
-.nl-steps li { align-content: start; }
+.nl-csteps li { align-content: start; }
 .nl-app .bp-app-stack { gap: clamp(40px, 4.5vw, 72px); }
 .nl-app .bp-plate.nl-box { border: 1px solid var(--line); border-radius: 14px; background: #090909; }
 .nl-app .bp-plate.nl-box:hover { border-color: rgba(255,255,255,.4); }

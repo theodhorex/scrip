@@ -251,7 +251,7 @@ export function OwnerConsole() {
       </section>
 
       {!w.accountId ? (
-        <ol className="nl-steps" aria-label="What happens after you connect">
+        <ol className="nl-csteps" aria-label="What happens after you connect">
           <li><b>Set the rules</b><span>Token, budget, cap per payment, guardian threshold, allowed shops, expiry. One approval creates the agent, the guardian and the mandate.</span></li>
           <li><b>Fund it</b><span>wNEAR (wrapped in the same transaction) or testnet USDC goes into the mandate, not to the agent.</span></li>
           <li><b>Be your own agent</b><span>Pay with the agent&apos;s key, gasless through the relayer. Then try to overspend.</span></li>
