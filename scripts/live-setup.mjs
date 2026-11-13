@@ -6,7 +6,8 @@
 // the key's allowance on the agent account (also bounded). Everything else is refused on-chain.
 //
 // Owner = funder account. Guardian, agent admin and shop keys go to KEY_DIR/live-demo-keys.json (mode 0600),
-// never into the repository. The contract's full-access key is deleted after init, so the code cannot change.
+// never into the repository. The contract's full-access key is deleted after init, so the code cannot change, and
+// the agent's setup key is deleted once the function-call key exists, so the agent's only key is the published one.
 //
 // usage: KEY_DIR=<dir with priv_key.txt> node scripts/live-setup.mjs
 import { readFileSync, writeFileSync, existsSync, chmodSync } from 'node:fs';
@@ -85,6 +86,8 @@ const m0 = await view(ids.contract, 'get_mandate', { id: mandateId });
 if (m0.deposited !== BUDGET.toString()) throw new Error(`funding failed: ${JSON.stringify(m0)}`);
 
 await step('addAgentKey', () => acc(ids.agent, kp.agent).addFunctionCallAccessKey({ publicKey: kp.fc.getPublicKey(), contractId: ids.contract, methodNames: ['request_payment'], allowance: nearToYocto(KEY_ALLOWANCE) }));
+// The agent keeps no full-access key: its only key is the published function-call key.
+await step('deleteAgentSetupKey', () => acc(ids.agent, kp.agent).deleteKey(kp.agent.getPublicKey()));
 // The contract can no longer be changed by anyone: its only full-access key is removed.
 await step('deleteContractKey', () => contractAcc.deleteKey(kp.contract.getPublicKey()));
 const keys = await provider.viewAccessKeyList({ accountId: ids.contract });

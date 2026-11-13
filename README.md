@@ -260,7 +260,7 @@ What NEAR makes possible here, concretely:
 | **Function-call access keys** | The agent's only key can call `request_payment` on one contract, with a gas allowance. No transfers, no new keys, no other contracts. This is what makes publishing the demo key safe |
 | **NEP-366 delegate actions** | The agent signs off-chain; the relayer wraps the action and pays gas, so the agent holds zero NEAR |
 | **Named sub-accounts** | One disposable envelope per task (`task-12.funder.testnet`); deleting it refunds storage to the parent |
-| **Accounts without keys** | The live demo contract's full-access key was deleted after init: nobody can change its code |
+| **Accounts without keys** | The live demo contract's full-access key was deleted after init: nobody can change its code. The live agent has no full-access key either: its only key is the published function-call key |
 | **Async receipts and callbacks** | Two-phase payments: reserve, `ft_transfer`, then a private `on_payment_done` callback settles or refunds |
 | **NEP-141 / NEP-145** | Testnet USDC, `ft_transfer_call` deposits into a mandate, storage registration for shops |
 | **NEP-297 events** | `mandate_created`, `deposited`, `reserved`, `settled`, `refunded`, `rejected` and more, read back by the dashboard |
