@@ -1,4 +1,5 @@
 import demoJson from "../data/demo.json" with { type: "json" };
+import demoLlmJson from "../data/demo-llm.json" with { type: "json" };
 import gateJson from "../data/gate.json" with { type: "json" };
 
 export type TxClassificationType = "SUCCESS" | "FAILURE" | "UNVERIFIABLE";
@@ -17,7 +18,7 @@ export type VerificationVerdict = "VERIFIED" | "MISMATCHED" | "UNVERIFIABLE";
 
 export interface VerificationItem {
   id: string;
-  source: "demo.json" | "gate.json";
+  source: "demo.json" | "demo-llm.json" | "gate.json";
   label: string;
   txHash: string;
   senderId?: string;
@@ -493,6 +494,12 @@ function buildFacilitatorMap(): Map<string, string> {
     }
   }
 
+  if (Array.isArray(demoLlmJson?.facilitatorLog)) {
+    for (const line of demoLlmJson.facilitatorLog) {
+      if (typeof line === "string") parseLogLine(line);
+    }
+  }
+
   return map;
 }
 
@@ -558,6 +565,29 @@ export function extractVerificationItems(): VerificationItem[] {
         });
       }
     }
+  }
+
+  // 3b. From demo-llm.json: recorded decisions of real models, re-executed on testnet by two wallets.
+  const llmAgents = demoLlmJson?.agents as
+    | Record<string, { decisions?: Array<{ model: string; label: string; paid: boolean; txHash: string | null; rejectionCode: string | null }> }>
+    | undefined;
+  for (const agentName of ["naive", "scrip"]) {
+    const decisions = llmAgents?.[agentName]?.decisions;
+    if (!Array.isArray(decisions)) continue;
+    decisions.forEach((d, i) => {
+      if (!d.txHash) return;
+      items.push({
+        id: `llm-${agentName}-${i}-${d.label}`,
+        source: "demo-llm.json",
+        label: `Model replay ${agentName === "naive" ? "Naive" : "Scrip"}: ${d.model} ${d.label} (${d.rejectionCode || "PAID"})`,
+        txHash: d.txHash,
+        senderId: facilitatorMap.get(d.txHash),
+        claim: {
+          expectedSuccess: d.paid,
+          expectedErrorCode: d.rejectionCode || undefined,
+        },
+      });
+    });
   }
 
   // 4. From gate.json: Attacks

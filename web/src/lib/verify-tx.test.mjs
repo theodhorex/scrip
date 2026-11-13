@@ -348,3 +348,17 @@ test("extractVerificationItems: the gate budget overflow is claimed as a refusal
   assert.equal(refused[0].claim.expectedSuccess, false);
   assert.equal(refused[0].claim.expectedErrorCode, "OVER_BUDGET");
 });
+
+test("extractVerificationItems: real-model replay txs are claimed as paid (naive) or refused with a code (Scrip)", () => {
+  const llm = extractVerificationItems().filter((i) => i.source === "demo-llm.json");
+  assert.equal(llm.length, 12);
+  const naive = llm.filter((i) => i.label.startsWith("Model replay Naive"));
+  const scrip = llm.filter((i) => i.label.startsWith("Model replay Scrip"));
+  assert.equal(naive.length, 6);
+  assert.equal(scrip.length, 6);
+  assert.ok(naive.every((i) => i.claim.expectedSuccess === true));
+  assert.ok(scrip.every((i) => i.claim.expectedSuccess === false));
+  const codes = scrip.map((i) => i.claim.expectedErrorCode).sort();
+  assert.deepEqual(codes, ["OVER_PER_PAYMENT_CAP", "OVER_PER_PAYMENT_CAP", "OVER_PER_PAYMENT_CAP", "RECIPIENT_NOT_ALLOWED", "RECIPIENT_NOT_ALLOWED", "RECIPIENT_NOT_ALLOWED"]);
+  assert.equal(new Set(llm.map((i) => i.txHash)).size, 12);
+});
