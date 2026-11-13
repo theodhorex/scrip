@@ -333,7 +333,12 @@ export async function fetchAndVerifyTx(options: FetchAndVerifyOptions): Promise<
   const fetcher = options.fetchFn ?? fetch;
 
   if (options.indexerUrl) {
-    const viaIndexer = await fetchViaIndexer(fetcher, options.indexerUrl, txHash, timeoutMs);
+    let viaIndexer = await fetchViaIndexer(fetcher, options.indexerUrl, txHash, timeoutMs);
+    // One retry after a pause when the indexer is rate limited or briefly unreachable (a page load fires many lookups at once).
+    if (!viaIndexer.body && /429|timed out|network error/i.test(viaIndexer.reason ?? "")) {
+      await new Promise((r) => setTimeout(r, 1200));
+      viaIndexer = await fetchViaIndexer(fetcher, options.indexerUrl, txHash, timeoutMs);
+    }
     if (viaIndexer.body) {
       const classification = classifyRpcResponse(viaIndexer.body);
       const comparison = compareClaim(classification, claim);

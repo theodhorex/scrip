@@ -6,7 +6,7 @@ export type ExplorerRow = { id: string; layer: string; category: string; verdict
 const LAYERS = ["A", "B", "C", "D", "E"] as const;
 const VERDICTS = ["PASS", "FAIL", "SKIPPED", "BREACH"] as const;
 const MARK: Record<string, string> = { PASS: "✓", FAIL: "✕", SKIPPED: "–", BREACH: "!" };
-const PAGE = 40;
+const PAGE = 60;
 
 /** Explorer for results/attack-catalog.json. With no catalog it says so and shows nothing invented. */
 export function Explorer({ rows, verifiedD }: { rows: ExplorerRow[]; verifiedD: { pass: number; total: number; asOf: string } }) {
@@ -14,6 +14,7 @@ export function Explorer({ rows, verifiedD }: { rows: ExplorerRow[]; verifiedD: 
   const [verdict, setVerdict] = useState<string>("all");
   const [cat, setCat] = useState<string>("all");
   const [shown, setShown] = useState(PAGE);
+  const [open, setOpen] = useState(false);
   const cats = useMemo(() => Array.from(new Set(rows.map((r) => r.category))).sort(), [rows]);
   const count = (l: string, v: string) => rows.filter((r) => r.layer === l && r.verdict === v).length;
   const filtered = rows.filter((r) => (layer === "all" || r.layer === layer) && (verdict === "all" || r.verdict === verdict) && (cat === "all" || r.category === cat));
@@ -54,6 +55,10 @@ export function Explorer({ rows, verifiedD }: { rows: ExplorerRow[]; verifiedD: 
         </div>
       ) : (
         <>
+          <button type="button" className="nl-btn nl-explorer-toggle" aria-expanded={open} aria-controls="nl-explorer-cases" onClick={() => setOpen(!open)}>
+            {open ? "Hide the case list" : `Browse all ${rows.length.toLocaleString("en-US")} cases`}
+          </button>
+          <div id="nl-explorer-cases" hidden={!open}>
           <div className="nl-filters">
             <div className="nl-chips" role="group" aria-label="Layer">
               {["all", ...LAYERS].map((l) => <button type="button" key={l} aria-pressed={layer === l} onClick={() => { setLayer(l); setShown(PAGE); }}>{l === "all" ? "All layers" : l}</button>)}
@@ -65,7 +70,7 @@ export function Explorer({ rows, verifiedD }: { rows: ExplorerRow[]; verifiedD: 
               <option value="all">All</option>{cats.map((c) => <option key={c} value={c}>{c}</option>)}</select></label>
           </div>
           <p className="nl-note" role="status" aria-live="polite" style={{ marginBottom: 10 }}>{main.length} cases shown{skipped.length ? `, ${skipped.length} skipped listed below` : ""}.</p>
-          <div className="nl-tablewrap">
+          <div className="nl-tablewrap nl-scrollbox" tabIndex={0} role="region" aria-label="Attack cases, scrollable">
             <table className="nl-table nl-stack">
               <thead><tr><th scope="col">Case</th><th scope="col">Layer</th><th scope="col">Category</th><th scope="col">Expected</th><th scope="col">Actual</th><th scope="col">Verdict</th></tr></thead>
               <tbody>
@@ -79,12 +84,15 @@ export function Explorer({ rows, verifiedD }: { rows: ExplorerRow[]; verifiedD: 
           {main.length > shown ? <button type="button" className="nl-btn" style={{ marginTop: 18 }} onClick={() => setShown(shown + PAGE)}>Show {Math.min(PAGE, main.length - shown)} more</button> : null}
           {skipped.length ? (
             <>
-              <h3 className="nl-h3">Skipped, with the reason on record</h3>
-              <ul className="nl-body" style={{ paddingLeft: 18 }}>
-                {skipped.slice(0, 30).map((r) => <li key={r.id}><code>{r.id}</code> (layer {r.layer}): {r.actual || r.expected || "no reason recorded"}</li>)}
-              </ul>
+              <details className="nl-skipped">
+                <summary>{skipped.length} skipped, with the reason on record</summary>
+                <ul className="nl-body nl-scrollbox" tabIndex={0} aria-label="Skipped cases, scrollable" style={{ paddingLeft: 18 }}>
+                  {skipped.map((r) => <li key={r.id}><code>{r.id}</code> (layer {r.layer}): {r.actual || r.expected || "no reason recorded"}</li>)}
+                </ul>
+              </details>
             </>
           ) : null}
+          </div>
         </>
       )}
     </div>

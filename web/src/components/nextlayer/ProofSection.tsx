@@ -27,7 +27,6 @@ export function ProofSection() {
       <div className="nl-wrap">
         <SectionHead id="proof" n={5} label="Proof" lines={["What was attacked,", "and what held."]}
           lede="Two kinds of evidence: a live run on testnet, and a larger set of test cases. Each number says where it comes from and when."
-          todo="Use the filters to see what was tested. Each row says when and where it ran."
           plain="Everything here was actually run, not drawn. Each number tells you what was tested, when, and on which network." />
         <div className="nl-proof-top">
           <div>
