@@ -1,0 +1,38 @@
+{
+  "network": "testnet",
+  "note": "Live demo mandate. agentKey is a FUNCTION-CALL key published on purpose: it can only call request_payment on this contract.",
+  "createdAt": "2026-11-13T09:29:09.208Z",
+  "contractId": "live-scrip.envtest-theo-1747.testnet",
+  "agentId": "live-agent.envtest-theo-1747.testnet",
+  "guardianId": "live-guardian.envtest-theo-1747.testnet",
+  "ownerId": "envtest-theo-1747.testnet",
+  "token": "3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af",
+  "mandateId": 1,
+  "recipients": [
+    "live-shop-a.envtest-theo-1747.testnet",
+    "live-shop-b.envtest-theo-1747.testnet"
+  ],
+  "budget": "10000000",
+  "perPaymentCap": "100000",
+  "approvalThreshold": "50000",
+  "expiresAtMs": 1798450136241,
+  "agentPublicKey": "ed25519:4mXjbAyWfLV3aVw7zBskuSFzctBFfHy3ySuLmjp7sGwA",
+  "agentKey": "ed25519:3TJ9dwcx94HHeZzqhLjc2ueBP1VZPAKM9hVkx9GCqxZaCoGRbupEcj3vrd6rkRFhGMs1gyrurSuWanRnR8vEjgb2",
+  "keyAllowanceNear": "4.5",
+  "txs": {
+    "createContract": "6ZotbqGAAExQAHe6Mx5iWe8tqj9hkQHYfih47gabzCez",
+    "createAgent": "De9DmWBXedbG8KWGiHNcvmFjJf7AB1QgpjDYcjE7Ncty",
+    "createGuardian": "6q6f9vG3T86VYANnWx5dTr8aGzp6GPfyAVgACa9TjoeZ",
+    "createShopA": "CDHmzDEsbivuuUz14xZmBNAkYhReG1kCHE2KHyL7ZUFm",
+    "createShopB": "7RsinmaYHTpNruWZP4b56EpXhpa4714ua853ibeMo3ip",
+    "deploy": "BKnWPvz3QiToxrck4vU5nV3TgWVFLJm7uDEvmoEj7Prk",
+    "init": "2XVimc3ZkHU6rJwWEkFgD6TgSVerxia2zusTKXuzmA4V",
+    "registerContract": "7HxeEk489K6oMQbVkJY5E5ckfCkPW53vySP9msAgGZ1v",
+    "registerShopA": "55rS8Pg4hFq3EYXM3v1BCWSXiDcXc2xZKqCcM1SSrhst",
+    "registerShopB": "Dbk5cwVZTGGkkzQichyrJtYVAA6pvxTqjwHM9HzofCwX",
+    "createMandate": "BK2YQJzVuRoNM3tpiK8CgvNG8jgLQW9vMahgZcAH9apA",
+    "fundMandate": "JE54cng6Vjf3j1B57GErGYu4jtjsiDBbQrshREFAP16N",
+    "addAgentKey": "C8MuWXG4UkXcWtbWM4jPEqS3eqnaVHnKEGU32pKCKrao",
+    "deleteContractKey": "Cmu8EbhFF8NE5w65y3yPAGwZeTXbxKhJQvkp57raDCps"
+  }
+}
