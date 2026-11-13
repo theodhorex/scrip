@@ -74,6 +74,9 @@ const short = (h: string) => `${h.slice(0, 6)}…${h.slice(-4)}`;
 const shortAcct = (a: string) => (a.length > 28 ? `${a.slice(0, 14)}…${a.slice(-12)}` : a);
 const letter = (i: number) => String.fromCharCode(65 + i);
 
+// Relayer answers that mean nothing was sent and the relayer itself cannot help right now.
+const RELAYER_DOWN = new Set(["RELAYER_LOW_BALANCE", "RELAYER_NOT_CONFIGURED", "SERVER_BUSY", "UPSTREAM_ERROR", "RELAYER_UNREACHABLE"]);
+
 export function LiveTry({ target = DEMO_TARGET }: { target?: TryTarget }) {
   const t = target;
   const rid = useId();
@@ -153,7 +156,7 @@ export function LiveTry({ target = DEMO_TARGET }: { target?: TryTarget }) {
   }, [refresh]);
 
   /** Runs one attempt: shows it as pending, then fills in what happened. */
-  const attempt = async (title: string, how: string, run: () => Promise<Pick<Attempt, "verdict" | "text" | "code" | "txHash">>) => {
+  const attempt = async (title: string, how: string, run: () => Promise<Pick<Attempt, "verdict" | "text" | "code" | "txHash"> & { how?: string }>) => {
     if (busy || now() - lastSend.current < COOLDOWN_MS) return;
     lastSend.current = now();
     setBusy(true);
@@ -197,8 +200,12 @@ export function LiveTry({ target = DEMO_TARGET }: { target?: TryTarget }) {
     return toBase64(lib.encodeSignedDelegate(signedDelegate));
   };
   const postRelay = async (b64: string): Promise<RelayReply> => {
-    const res = await fetch("/api/relay", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ signed_delegate: b64 }) });
-    return (await res.json()) as RelayReply;
+    try {
+      const res = await fetch("/api/relay", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ signed_delegate: b64 }) });
+      return (await res.json()) as RelayReply;
+    } catch {
+      return { ok: false, code: "RELAYER_UNREACHABLE" } as RelayReply;
+    }
   };
 
   /** One payment request, through the relayer (gasless) or paid by the agent key. */
@@ -206,9 +213,19 @@ export function LiveTry({ target = DEMO_TARGET }: { target?: TryTarget }) {
     if (via === "relayer") {
       let reply = await postRelay(await signPayment(to, u));
       if (!reply.ok && reply.code === "NONCE_TOO_LOW") reply = await postRelay(await signPayment(to, u));
+      if (!reply.ok && !reply.tx_hash && RELAYER_DOWN.has(reply.code ?? "")) {
+        // Nothing was sent. The relayer cannot pay gas right now, so the agent key pays it instead.
+        if (reply.code === "RELAYER_LOW_BALANCE" || reply.code === "RELAYER_NOT_CONFIGURED") setRelayerUp(false);
+        const r = await payByAgent(to, u);
+        return { ...r, how: "the relayer was unavailable, so the agent key paid the gas" };
+      }
       if (!reply.ok) return { verdict: "error" as const, code: reply.code, txHash: reply.tx_hash, text: `The relayer refused it: ${RELAY_EXPLAIN[reply.code ?? ""] ?? reply.code}` };
       return { ...explain(relayOutcome(reply), to, u), txHash: reply.tx_hash };
     }
+    return payByAgent(to, u);
+  };
+
+  const payByAgent = async (to: string, u: string) => {
     const { agent } = await agentKit();
     const call = () => agent.callFunctionRaw({ contractId: t.contractId, methodName: "request_payment", args: { mandate_id: t.mandateId, recipient: to, amount: u, nonce: now() }, gas: BigInt(GAS), deposit: BigInt(0) });
     let outcome;

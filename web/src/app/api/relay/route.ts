@@ -15,6 +15,7 @@ const MIN_BALANCE = BigInt("500000000000000000000000"); // 0.5 NEAR
 
 type Hosted = ReturnType<typeof createHostedRelayer>;
 let hosted: Hosted | null = null;
+let relayerAccount: Account | null = null;
 const ipLimiter = createRateLimiter({ capacity: 20, refillPerSecond: 1 });
 
 function relayer(): Hosted | null {
@@ -24,6 +25,7 @@ function relayer(): Hosted | null {
   if (!accountId || !key) return null;
   const provider = new JsonRpcProvider({ url: RPC_URL });
   const account = new Account(accountId, provider, new KeyPairSigner(KeyPair.fromString(key as `ed25519:${string}`)));
+  relayerAccount = account;
   hosted = createHostedRelayer({
     provider,
     relayerAccount: account,
@@ -47,13 +49,22 @@ function clientIp(req: Request): string {
 
 export async function GET() {
   const r = relayer();
+  let code: string | undefined = r ? undefined : "RELAYER_NOT_CONFIGURED";
+  if (r && relayerAccount) {
+    // Report a relayer that would refuse for lack of gas money, so clients can pay gas themselves instead.
+    try {
+      if (BigInt((await relayerAccount.getBalance()) ?? 0) <= MIN_BALANCE) code = "RELAYER_LOW_BALANCE";
+    } catch {
+      // Balance unknown: report the relayer as up; a relay call re-checks the balance anyway.
+    }
+  }
   return json(200, {
-    ok: r !== null,
+    ok: code === undefined,
     network: "testnet",
     contract: LIVE.contractId,
     relayer: process.env.RELAYER_ACCOUNT_ID ?? null,
     methods: ["request_payment"],
-    ...(r ? {} : { code: "RELAYER_NOT_CONFIGURED" }),
+    ...(code ? { code } : {}),
   });
 }
 
