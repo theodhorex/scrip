@@ -90,3 +90,28 @@ export function remaining(s: LiveStats): string {
   const left = ceiling - BigInt(s.spent) - BigInt(s.reserved);
   return (left > BigInt(0) ? left : BigInt(0)).toString();
 }
+
+/** What the hosted relayer (POST /api/relay) reports, read back as a payment outcome. */
+export type RelayReply = { ok?: boolean; code?: string; tx_hash?: string; inner_status?: string; inner_code?: string };
+
+export function relayOutcome(r: RelayReply): PaymentOutcome {
+  if (!r.ok) return { kind: "failed", detail: `Relayer refused: ${r.code ?? "unknown error"}` };
+  if (r.inner_status === "Settled") return { kind: "settled", requestId: -1 };
+  if (r.inner_status === "Refunded") return { kind: "refunded", requestId: -1 };
+  if (r.inner_status === "Rejected" && r.inner_code) return { kind: "rejected", code: r.inner_code };
+  return { kind: "unknown" };
+}
+
+/** Why the relayer refused before anything reached the chain (codes from src/lib/relayer). */
+export const RELAY_EXPLAIN: Record<string, string> = {
+  AGENT_NOT_ALLOWED: "Only the agent recorded on the mandate can use the relayer.",
+  MANDATE_NOT_FOUND: "No such mandate on the live contract.",
+  KEY_NOT_ALLOWED: "The signing key is not a function-call key for request_payment on the contract.",
+  NONCE_TOO_LOW: "Another payment used this key's nonce first. Send again.",
+  DUPLICATE_DELEGATE: "This exact signed payment was already relayed.",
+  RATE_LIMITED: "Too many payments for this agent right now. Wait a few seconds.",
+  IP_RATE_LIMITED: "Too many requests from this network. Wait a few seconds.",
+  RELAYER_LOW_BALANCE: "The relayer is out of testnet gas money. Switch to \"agent key pays\".",
+  RELAYER_NOT_CONFIGURED: "The relayer is not configured on this deployment.",
+  EXPIRES_TOO_SOON: "The signed payment expired before it reached the relayer. Send again.",
+};

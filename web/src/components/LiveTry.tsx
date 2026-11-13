@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { EXPLORER_ACCOUNT_BASE, EXPLORER_TX_BASE, RPC_URL } from "@/lib/network";
-import { LIVE, isValidAccountId, parsePaymentOutcome, remaining, type LiveStats, type PaymentOutcome } from "@/lib/live";
+import { LIVE, RELAY_EXPLAIN, isValidAccountId, parsePaymentOutcome, relayOutcome, remaining, type LiveStats, type PaymentOutcome, type RelayReply } from "@/lib/live";
 import { fromUnits, toUnits } from "@/lib/owner-flow";
 
 const GAS = "80000000000000"; // 80 Tgas; the contract requires at least 60
@@ -61,9 +61,17 @@ type Attempt = {
   outcome?: PaymentOutcome;
   txHash?: string;
   error?: string;
+  via: "relayer" | "agent";
 };
 
 type Stats = LiveStats & { open_requests?: number };
+type Payer = "relayer" | "agent";
+
+const toBase64 = (bytes: Uint8Array) => {
+  let s = "";
+  for (const b of bytes) s += String.fromCharCode(b);
+  return btoa(s);
+};
 
 async function nearLib() {
   return import("near-api-js");
@@ -87,6 +95,9 @@ export function LiveTry({ target = DEMO_TARGET }: { target?: TryTarget }) {
   const [log, setLog] = useState<Attempt[]>([]);
   const [busy, setBusy] = useState(false);
   const lastSend = useRef(0);
+  const [relayerUp, setRelayerUp] = useState<boolean | null>(null);
+  const [payer, setPayer] = useState<Payer>("relayer");
+  const via: Payer = relayerUp ? payer : "agent";
   const seq = useRef(0);
 
   const target_ = recipient === "custom" ? custom.trim() : recipient;
@@ -113,6 +124,15 @@ export function LiveTry({ target = DEMO_TARGET }: { target?: TryTarget }) {
   }, [t.contractId, t.mandateId, t.agentId, t.agentPublicKey]);
 
   useEffect(() => {
+    let alive = true;
+    fetch("/api/relay", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((h: { ok?: boolean }) => { if (alive) setRelayerUp(h.ok === true); })
+      .catch(() => { if (alive) setRelayerUp(false); });
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
     const first = setTimeout(refresh, 0);
     const timer = setInterval(refresh, 15000);
     return () => { clearTimeout(first); clearInterval(timer); };
@@ -123,12 +143,41 @@ export function LiveTry({ target = DEMO_TARGET }: { target?: TryTarget }) {
     lastSend.current = now();
     setBusy(true);
     const id = ++seq.current;
-    setLog((l) => [{ id, at: new Date().toISOString(), recipient: to, amount: shown, state: "pending" as const }, ...l].slice(0, 12));
+    setLog((l) => [{ id, at: new Date().toISOString(), recipient: to, amount: shown, state: "pending" as const, via }, ...l].slice(0, 12));
     const update = (patch: Partial<Attempt>) => setLog((l) => l.map((a) => (a.id === id ? { ...a, ...patch } : a)));
     try {
-      const { Account, JsonRpcProvider, KeyPair, KeyPairSigner } = await nearLib();
+      const { Account, JsonRpcProvider, KeyPair, KeyPairSigner, actions, buildDelegateAction, encodeSignedDelegate } = await nearLib();
       const provider = new JsonRpcProvider({ url: RPC_URL });
-      const signer = new KeyPairSigner(KeyPair.fromString(t.agentKey as `ed25519:${string}`));
+      const keyPair = KeyPair.fromString(t.agentKey as `ed25519:${string}`);
+      const signer = new KeyPairSigner(keyPair);
+      if (via === "relayer") {
+        // Gasless: sign a NEP-366 delegate with the agent key and let the Scrip relayer pay for the transaction.
+        const relayOnce = async (): Promise<RelayReply> => {
+          const [key, block] = await Promise.all([
+            provider.viewAccessKey({ accountId: t.agentId, publicKey: t.agentPublicKey }),
+            provider.viewBlock({ finality: "final" }),
+          ]);
+          const delegate = buildDelegateAction({
+            senderId: t.agentId,
+            receiverId: t.contractId,
+            actions: [actions.functionCall("request_payment", { mandate_id: t.mandateId, recipient: to, amount: u, nonce: now() }, BigInt(GAS), BigInt(0))],
+            nonce: BigInt(key.nonce) + BigInt(1),
+            maxBlockHeight: BigInt(block.header.height) + BigInt(100),
+            publicKey: keyPair.getPublicKey(),
+          });
+          const { signedDelegate } = await signer.signDelegateAction(delegate);
+          const res = await fetch("/api/relay", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ signed_delegate: toBase64(encodeSignedDelegate(signedDelegate)) }) });
+          return (await res.json()) as RelayReply;
+        };
+        let reply = await relayOnce();
+        if (!reply.ok && reply.code === "NONCE_TOO_LOW") reply = await relayOnce();
+        if (!reply.ok) {
+          update({ state: "error", txHash: reply.tx_hash, error: `${reply.code}: ${RELAY_EXPLAIN[reply.code ?? ""] ?? "The relayer refused this payment."}` });
+          return;
+        }
+        update({ state: "done", outcome: relayOutcome(reply), txHash: reply.tx_hash });
+        return;
+      }
       const agent = new Account(t.agentId, provider, signer);
       const call = () => agent.callFunctionRaw({
         contractId: t.contractId,
@@ -221,6 +270,14 @@ export function LiveTry({ target = DEMO_TARGET }: { target?: TryTarget }) {
             {busy ? "Sending to testnet…" : "Send on testnet"}
           </button>
         </div>
+        {relayerUp ? (
+          <fieldset className="nl-live-payer">
+            <legend className="bp-app-label">Who pays the gas</legend>
+            <label><input type="radio" name={`${rid}-payer`} checked={payer === "relayer"} onChange={() => setPayer("relayer")} /> Scrip relayer (gasless for the agent)</label>
+            <label><input type="radio" name={`${rid}-payer`} checked={payer === "agent"} onChange={() => setPayer("agent")} /> The agent key&apos;s own allowance</label>
+            <p className="bp-app-hint">{payer === "relayer" ? "The agent signs a delegate (NEP-366) and the hosted relayer submits it and pays the gas. The relayer checks the signature, the key and that the sender is this mandate's agent. The contract still decides." : "The agent key sends the transaction itself; gas comes out of its allowance."}</p>
+          </fieldset>
+        ) : null}
         <p className="bp-app-hint" style={{ marginTop: 16 }}>Or try one of these:</p>
         <div className="bp-app-try-actions" style={{ marginTop: 8 }}>
           <button type="button" className="bp-btn bp-btn-secondary bp-btn-sm" disabled={busy} onClick={() => presetUnits(t.recipients[0], firstAmount)}>
@@ -244,10 +301,12 @@ export function LiveTry({ target = DEMO_TARGET }: { target?: TryTarget }) {
               </div>
               <div className="nl-live-sub">
                 <time dateTime={a.at}>{a.at.slice(11, 19)} UTC</time>
+                {a.via === "relayer" ? " · gasless via relayer" : " · agent paid gas"}
                 {a.txHash ? <> · <a className="bp-app-inline font-mono" href={`${EXPLORER_TX_BASE}/${a.txHash}`} target="_blank" rel="noopener noreferrer">{short(a.txHash)} ↗</a></> : null}
               </div>
               {a.state === "done" && a.outcome?.kind === "rejected" ? <p className="nl-live-why">{EXPLAIN[a.outcome.code] ?? "Refused by the contract."}</p> : null}
               {a.state === "done" && a.outcome?.kind === "settled" ? <p className="nl-live-why">Inside every rule, so the contract paid it. The tokens moved on testnet.</p> : null}
+              {a.state === "done" && a.outcome?.kind === "unknown" ? <p className="nl-live-why">Submitted. Open the transaction to read the result.</p> : null}
               {a.state === "done" && a.outcome?.kind === "refunded" ? <p className="nl-live-why">The token transfer failed (for example the recipient is not registered with the token), so the reservation was released.</p> : null}
               {a.state === "error" ? <p className="nl-live-why text-bp-reject">{a.error}</p> : null}
             </li>

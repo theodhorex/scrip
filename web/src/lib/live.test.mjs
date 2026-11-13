@@ -50,3 +50,12 @@ test("live config is a testnet function-call setup", () => {
   assert.ok(LIVE.agentKey.startsWith("ed25519:"));
   assert.equal(LIVE.recipients.length, 2);
 });
+
+test("relayOutcome reads the hosted relayer reply", async () => {
+  const { relayOutcome } = await import("./live.ts");
+  assert.deepEqual(relayOutcome({ ok: true, inner_status: "Settled" }), { kind: "settled", requestId: -1 });
+  assert.deepEqual(relayOutcome({ ok: true, inner_status: "Rejected", inner_code: "RECIPIENT_NOT_ALLOWED" }), { kind: "rejected", code: "RECIPIENT_NOT_ALLOWED" });
+  assert.deepEqual(relayOutcome({ ok: true, inner_status: "Refunded" }), { kind: "refunded", requestId: -1 });
+  assert.deepEqual(relayOutcome({ ok: true, inner_status: "Unknown" }), { kind: "unknown" });
+  assert.equal(relayOutcome({ ok: false, code: "AGENT_NOT_ALLOWED" }).kind, "failed");
+});

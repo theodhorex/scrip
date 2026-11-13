@@ -1,0 +1,24 @@
+{
+  "relay": "http://127.0.0.1:3055/api/relay",
+  "contractId": "live-scrip.envtest-theo-1747.testnet",
+  "mandateId": 1,
+  "startedAt": "2026-11-13T11:30:49.431Z",
+  "steps": [
+    {
+      "name": "gasless payment to shop A (0.01 USDC)",
+      "txHash": "48d47bB1drU4jnN4EHBk86Y6NkS2bUXSuPzCLttDCi7j",
+      "result": "Settled"
+    },
+    {
+      "name": "gasless payment to attacker.testnet",
+      "txHash": "4oJ3k6shfPXJZSmiiuqqn4BYFBoqUegpBoJRAVrZdA5G",
+      "result": "Rejected RECIPIENT_NOT_ALLOWED"
+    },
+    {
+      "name": "delegate from an account that is not the mandate's agent",
+      "result": "Refused by the relayer (AGENT_NOT_ALLOWED), nothing sent"
+    }
+  ],
+  "relayer": "relay.envtest-theo-1747.testnet",
+  "finishedAt": "2026-11-13T11:31:02.721Z"
+}
