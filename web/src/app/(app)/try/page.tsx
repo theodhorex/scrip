@@ -17,7 +17,7 @@ export default function TryLivePage() {
           <h1 className="bp-app-title">You are the agent now.</h1>
           <p className="bp-app-lede">
             This page holds the agent&apos;s key for a real mandate on NEAR testnet. Pay a shop, pay an attacker,
-            pay too much. Every click is a transaction, and the contract decides. No wallet needed.
+            pay too much. Every click is a real transaction and the contract decides. No wallet and no gas needed: the Scrip relayer pays.
           </p>
         </div>
         <a className="bp-btn bp-btn-secondary" href={`${EXPLORER_ACCOUNT_BASE}/${LIVE.contractId}`} target="_blank" rel="noopener noreferrer">

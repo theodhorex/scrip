@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { listMandates } from "@/lib/scrip";
-import { formatTime, formatUsdc } from "@/lib/format";
+import { formatTime, formatUsdc, tokenName } from "@/lib/format";
 import { BudgetBar } from "@/components/BudgetBar";
 import { ChainError } from "@/components/ChainError";
 import { LoadingState } from "@/components/LoadingState";
@@ -17,10 +17,11 @@ export default function MandatesPage() {
           <span className="bp-chapter-label">Mandates</span>
           <h1 className="bp-app-title">Spending mandates</h1>
           <p className="bp-app-lede">
-            Active and past spending boundaries configured for AI agents.
+            Each mandate is a budget an owner gave an agent, with the rules the contract enforces on every payment.
+            These are read from the live contract on NEAR testnet.
           </p>
         </div>
-        <Link href="/mandates/new" className="bp-btn bp-btn-primary">+ Create mandate</Link>
+        <Link href="/mandates/new" className="bp-btn bp-btn-primary">Create a mandate</Link>
       </header>
 
       <Suspense fallback={<LoadingState label="Loading mandates" />}>
@@ -61,16 +62,14 @@ async function MandatesContent() {
           {mandates.map((m, i) => (
             <li
               key={m.id}
-              className="bp-plate bp-app-card bp-app-enter"
+              className="bp-plate bp-app-card bp-app-enter nl-box"
               style={{ "--bp-app-delay": `${i * 90}ms` } as React.CSSProperties}
             >
               <div>
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <span className="bp-app-chip">#{m.id}</span>
-                    <span className="text-xs text-bp-muted">
-                      Token <span className="bp-app-mono text-bp-ink">{m.token}</span>
-                    </span>
+                    <span className="truncate text-xs text-bp-muted" title={m.token}>{tokenName(m.token)}</span>
                   </div>
                   <StatusBadge status={m.status} />
                 </div>
@@ -101,6 +100,13 @@ async function MandatesContent() {
               </div>
             </li>
           ))}
+          <li className="flex">
+            <Link href="/mandates/new" className="nl-box nl-box-dashed flex-1">
+              <strong>Create your own mandate</strong>
+              <span>Connect a testnet wallet, set a budget, a cap and the shops your agent may pay, then try to break it.</span>
+              <span className="bp-app-link-cta">Start <span aria-hidden="true">&rarr;</span></span>
+            </Link>
+          </li>
         </ul>
       )}
     </>

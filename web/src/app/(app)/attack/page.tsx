@@ -66,15 +66,20 @@ export default function AttackPage() {
 
   return (
     <div className="bp-app-stack">
-      <header className="bp-app-head" style={{ marginBottom: 0 }}>
+      <header className="bp-app-head">
         <div>
           <span className="bp-chapter-label">Attack demo</span>
           <h1 className="bp-app-title">Naive contract vs Scrip</h1>
           <p className="bp-app-lede">
-            Concurrency stress test evaluating race condition defense under parallel payment requests.
+            Thirty payments of 0.1 USDC fired in parallel at a 1 USDC budget: once at a contract that checks the balance
+            after sending, once at Scrip, which reserves the amount first. Below that, every recorded attack case by
+            category and layer.
           </p>
         </div>
-        <Link href="/mandates" className="bp-btn bp-btn-secondary">View mandates</Link>
+        <div className="nl-head-actions">
+          <Link href="/try" className="bp-btn bp-btn-primary">Try an attack yourself</Link>
+          <Link href="/verify" className="bp-btn bp-btn-secondary">Verify the transactions</Link>
+        </div>
       </header>
 
       {!results ? (
@@ -86,18 +91,29 @@ export default function AttackPage() {
           </p>
         </div>
       ) : (
-        <div className="bp-plate p-4 text-xs font-mono flex flex-wrap gap-x-6 gap-y-2 items-center text-bp-muted">
-          <div>Network: <span className="text-bp-ink">{results.network}</span></div>
-          <div>Started: <span className="text-bp-ink">{results.startedAt}</span></div>
-          <div>Pace: <span className="text-bp-ink">{results.params.PACE_MS} ms</span></div>
-          <div>Burst: <span className="text-bp-ink">{results.params.N} txs</span></div>
-          <div>Status: <span className="text-bp-pass font-semibold">{results.ok ? "Testnet run verified" : "Run recorded"}</span></div>
+        <div className="nl-burst">
+          <div className="nl-burst-card nl-burst-bad">
+            <span className="nl-burst-k">Naive contract paid out</span>
+            <span className="nl-burst-v">{naive ? formatUsdcUnits(naive.merchantReceived) : "–"}</span>
+            <span className="nl-burst-s">{naive?.exceededBudget ? `${formatUsdcUnits(naive.overBudgetBy)} over a ${formatUsdcUnits(naive.budget)} budget` : "within budget"}</span>
+          </div>
+          <div className="nl-burst-card">
+            <span className="nl-burst-k">Scrip paid out</span>
+            <span className="nl-burst-v">{scrip ? formatUsdcUnits(scrip.merchantReceived) : "–"}</span>
+            <span className="nl-burst-s">{scrip && !scrip.exceededBudget ? `exactly the ${formatUsdcUnits(scrip.budget)} budget, the rest refused` : "over budget"}</span>
+          </div>
+          <dl className="nl-burst-meta">
+            <div><dt>Network</dt><dd>{results.network}</dd></div>
+            <div><dt>Run</dt><dd>{results.startedAt.slice(0, 16).replace("T", " ")} UTC</dd></div>
+            <div><dt>Burst</dt><dd>{results.params.N} transactions, {results.params.PACE_MS} ms apart</dd></div>
+            <div><dt>Status</dt><dd>{results.ok ? "Testnet run verified" : "Run recorded"}</dd></div>
+          </dl>
         </div>
       )}
 
       <section aria-labelledby="comparison-heading">
         <h2 id="comparison-heading" className="bp-app-section-title">
-          Benchmark comparison: Naive vs Scrip
+          The burst, line by line
         </h2>
         <div className="bp-plate bp-app-table-wrap">
           <table className="bp-app-table">
@@ -242,10 +258,10 @@ export default function AttackPage() {
         </div>
       </section>
 
-      <section aria-labelledby="catalog-heading" className="mt-8">
-        <div className="flex items-center justify-between mb-3">
-          <h2 id="catalog-heading" className="bp-app-section-title" style={{ marginBottom: 0 }}>
-            Attack variation catalog
+      <section aria-labelledby="catalog-heading">
+        <div className="flex items-center justify-between">
+          <h2 id="catalog-heading" className="bp-app-section-title">
+            Attack catalog <span className="bp-kicker">{grand.toLocaleString("en-US")} cases, 12 categories, 5 layers</span>
           </h2>
           {!catalog && <span className="bp-app-chip text-bp-muted">Not run</span>}
         </div>
@@ -260,7 +276,7 @@ export default function AttackPage() {
           </div>
         ) : (
           <>
-            <p className="text-xs text-bp-muted mb-3 max-w-2xl leading-relaxed">
+            <p className="nl-ov-note" style={{ margin: "0 0 18px" }}>
               Source: <code className="bp-app-chip">results/attack-catalog.json</code>. {grand} recorded cases; PASS, FAIL, SKIPPED and BREACH labels are shown exactly as the catalog records them.
               {layersMissing.length > 0 && (
                 <> Layer {layersMissing.join(", ")} has no data yet and is marked &quot;not run&quot;, not counted as zero passes.</>
@@ -306,7 +322,7 @@ export default function AttackPage() {
                 </tfoot>
               </table>
             </div>
-            <p className="text-[11px] text-bp-muted mt-2" aria-hidden={layersWithData.length === 0}>
+            <p className="nl-ov-note" style={{ marginTop: 12 }} aria-hidden={layersWithData.length === 0}>
               Legend: {VERDICTS.map((v) => `${VERDICT_MARK[v]} ${v}`).join(" · ")} · &ndash; no cases
             </p>
           </>
@@ -314,12 +330,12 @@ export default function AttackPage() {
       </section>
 
       {catalog && (
-        <section aria-labelledby="out-of-scope-heading" className="mt-8">
-          <div className="mb-3">
-            <h3 id="out-of-scope-heading" className="bp-app-section-title" style={{ marginBottom: 0 }}>
-              Outside the guarantee
-            </h3>
-            <p className="text-xs text-bp-muted mt-1 max-w-2xl leading-relaxed">
+        <section aria-labelledby="out-of-scope-heading">
+          <div>
+            <h2 id="out-of-scope-heading" className="bp-app-section-title">
+              Outside the guarantee <span className="bp-kicker">{outOfScopeCases.length} cases</span>
+            </h2>
+            <p className="nl-ov-note" style={{ margin: "0 0 18px" }}>
               Scenarios outside the Scrip threat model (for example a leaked owner full-access key, a malicious token contract, or a lying RPC). Scrip does not claim to prevent these; they are recorded on purpose as stated limits.
             </p>
           </div>
@@ -329,6 +345,8 @@ export default function AttackPage() {
               The catalog has no OUT_OF_SCOPE cases right now.
             </div>
           ) : (
+            <details className="nl-fold">
+              <summary>Show all {outOfScopeCases.length} out-of-scope cases (every one labelled as expected)</summary>
             <div className="bp-plate bp-app-table-wrap">
               <table className="bp-app-table">
                 <thead>
@@ -366,6 +384,7 @@ export default function AttackPage() {
                 </tbody>
               </table>
             </div>
+            </details>
           )}
         </section>
       )}

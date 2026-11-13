@@ -172,10 +172,10 @@ export function NewMandateForm() {
       >
         <div className="border-b border-bp-line pb-4">
           <h2 className="bp-app-section-title" style={{ marginBottom: 0 }}>
-            Mandate Configuration
+            Mandate settings
           </h2>
           <p className="bp-app-hint">
-            Define parties, funding limits, and allowlist constraints.
+            Change any value: the contract call on the right and the payment check below it update as you type.
           </p>
         </div>
 
@@ -350,7 +350,7 @@ export function NewMandateForm() {
           <a href="#owner-wallet" className="bp-btn bp-btn-secondary py-2.5">
             Create it for real: connect a wallet above
           </a>
-          <p className="bp-app-hint text-center">
+          <p className="bp-app-hint" style={{ marginTop: 10 }}>
             This form only checks your input and shows the contract call. To create a real mandate on testnet, connect a wallet at the top of this page. To pay as an agent without a wallet, open <a className="bp-app-inline" href="/try">Try it live</a>.
           </p>
         </div>
@@ -360,15 +360,15 @@ export function NewMandateForm() {
         <div className="bp-plate bp-app-plate">
           <div className="flex items-center justify-between pb-3 border-b border-bp-line">
             <h2 className="text-sm font-semibold text-bp-ink">
-              create_mandate Payload Preview
+              The <code>create_mandate</code> call
             </h2>
             <span className="bp-app-chip">
               JSON
             </span>
           </div>
           <p className="bp-app-hint mt-3">
-            Live serialized contract call arguments. Amounts are exact 6-decimal
-            U128 strings computed with BigInt (no floating-point rounding):
+            The arguments this form would send. Amounts are exact token units (6 decimals for USDC), computed
+            with BigInt, never floating point.
           </p>
           <pre className="bp-app-code">
             <code>{JSON.stringify(mandateArgsPreview, null, 2)}</code>
@@ -377,15 +377,15 @@ export function NewMandateForm() {
 
         <TryPayment mandate={mandateArgsPreview} />
 
-        <div className="bp-plate p-5 text-xs text-bp-muted space-y-2">
+        <div className="bp-plate bp-app-plate text-xs text-bp-muted space-y-2">
           <p className="bp-kicker">
-            Validation Rules Enforced:
+            The contract refuses to create a mandate unless
           </p>
           <ul className="list-disc pl-4 space-y-1">
-            <li>Budget &ge; Per-payment cap</li>
-            <li>Guardian account &ne; Agent account</li>
-            <li>Allowlist contains at least one recipient</li>
-            <li>Expiry timestamp is in the future</li>
+            <li>the budget is at least the cap per payment, and the approval threshold at most the cap</li>
+            <li>owner, agent and guardian are three different accounts</li>
+            <li>there are 1 to 16 distinct recipients</li>
+            <li>the expiry is in the future</li>
           </ul>
         </div>
       </div>

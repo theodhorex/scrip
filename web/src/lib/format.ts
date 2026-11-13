@@ -33,3 +33,13 @@ export function isOverdrawn(budget: string, spent: string, reserved: string): bo
 export function formatTime(ms: number): string {
   return new Date(ms).toISOString().replace("T", " ").slice(0, 16) + " UTC";
 }
+
+const TOKEN_NAMES: Record<string, string> = {
+  "3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af": "Testnet USDC",
+  "wrap.testnet": "wNEAR",
+};
+
+/** Human name for a token contract id; unknown ids are shortened, never hidden. */
+export function tokenName(id: string): string {
+  return TOKEN_NAMES[id] ?? (id.length > 24 ? `${id.slice(0, 10)}…${id.slice(-6)}` : id);
+}

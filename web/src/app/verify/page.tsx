@@ -103,11 +103,12 @@ export default function VerifyPage() {
             <span className="bp-chapter-label">Verification</span>
             <h1 className="bp-app-title">Verify it yourself</h1>
             <p className="bp-app-lede">
-              Every on-chain claim in Scrip can be independently verified against public NEAR
-              testnet RPC records without trusted intermediaries or private API keys.
+              Every transaction we cite is read back from NEAR testnet when this page loads, through the public
+              FastNear indexer with an archival RPC as fallback, and compared with what we claim happened. No key, no
+              backend of ours.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="nl-head-actions">
             <button
               type="button"
               onClick={handleRunAgain}
@@ -126,41 +127,24 @@ export default function VerifyPage() {
           </div>
         </header>
 
-        <section aria-labelledby="summary-heading" className="mb-8">
+        <section aria-labelledby="summary-heading" className="nl-verify-sum">
           <h2 id="summary-heading" className="sr-only">
             Verification Summary
           </h2>
 
-          <div
-            role="status"
-            aria-live="polite"
-            className="bp-plate bp-app-plate flex flex-wrap items-center justify-between gap-4"
-          >
-            <div>
-              <span className="bp-app-label">Verification status</span>
-              <p className="mt-1 text-base font-semibold text-bp-ink">
-                {verified} verified / {mismatched} mismatched / {unverifiable} unverifiable
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <span className="bp-app-chip bp-app-chip-pass">
-                {verified} Verified
-              </span>
-              <span className="bp-app-chip bp-app-chip-reject">
-                {mismatched} Mismatched
-              </span>
-              <span className="bp-app-chip">
-                {unverifiable} Unverifiable
-              </span>
-            </div>
-          </div>
+          <dl role="status" aria-live="polite" className="nl-kv-key">
+            <div><dt>Verified</dt><dd>{verified}<span className="nl-of">/{items.length}</span></dd></div>
+            <div><dt>Mismatched</dt><dd className={mismatched > 0 ? "text-bp-reject" : undefined}>{mismatched}</dd></div>
+            <div><dt>Unverifiable</dt><dd>{unverifiable}</dd></div>
+            <div><dt>Still checking</dt><dd>{Math.max(0, items.length - verified - mismatched - unverifiable)}</dd></div>
+          </dl>
+          <p className="nl-ov-note">An answer the indexer and the RPC cannot give is shown as UNVERIFIABLE, never as a pass.</p>
         </section>
 
-        <section aria-labelledby="tx-table-heading" className="mb-10">
+        <section aria-labelledby="tx-table-heading" className="nl-verify-sec">
           <div className="flex items-baseline justify-between mb-3">
             <h2 id="tx-table-heading" className="bp-app-section-title">
-              Recorded Testnet Transactions
+              Recorded transactions
             </h2>
             <span className="text-xs font-mono text-bp-muted">
               {items.length} recorded items
@@ -205,7 +189,7 @@ export default function VerifyPage() {
                       </th>
                       <td>
                         {res?.blockTime ? (
-                          <time className="font-mono text-xs text-bp-ink" dateTime={res.blockTime} title="Block time reported by the indexer">
+                          <time className="font-mono text-xs text-bp-ink whitespace-nowrap" dateTime={res.blockTime} title="Block time reported by the indexer">
                             {formatUtc(res.blockTime)}
                           </time>
                         ) : item.recordedAt ? (
@@ -217,7 +201,7 @@ export default function VerifyPage() {
                           <span className="font-mono text-xs text-bp-muted">Not recorded</span>
                         )}
                       </td>
-                      <td>
+                      <td className="whitespace-nowrap">
                         <span className="font-mono text-xs text-bp-muted">
                           {item.source}
                         </span>
@@ -290,7 +274,7 @@ export default function VerifyPage() {
 
         <section aria-labelledby="raw-curl-heading" className="bp-plate bp-app-plate mb-10">
           <h2 id="raw-curl-heading" className="bp-app-section-title">
-            Raw RPC Verification (curl)
+            Check one yourself with curl
           </h2>
           <p className="bp-app-lede text-sm mb-4">
             You do not need this web app to verify any transaction. Anyone can query the public

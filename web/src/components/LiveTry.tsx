@@ -264,12 +264,6 @@ export function LiveTry({ target = DEMO_TARGET }: { target?: TryTarget }) {
             <input id={aid} className="bp-app-input" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
           </div>
         </div>
-        {inputError ? <p className="text-bp-reject text-xs" style={{ marginTop: 10 }}>{inputError}</p> : null}
-        <div className="bp-app-try-actions">
-          <button type="button" className="bp-btn bp-btn-primary" onClick={sendForm} disabled={busy || !!inputError} aria-disabled={busy || !!inputError}>
-            {busy ? "Sending to testnet…" : "Send on testnet"}
-          </button>
-        </div>
         {relayerUp ? (
           <fieldset className="nl-live-payer">
             <legend className="bp-app-label">Who pays the gas</legend>
@@ -278,7 +272,13 @@ export function LiveTry({ target = DEMO_TARGET }: { target?: TryTarget }) {
             <p className="bp-app-hint">{payer === "relayer" ? "The agent signs a delegate (NEP-366) and the hosted relayer submits it and pays the gas. The relayer checks the signature, the key and that the sender is this mandate's agent. The contract still decides." : "The agent key sends the transaction itself; gas comes out of its allowance."}</p>
           </fieldset>
         ) : null}
-        <p className="bp-app-hint" style={{ marginTop: 16 }}>Or try one of these:</p>
+        {inputError ? <p className="text-bp-reject text-xs" style={{ marginTop: 10 }}>{inputError}</p> : null}
+        <div className="bp-app-try-actions">
+          <button type="button" className="bp-btn bp-btn-primary" onClick={sendForm} disabled={busy || !!inputError} aria-disabled={busy || !!inputError}>
+            {busy ? "Sending to testnet…" : "Send on testnet"}
+          </button>
+        </div>
+        <p className="bp-app-hint" style={{ marginTop: 22 }}>Or try one of these:</p>
         <div className="bp-app-try-actions" style={{ marginTop: 8 }}>
           <button type="button" className="bp-btn bp-btn-secondary bp-btn-sm" disabled={busy} onClick={() => presetUnits(t.recipients[0], firstAmount)}>
             {t.publicDemo ? "Pay shop A 0.01" : `Pay ${fromUnits(firstAmount, t.decimals)} to the first recipient`}
