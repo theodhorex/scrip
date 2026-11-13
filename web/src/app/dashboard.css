@@ -191,3 +191,4 @@ html:has(.nl-app), body:has(.nl-app) { background: #050505; }
 .nl-owner-txs span { font-family: var(--mono); text-transform: uppercase; letter-spacing: .04em; color: var(--strip); }
 .nl-owner .nl-live-facts dd { overflow-wrap: anywhere; }
 .nl-owner-sim { margin-top: 12px; padding-top: 28px; border-top: 1px solid var(--line-strong); }
+.nl-owner [id] { scroll-margin-top: 96px; }

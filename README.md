@@ -52,6 +52,7 @@ Every step is "do X, see Y". Nothing to install for steps 1 to 6: no wallet, no 
 | 6 | Open **[/verify](https://scrip-dev.vercel.app/verify)** | the page re-reads 35 recorded transactions from the chain and compares each claim (paid, or refused with a code): **35 verified, 0 mismatched** |
 | 7 | Clone and run `make test` (Node 22.18+, Rust) | every offline suite passes; full list in [All tests](#all-tests) |
 | 8 | Run `make verify-onchain` | **21 verified, 0 mismatched, 0 unverifiable** from the terminal, no key needed |
+| 9 | With a testnet wallet: open **[/mandates/new](https://scrip-dev.vercel.app/mandates/new)**, connect, create, fund, then pay as your agent | your own mandate on the live contract; your agent's key is a function-call key you can download, and the same refusals apply |
 
 The claims-to-evidence matrix for every number in this README is in **[JUDGES.md](JUDGES.md)**. A longer walkthrough is in [docs/TRY_IT.md](docs/TRY_IT.md).
 
@@ -117,7 +118,7 @@ Scrip moves the spending rules out of the agent and into a NEAR contract. Five p
 - **Live Mandate Dashboard**: [/mandates/1](https://scrip-dev.vercel.app/mandates/1) reads `get_mandate` and `get_stats` from the chain and lists the mandate's NEP-297 events (created, deposited, reserved, settled, rejected) with explorer links
 - **Attack Demo**: [/attack](https://scrip-dev.vercel.app/attack) shows the parallel burst result and the full 1,999-case catalog by category and layer
 - **Verify It Yourself**: [/verify](https://scrip-dev.vercel.app/verify) re-checks 35 recorded transactions on every load through the public FastNear indexer, with an archival RPC fallback; unanswerable checks show `UNVERIFIABLE`, never a pass
-- **Mandate Builder**: [/mandates/new](https://scrip-dev.vercel.app/mandates/new) builds a mandate and simulates payments against the same rules in the browser
+- **Create Your Own Mandate**: [/mandates/new](https://scrip-dev.vercel.app/mandates/new) connects a NEAR testnet wallet (Meteor, Intear, Nightly, Ledger and others via near-connect). One approval creates an agent sub-account whose only key can call `request_payment`, a guardian sub-account, and the mandate; then you fund it (wNEAR wrapped in the same transaction, or testnet USDC), pay as your own agent, revoke, and withdraw what is left. A browser simulator of the same rules sits below it for visitors without a wallet
 - **Guardian Approvals**: payments at or above the threshold need a single-use, expiring approval bound to an exact intent hash
 - **Signing Guard**: the client SDK checks account age, contract code hash, prior interactions and an evidenced blocklist before signing; `allow` signs, `warn` asks a human, `block` stops
 - **Gasless Relayer**: the facilitator validates the key, rate-limits, deduplicates nonces and sponsors gas for NEP-366 delegate actions
@@ -362,7 +363,8 @@ Every suite below runs offline unless noted. Counts are from the clean rerun of 
 | Facilitator (relayer) | `cd facilitator && node --test test/` | **293 passed** | Key checks, 64-position bit flips, replay, rate limits, NEP-366 validation |
 | Demo scenarios | `make demo-test` | **35 passed** | Honest payment, injected agent refused, overcharge refused, x402 flow |
 | Scripts and verifiers | `make script-test` | **48 passed** | CLI parsing, envelope recovery sweeps, on-chain verification, link extraction |
-| Web | `cd web && node --test src/lib/ tests/` | **182 passed** | Live outcome parsing, event parsing, transaction verification, rule simulation, catalog loading |
+| Web | `cd web && node --test src/lib/ tests/` | **197 passed** | Live outcome parsing, event parsing, transaction verification, owner-flow transaction builders, rule simulation, catalog loading |
+| Owner flow on testnet (needs network and a funded key) | `cd web && KEY_DIR=… node scripts/owner-flow-e2e.mjs` | **all checks passed** ([`results/owner-flow-e2e.json`](results/owner-flow-e2e.json)) | Signs the exact transactions `/mandates/new` hands to the wallet: create agent and guardian, create and fund a wNEAR mandate, pay, two refusals, agent key cannot send NEAR, revoke, withdraw |
 | Attack catalog, Layer C | `node scripts/attack-catalog/run.mjs --layers C` | **317 passed** | Client payload validation |
 | Attack catalog, Layer B | `node scripts/attack-catalog/run.mjs --layers B` | **385 passed** | Relayer checks |
 | Attack catalog, Layer E (testnet) | `node scripts/attack-catalog/run-testnet.mjs` | **405 passed, 105 skipped**, 0 fail | Live attacks in 9 waves; skips are never counted as passes |
@@ -414,6 +416,7 @@ All 384 distinct transaction hashes in the catalog and results files were also l
 | Client SDK | Node.js, @noble/curves, NEP-366 delegate signing, x402 header parsing |
 | Relayer | Node.js facilitator on FastNEAR RPC |
 | Frontend | Next.js 16 (App Router, Turbopack), React 19, TypeScript, Tailwind CSS 4, Lenis |
+| Wallets | @hot-labs/near-connect 0.12 (testnet) |
 | Chain access | near-api-js 7.4, FastNear transaction indexer, archival RPC |
 | Model trials | Ollama 0.40.13 on GitHub Actions (`qwen3:1.7b`, `qwen3:4b`, `llama3.2:3b`, `qwen2.5:3b`) |
 | Mutation testing | cargo-mutants (contract), Stryker (client, relayer) |
@@ -506,6 +509,7 @@ scrip/
 - Testnet only; no mainnet deployment
 - The model trials use small open models (1.7B to 4B) on CPU; they measure how often small models obey an injection, not frontier-model robustness
 - **Live demo key**: anyone can spend the shared demo budget on the two allowed shops and use up the key's 4.5 testnet NEAR gas allowance. That limits the demo; it does not break a rule
+- **Keys from /mandates/new**: the agent and guardian keys are generated in the browser and kept in its local storage (testnet only), with a download button. A production version would hand the agent key straight to the agent and keep the guardian in a real wallet
 - "0 breach" covers the cataloged attacks, not every possible attack
 
 ---
@@ -514,7 +518,7 @@ scrip/
 
 - **Built for NEAR HACKATHON.** Tracks: **AI Security & Defense** and **Agent Economy**.
 - **Timeline (Q-001):** work in this folder started on 2026-10-28, after the announcement on 2026-10-19; there is no pre-hackathon baseline. The git history was assembled from the working folder on 2026-11-02, one commit per component, dated with each file's last modification time; versions in between were not kept.
-- **Libraries and AI tools (Q-005):** near-sdk, near-contract-standards, near-workspaces, near-api-js, @noble/curves, Next.js, React, Tailwind CSS, Lenis, Ollama, cargo-mutants, Stryker. Code was written with AI assistance, listed in [Tech Stack](#tech-stack).
+- **Libraries and AI tools (Q-005):** near-sdk, near-contract-standards, near-workspaces, near-api-js, @hot-labs/near-connect, @noble/curves, Next.js, React, Tailwind CSS, Lenis, Ollama, cargo-mutants, Stryker. Code was written with AI assistance, listed in [Tech Stack](#tech-stack).
 - **Testnet only (Q-010):** all contracts and tokens are on NEAR testnet with testnet USDC.
 - *Scrip* is money issued for use only inside a limited network. That is what a mandate is.
 

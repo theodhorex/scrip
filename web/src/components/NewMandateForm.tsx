@@ -347,16 +347,11 @@ export function NewMandateForm() {
         </div>
 
         <div className="pt-2">
-          <button
-            type="button"
-            disabled
-            aria-disabled="true"
-            className="bp-btn bp-btn-secondary bp-app-btn-off py-2.5"
-          >
-            Creating on testnet needs a wallet (not built yet)
-          </button>
+          <a href="#owner-wallet" className="bp-btn bp-btn-secondary py-2.5">
+            Create it for real: connect a wallet above
+          </a>
           <p className="bp-app-hint text-center">
-            This form checks your input and shows the contract call it would send. To send real payments on testnet, open <a className="bp-app-inline" href="/try">Try it live</a>.
+            This form only checks your input and shows the contract call. To create a real mandate on testnet, connect a wallet at the top of this page. To pay as an agent without a wallet, open <a className="bp-app-inline" href="/try">Try it live</a>.
           </p>
         </div>
       </form>
