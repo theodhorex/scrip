@@ -1,0 +1,24 @@
+/* Three flat tones (top, left, right), thin white edges, one rejection red. No gradients, no glow. */
+.iso { display: block; width: 100%; height: auto; overflow: visible; }
+.iso-f { stroke: rgba(250,250,250,.55); stroke-width: .8; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.iso-f[data-shade="0"] { fill: #343434; }
+.iso-f[data-shade="1"] { fill: #1f1f1f; }
+.iso-f[data-shade="2"] { fill: #111; }
+.iso-f[data-tone="bright"][data-shade="0"] { fill: #f4f4f4; }
+.iso-f[data-tone="bright"][data-shade="1"] { fill: #c9c9c9; }
+.iso-f[data-tone="bright"][data-shade="2"] { fill: #9a9a9a; }
+.iso-f[data-tone="reject"] { stroke: var(--reject); stroke-width: 1.2; }
+.iso-f[data-tone="line"] { fill: none; stroke-dasharray: 3 3; stroke: rgba(250,250,250,.45); }
+.iso-l { stroke: rgba(250,250,250,.5); stroke-width: .8; vector-effect: non-scaling-stroke; }
+.iso-l[data-tone="reject"] { stroke: var(--reject); }
+.iso-l[data-tone="bright"] { stroke: #fff; }
+.iso-l[data-tone="faint"] { stroke: rgba(250,250,250,.16); }
+.iso-l[data-dash] { stroke-dasharray: 4 4; }
+.iso-t { font: 500 11px var(--mono); fill: #bdbdbd; }
+.iso-t[data-tone="reject"] { fill: var(--reject); }
+.iso-t[data-tone="bright"] { fill: #fff; }
+/* floor and soft shadow: darker than the figures, no outline, so objects sit on the ground instead of floating */
+.iso-f[data-tone="floor"] { stroke: rgba(250,250,250,.18); }
+.iso-f[data-tone="floor"][data-shade="0"] { fill: #141414; }
+.iso-f[data-tone="floor"][data-shade="1"], .iso-f[data-tone="floor"][data-shade="2"] { fill: #0c0c0c; }
+.iso-f[data-tone="shadow"] { stroke: none; fill: #000; }

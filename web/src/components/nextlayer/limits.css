@@ -1,0 +1,15 @@
+.nl-limits-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 4fr); gap: clamp(24px, 4vw, 72px); align-items: start; }
+.nl-lstack-col { position: sticky; top: 14dvh; order: 2; }
+.nl-lstack { cursor: grab; touch-action: pan-y; user-select: none; }
+.nl-limit[data-active] h3 { color: #fff; }
+.nl-limit-btn { all: unset; cursor: pointer; display: inline; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 6px; }
+.nl-limit-btn:hover, .nl-limit[data-active] .nl-limit-btn { text-decoration-color: #fff; }
+.nl-limit-btn:focus-visible { outline: 2px solid #fff; outline-offset: 4px; }
+@media (max-width: 900px) { .nl-limits-grid { grid-template-columns: minmax(0, 1fr); } .nl-lstack-col { position: static; order: -1; max-width: 420px; } }
+.nl-limits-list { margin: 0; padding: 0; list-style: none; counter-reset: lim; border-top: 1px solid var(--line-strong); }
+.nl-limit { display: grid; grid-template-columns: clamp(56px, 8vw, 140px) minmax(0, 1fr); gap: 8px clamp(16px, 3vw, 48px); padding: clamp(24px, 3vw, 44px) 0; border-bottom: 1px solid var(--line); counter-increment: lim; }
+.nl-limit::before { content: counter(lim); font-size: clamp(40px, 6vw, 96px); line-height: .9; letter-spacing: -.03em; color: var(--ink); font-weight: 300; font-variant-numeric: tabular-nums; }
+.nl-limit h3 { font-size: clamp(21px, 2vw, 30px); line-height: 1.2; margin-bottom: 8px; }
+.nl-limit:nth-child(even) { padding-left: clamp(0px, 6vw, 120px); }
+.nl-limit:nth-child(3n) h3 { max-width: 22ch; }
+@media (max-width: 700px) { .nl-limit:nth-child(even) { padding-left: 0; } }

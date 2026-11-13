@@ -1,0 +1,65 @@
+.nl-rm { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 6vw, 112px); align-items: start; }
+.nl-rm-form { display: flex; flex-direction: column; gap: 34px; }
+.nl-field { display: flex; flex-direction: column; gap: 10px; border: 0; padding: 0; margin: 0; min-width: 0; }
+.nl-field > label, .nl-field > legend { font-size: 14px; color: var(--strip); padding: 0; }
+.nl-select {
+  appearance: none; -webkit-appearance: none; min-height: 52px; padding: 0 44px 0 0; background: transparent; color: var(--ink);
+  border: 0; border-bottom: 1px solid var(--line-strong); border-radius: 0; font: 500 19px/1.2 var(--font-manrope), system-ui, sans-serif; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, #fff 50%), linear-gradient(135deg, #fff 50%, transparent 50%);
+  background-position: calc(100% - 14px) 50%, calc(100% - 8px) 50%; background-size: 6px 6px; background-repeat: no-repeat;
+}
+.nl-select option { background: #111; color: #fff; }
+.nl-amount { display: flex; align-items: baseline; justify-content: space-between; }
+.nl-amount output { font-family: var(--mono); font-size: 34px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.nl-range { width: 100%; height: 44px; background: transparent; cursor: pointer; accent-color: #fff; margin: 0; }
+.nl-ticks { position: relative; height: 34px; font-family: var(--mono); font-size: 11.5px; color: var(--strip); }
+.nl-ticks span { position: absolute; top: 0; transform: translateX(-50%); white-space: nowrap; padding-top: 14px; }
+.nl-ticks span::before { content: ""; position: absolute; top: 0; left: 50%; height: 10px; border-left: 1px solid var(--line-strong); }
+.nl-switch { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 52px; padding: 0; background: transparent; border: 0; border-bottom: 1px solid var(--line-strong); color: var(--ink); font: 500 19px/1.2 var(--font-manrope), system-ui, sans-serif; cursor: pointer; text-align: left; }
+.nl-switch-track { position: relative; width: 48px; height: 26px; border: 1px solid var(--line-strong); border-radius: 999px; flex: none; transition: background-color .3s var(--ease), border-color .3s; }
+.nl-switch-track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .4s var(--ease), background-color .3s; }
+.nl-switch[aria-checked="true"] .nl-switch-track { background: #fff; border-color: #fff; }
+.nl-switch[aria-checked="true"] .nl-switch-track::after { transform: translateX(22px); background: #050505; }
+.nl-actions-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.nl-presets { display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 14px; color: var(--muted); }
+.nl-presets button { background: none; border: 0; color: var(--ink); padding: 10px 0; min-height: 44px; font: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 5px; }
+.nl-presets button:hover { text-decoration-color: #fff; }
+.nl-params { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 20px; font-family: var(--mono); font-size: 12.5px; color: var(--strip); }
+.nl-params dd { margin: 0; color: var(--muted); }
+
+.nl-rm-out { position: relative; }
+.nl-rm-panel { position: relative; padding-top: 20px; border-top: 1px solid var(--line-strong); }
+.nl-sweep { position: absolute; left: 0; top: -1px; height: 2px; width: 100%; background: var(--reject); transform-origin: left; animation: nl-sweep .9s var(--ease) both; }
+@keyframes nl-sweep { 0% { transform: scaleX(0); opacity: 1; } 60% { transform: scaleX(1); opacity: 1; } 100% { transform: scaleX(1); opacity: 0; } }
+.nl-result { min-height: 132px; }
+.nl-result-head { font-size: clamp(26px, 2.8vw, 42px); line-height: 1.1; letter-spacing: -.01em; }
+.nl-result-head[data-bad] { color: var(--reject); }
+.nl-result-head code { font-size: .78em; }
+.nl-result p { margin-top: 12px; color: var(--muted); font-size: 16px; line-height: 1.6; max-width: 52ch; }
+.nl-result .nl-note { margin-top: 10px; }
+.nl-rm-nums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 30px 0 0; padding: 0; border-top: 1px solid var(--line); }
+.nl-rm-nums div { padding: 14px 0 6px; }
+.nl-rm-nums dt { color: var(--strip); font-size: 13px; }
+.nl-rm-nums dd { margin: 4px 0 0; font-family: var(--mono); font-size: 26px; font-variant-numeric: tabular-nums; }
+.nl-log-wrap { margin-top: 34px; }
+.nl-log-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-size: 14px; color: var(--strip); }
+.nl-log-head button { min-height: 44px; padding: 0 4px; background: none; border: 0; color: var(--ink); font: 500 14px var(--font-manrope), system-ui, sans-serif; cursor: pointer; }
+.nl-log { margin: 8px 0 0; padding: 0; list-style: none; font-size: 12px; line-height: 1.75; max-height: 232px; overflow: auto; border-top: 1px solid var(--line); }
+.nl-log li { padding: 6px 0; border-bottom: 1px solid var(--line); color: #cfcfcf; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nl-log li[data-ev="rejected"] { color: var(--reject); }
+.nl-log-empty { padding: 14px 0; color: var(--strip); font-size: 14px; }
+.nl-log li[data-new] { animation: nl-type .7s steps(48, end) both; }
+@keyframes nl-type { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+.nl-ticks-wrap { margin-top: -6px; }
+@media (max-width: 900px) { .nl-rm { grid-template-columns: minmax(0, 1fr); } }
+@media (prefers-reduced-motion: reduce) { .nl-sweep, .nl-log li[data-new] { animation: none; } .nl-sweep { opacity: 0; } }
+
+.nl-rscene { margin: 0 0 30px; }
+.nl-rscene-svg { cursor: grab; touch-action: pan-y; user-select: none; }
+.nl-rscene-svg:active { cursor: grabbing; }
+.nl-gates { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12.5px; color: var(--strip); font-family: var(--mono); }
+.nl-gates li { display: inline-flex; gap: 6px; transition: color .3s; }
+.nl-gates li span { color: var(--muted); }
+.nl-gates li[data-state="pass"] { color: var(--ink); }
+.nl-gates li[data-state="fail"] { color: var(--reject); }
+.nl-rscene figcaption .nl-note { margin-top: 10px; }

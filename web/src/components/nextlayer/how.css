@@ -1,0 +1,45 @@
+.nl-how-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: clamp(32px, 6vw, 120px); align-items: start; }
+.nl-ledger { position: sticky; top: 96px; }
+.nl-ledger-tag { font-family: var(--mono); font-size: 12.5px; color: var(--strip); margin-bottom: 18px; }
+.nl-ledger dl { margin: 0; border-top: 1px solid var(--line-strong); }
+.nl-ledger-row { display: flex; align-items: baseline; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid var(--line); transition: color .4s var(--ease); }
+.nl-ledger dt { color: var(--muted); font-size: 15px; }
+.nl-ledger dd { margin: 0; font-family: var(--mono); font-size: 22px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.nl-ledger dd small { font-size: 12px; color: var(--strip); margin-left: 6px; }
+.nl-ledger-row[data-hot] dt { color: #fff; }
+.nl-ledger-row[data-key] dd { font-size: 30px; }
+/* the budget meter: deposited is the full width, the budget line is fixed */
+.nl-meter { position: relative; height: 12px; margin: 28px 0 8px; background: rgba(255,255,255,.07); }
+.nl-meter-spent, .nl-meter-res { position: absolute; top: 0; bottom: 0; left: 0; transform-origin: left; }
+.nl-meter-spent { background: #fff; }
+.nl-meter-res { background: repeating-linear-gradient(135deg, #fff 0 2px, transparent 2px 5px); }
+.nl-meter-caption { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 11.5px; color: var(--strip); }
+
+.nl-steps { position: relative; margin: 0; padding: 0; list-style: none; padding-left: clamp(28px, 3.4vw, 56px); }
+.nl-steps::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 1px; background: var(--line); }
+.nl-steps-fill { position: absolute; left: -.5px; top: 0; bottom: 0; width: 2px; background: #fff; transform-origin: top; transform: scaleY(var(--p, 0)); }
+.nl-step { min-height: 78vh; display: flex; flex-direction: column; justify-content: center; padding-block: 48px; opacity: .38; transition: opacity .6s var(--ease), transform .6s var(--ease); transform: translateX(0); }
+.nl-step:first-child { min-height: 64vh; }
+.nl-step[data-active] { opacity: 1; transform: translateX(10px); }
+.nl-step-n { font-family: var(--mono); font-size: 13px; color: var(--strip); margin-bottom: 14px; }
+.nl-step h3 { font-size: clamp(26px, 2.6vw, 40px); line-height: 1.12; letter-spacing: -.01em; max-width: 18ch; margin-bottom: 18px; }
+.nl-step[data-active] h3 { font-size: clamp(28px, 2.9vw, 44px); }
+.nl-step h3, .nl-step-n { transition: font-size .5s var(--ease); }
+
+@media (max-width: 900px) {
+  .nl-how-grid { grid-template-columns: minmax(0, 1fr); }
+  .nl-ledger { position: sticky; top: 64px; z-index: 5; background: #050505; padding-block: 12px 4px; margin-inline: calc(var(--gutter) * -1); padding-inline: var(--gutter); border-bottom: 1px solid var(--line); }
+  .nl-ledger dl { display: grid; grid-template-columns: repeat(5, 1fr); border-top: 0; }
+  .nl-ledger-row { flex-direction: column; border-bottom: 0; padding: 4px 0; }
+  .nl-ledger dt { font-size: 11px; }
+  .nl-ledger dd, .nl-ledger-row[data-key] dd { font-size: 15px; }
+  .nl-ledger dd small { display: none; }
+  .nl-ledger-tag { margin-bottom: 8px; }
+  .nl-meter { margin: 10px 0 4px; height: 8px; }
+  .nl-meter-caption { display: none; }
+  .nl-step, .nl-step:first-child { min-height: 56vh; }
+}
+@media (prefers-reduced-motion: reduce) { .nl-step { opacity: 1; transition: none; transform: none; } .nl-step[data-active] { transform: none; } }
+.nl-hscene { margin-top: 26px; max-width: 520px; }
+@media (max-width: 900px) { .nl-hscene { display: none; } }
+@media (max-height: 760px) { .nl-hscene { display: none; } }

@@ -1,0 +1,271 @@
+/* Scrip landing lab. Hero geometry follows the "Next Layer" prompt (canvas 1487 x 1058).
+   Everything is scoped under .nl so nothing leaks to the rest of the app. */
+.nl {
+  --ink: #fafafa;
+  --muted: #a7a6a6;
+  --nav: #b6b5b5;
+  --strip: #8b8a8a;
+  --pill: #fff;
+  --pill-ink: #050505;
+  --bg: #050505;
+  --u: calc(100vh / 1058);
+  --uw: calc(100vw / 1487);
+  --h: clamp(var(--u), calc(var(--u) * .65 + var(--uw) * .35), calc(var(--u) * 1.16));
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  background: var(--bg);
+  color: var(--ink);
+  color-scheme: dark;
+  font-family: var(--font-manrope), system-ui, -apple-system, "Segoe UI", sans-serif;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+@supports (height: 100dvh) { .nl { --u: calc(100dvh / 1058); } }
+.nl *, .nl *::before, .nl *::after { box-sizing: border-box; }
+.nl a { color: inherit; text-decoration: none; }
+.nl video, .nl img { max-width: none; }
+
+/* 2px high-contrast focus ring everywhere */
+.nl :focus-visible { outline: 2px solid #fff; outline-offset: 3px; border-radius: 2px; }
+
+.nl-skip {
+  position: absolute; left: 12px; top: -80px; z-index: 100;
+  background: #fff; color: #050505; padding: 12px 16px; font-weight: 600; border-radius: 999px;
+}
+.nl-skip:focus { top: 12px; }
+
+/* ───────── stage ───────── */
+.nl-stage { position: relative; height: 100vh; height: 100dvh; overflow: hidden; background: var(--bg); }
+
+.nl-plate { position: absolute; inset: 0; overflow: hidden; }
+.nl-plate-video, .nl-plate-still {
+  position: absolute; left: 50%; top: calc(1 * var(--u));
+  width: calc(1492 * var(--u)); height: calc(1054 * var(--u));
+  transform: translateX(calc(-50% - calc(0.5 * var(--u))));
+  object-fit: cover; pointer-events: none;
+}
+.nl-plate-still { opacity: 1; }
+.nl-plate::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background:
+    linear-gradient(to bottom,
+      rgba(5,5,5,0) 78.8%, rgba(5,5,5,.23) 79.6%, rgba(5,5,5,.45) 81.4%,
+      rgba(5,5,5,.75) 83.3%, rgba(5,5,5,.84) 85.2%, rgba(5,5,5,.888) 88%,
+      rgba(5,5,5,.905) 91%, rgba(5,5,5,.96) 95%, #050505 100%),
+    linear-gradient(to right,
+      #050505 calc(50% - 746 * var(--u)),
+      transparent calc(50% - 676 * var(--u)),
+      transparent calc(50% + 676 * var(--u)),
+      #050505 calc(50% + 746 * var(--u)));
+}
+
+/* ───────── header ───────── */
+.nl-topbar { position: absolute; inset: 0 0 auto 0; height: calc(110 * var(--u)); z-index: 5; }
+.nl-brand {
+  position: absolute; left: calc(75 * var(--u)); top: calc(27 * var(--u));
+  width: calc(31.5 * var(--u)); height: calc(48.5 * var(--u)); display: block;
+}
+.nl-links {
+  position: absolute; left: 50%; top: calc(51 * var(--u)); transform: translate(-50%, -50%);
+  display: flex; align-items: center; white-space: nowrap;
+  font-size: calc(19 * var(--u)); font-weight: 400; color: var(--nav);
+}
+.nl-links a { position: relative; padding: calc(8 * var(--u)) 0; transition: color .25s var(--ease); }
+.nl-links a:hover { color: #fff; }
+.nl-links a + a { margin-left: calc(24.5 * var(--u)); }
+.nl-links a:nth-child(3) { margin-left: calc(23.5 * var(--u)); }
+.nl-links a:nth-child(4) { margin-left: calc(26 * var(--u)); }
+
+.nl a.nl-pill, .nl-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--pill); color: var(--pill-ink) !important; border-radius: 999px; font-weight: 500;
+  transition: transform .35s var(--ease), background-color .25s;
+}
+.nl-pill:hover { background: #e9e9e9; }
+.nl-pill span { display: block; transform: translateY(calc(1 * var(--u))); }
+.nl-pill-nav {
+  position: absolute; right: calc(75.4 * var(--u)); top: calc(27 * var(--u));
+  width: calc(175 * var(--u)); height: calc(49 * var(--u)); font-size: calc(20.6 * var(--u));
+}
+
+.nl-burger { display: none; }
+.nl-menu { display: none; }
+
+/* ───────── hero copy ───────── */
+.nl-hero { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.nl-hero > * { pointer-events: auto; }
+.nl-headline {
+  position: absolute; left: calc(75.5 * var(--u)); top: calc(230.5 * var(--u)); margin: 0;
+  font-size: calc(71.6 * var(--h)); line-height: calc(80.5 * var(--h)); font-weight: 400;
+  letter-spacing: calc(0.3 * var(--h)); color: var(--ink); white-space: nowrap;
+}
+.nl-headline > span { display: block; }
+.nl-sub {
+  position: absolute; left: calc(75.5 * var(--u)); top: calc(230.5 * var(--u) + 189 * var(--h)); margin: 0;
+  font-size: calc(20.7 * var(--h)); line-height: calc(23.5 * var(--h)); font-weight: 400;
+  word-spacing: calc(1.8 * var(--h)); color: var(--muted); white-space: nowrap;
+}
+.nl-sub > span { display: block; }
+.nl-actions {
+  position: absolute; left: calc(74.9 * var(--u)); top: calc(230.5 * var(--u) + 264.5 * var(--h));
+  display: flex; align-items: center; gap: calc(30 * var(--h));
+}
+.nl-pill-cta { min-width: calc(175.6 * var(--h)); height: calc(50 * var(--h)); padding: 0 calc(30 * var(--h)); font-size: calc(20.6 * var(--h)); }
+.nl-ghost {
+  position: relative; font-size: calc(20.6 * var(--h)); font-weight: 500; letter-spacing: calc(0.12 * var(--h)); color: #fff;
+  padding: calc(8 * var(--h)) 0;
+}
+
+/* ───────── evidence strip (text markers, no partner logos) ───────── */
+.nl-logos {
+  position: absolute; top: calc(995 * var(--u)); left: 50%; width: calc(741 * var(--u));
+  transform: translateX(calc(-50% + 20 * var(--u))); color: var(--strip); z-index: 3;
+  display: flex; justify-content: space-between; align-items: center; margin: 0; padding: 0; list-style: none;
+}
+.nl-lg { display: flex; align-items: center; gap: calc(7 * var(--u)); font-weight: 700; font-size: calc(15.6 * var(--u)); white-space: nowrap; }
+.nl-lg svg { width: calc(26 * var(--u)); height: calc(26 * var(--u)); flex: none; }
+
+/* ───────── entrance (only when motion is allowed) ───────── */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes nl-rise { from { opacity: 0; transform: translateY(calc(14 * var(--u))); } }
+  @keyframes nl-riseNav { from { opacity: 0; transform: translate(-50%, calc(-50% + 14 * var(--u))); } to { opacity: 1; transform: translate(-50%, -50%); } }
+  @keyframes nl-fade { from { opacity: 0; } }
+  .nl-brand, .nl-pill-nav { animation: nl-rise .8s var(--ease) both; }
+  .nl-links { animation: nl-riseNav .8s var(--ease) both; }
+  .nl-headline { animation: nl-rise .9s var(--ease) .06s both; }
+  .nl-sub { animation: nl-rise .9s var(--ease) .14s both; }
+  .nl-actions { animation: nl-rise .9s var(--ease) .22s both; }
+  .nl-lg { animation: nl-fade 1.1s ease .34s both; }
+}
+
+/* ───────── portrait / narrow: flow layout ───────── */
+@media (max-aspect-ratio: 11/10) {
+  .nl { --m: min(100vw / 430, 1.34px); --u: var(--m); --h: var(--m); }
+  .nl-stage {
+    height: auto; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; overflow: hidden;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .nl-plate-video, .nl-plate-still { inset: 0; left: 0; top: 0; width: 100%; height: 100%; transform: none; object-position: 43% center; }
+  .nl-plate::after {
+    background:
+      linear-gradient(to right, rgba(5,5,5,.86), rgba(5,5,5,.66) 42%, rgba(5,5,5,.20) 78%, rgba(5,5,5,.10)),
+      linear-gradient(to bottom, rgba(5,5,5,.72), rgba(5,5,5,.34) 24%, rgba(5,5,5,.34) 56%, rgba(5,5,5,.80) 82%, rgba(5,5,5,.97) 94%, #050505);
+  }
+  .nl-topbar { position: relative; height: auto; display: flex; justify-content: space-between; align-items: center; padding: calc(22 * var(--m)) calc(24 * var(--m)) 0; z-index: 30; }
+  .nl-brand { position: static; width: calc(26 * var(--m)); height: calc(40 * var(--m)); }
+  .nl-links, .nl-pill-nav { display: none; }
+  .nl-burger {
+    display: inline-flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px;
+    width: 48px; height: 48px; border-radius: 999px; cursor: pointer; padding: 0;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.14);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); color: #fff;
+  }
+  .nl-burger i { display: block; width: 18px; height: 1.6px; background: currentColor; transition: transform .42s var(--ease); }
+  .nl-stage.is-open .nl-burger i:first-child { transform: translateY(3.8px) rotate(45deg); }
+  .nl-stage.is-open .nl-burger i:last-child { transform: translateY(-3.8px) rotate(-45deg); }
+
+  .nl-menu {
+    display: block; position: absolute; inset: 0; z-index: 20; opacity: 0; visibility: hidden;
+    background: linear-gradient(to bottom, rgba(5,5,5,.94), rgba(5,5,5,.98));
+    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+    transition: opacity .42s var(--ease), visibility .42s;
+  }
+  .nl-stage.is-open .nl-menu { opacity: 1; visibility: visible; }
+  .nl-menu-inner { padding: calc(110 * var(--m)) calc(24 * var(--m)) calc(32 * var(--m)); display: flex; flex-direction: column; min-height: 100%; }
+  .nl-menu-eyebrow { margin: 0 0 calc(18 * var(--m)); font-size: 14px; color: var(--strip); }
+  .nl-menu-list { list-style: none; margin: 0; padding: 0; }
+  .nl-menu-list a { display: flex; justify-content: space-between; align-items: center; min-height: 56px; font-size: max(25px, calc(31 * var(--m))); border-bottom: 1px solid rgba(255,255,255,.1); }
+  .nl-menu-list a::after { content: ""; width: 9px; height: 9px; border-top: 1.5px solid currentColor; border-right: 1.5px solid currentColor; transform: rotate(45deg); opacity: .6; }
+  .nl-menu-foot { margin-top: auto; padding-top: calc(32 * var(--m)); display: flex; align-items: center; gap: 24px; flex-wrap: wrap; }
+  .nl-menu-eyebrow, .nl-menu-list li, .nl-menu-foot { opacity: 0; transform: translateY(12px); transition: opacity .5s var(--ease), transform .5s var(--ease); }
+  .nl-stage.is-open .nl-menu-eyebrow, .nl-stage.is-open .nl-menu-list li, .nl-stage.is-open .nl-menu-foot { opacity: 1; transform: none; }
+  .nl-stage.is-open .nl-menu-eyebrow { transition-delay: .06s; }
+  .nl-stage.is-open .nl-menu-list li:nth-child(1) { transition-delay: .10s; }
+  .nl-stage.is-open .nl-menu-list li:nth-child(2) { transition-delay: .16s; }
+  .nl-stage.is-open .nl-menu-list li:nth-child(3) { transition-delay: .22s; }
+  .nl-stage.is-open .nl-menu-list li:nth-child(4) { transition-delay: .28s; }
+  .nl-stage.is-open .nl-menu-foot { transition-delay: .34s; }
+
+  .nl-hero { position: relative; inset: auto; flex: 1; display: flex; flex-direction: column; justify-content: center; padding: calc(40 * var(--m)) calc(24 * var(--m)) calc(24 * var(--m)); }
+  .nl-headline, .nl-sub, .nl-actions { position: static; }
+  .nl-headline { font-size: calc(50 * var(--m)); line-height: 1.1; white-space: normal; letter-spacing: 0.2px; }
+  .nl-headline > span { display: inline; }
+  .nl-sub { margin-top: calc(22 * var(--m)); font-size: max(16px, calc(18 * var(--m))); line-height: 1.5; white-space: normal; word-spacing: 0; max-width: 34ch; }
+  .nl-sub > span { display: inline; }
+  .nl-actions { margin-top: calc(32 * var(--m)); gap: 24px; flex-wrap: wrap; }
+  .nl-pill-cta { height: 52px; min-width: 0; padding: 0 28px; font-size: 18px; }
+  .nl-ghost { font-size: 18px; padding: 12px 0; }
+  .nl-logos { position: relative; left: auto; top: auto; width: auto; transform: none; z-index: 3; display: grid; grid-template-columns: 1fr 1fr; gap: 18px 12px; padding: 8px calc(24 * var(--m)) calc(32 * var(--m)); }
+  .nl-lg { font-size: 13.5px; gap: 8px; }
+  .nl-lg svg { width: 22px; height: 22px; }
+}
+/* tablet band */
+@media (min-width: 600px) and (max-aspect-ratio: 11/10) {
+  .nl { --m: min(100vw / 860, 100vh / 760, 1.25px); }
+  .nl-plate-video, .nl-plate-still { object-position: 44% center; }
+  .nl-plate::after {
+    background:
+      linear-gradient(to right, rgba(5,5,5,.84), rgba(5,5,5,.60) 42%, rgba(5,5,5,.16) 78%, rgba(5,5,5,.06)),
+      linear-gradient(to bottom, rgba(5,5,5,.66), rgba(5,5,5,.28) 24%, rgba(5,5,5,.30) 56%, rgba(5,5,5,.78) 82%, rgba(5,5,5,.96) 94%, #050505);
+  }
+  .nl-headline { font-size: calc(76 * var(--m)); white-space: nowrap; }
+  .nl-headline > span { display: block; }
+  .nl-sub > span { display: block; }
+  .nl-sub { white-space: nowrap; max-width: none; font-size: calc(24 * var(--m)); }
+  .nl-logos { display: flex; justify-content: space-between; }
+  .nl-lg { font-size: calc(17 * var(--m)); }
+  .nl-lg svg { width: calc(26 * var(--m)); height: calc(26 * var(--m)); }
+}
+
+/* static mode: reduced motion or data saver. The still frame stays, the video is hidden. */
+.nl-plate[data-static] .nl-plate-video { display: none; }
+
+/* scroll push: <= 6% scale and a fade into the page black while the hero leaves (--vp is set by <Motion/>) */
+@media (prefers-reduced-motion: no-preference) {
+  .nl-plate { opacity: calc(1 - var(--vp, 0) * .9); }
+  .nl-plate-video, .nl-plate-still { transform: translateX(calc(-50% - calc(0.5 * var(--u)))) scale(calc(1 + var(--vp, 0) * .06)); }
+}
+@media (prefers-reduced-motion: no-preference) and (max-aspect-ratio: 11/10) {
+  .nl-plate-video, .nl-plate-still { transform: scale(calc(1 + var(--vp, 0) * .06)); }
+}
+
+/* ───────── the door: elements that exist for the journey ───────── */
+.nl-flood, .nl-flood-text, .nl-hint, .nl-door { display: none; }
+
+@media (prefers-reduced-motion: no-preference) and (min-aspect-ratio: 11/10) {
+  .nl-journey { position: relative; height: 480vh; height: 480dvh; }
+  .nl-journey .nl-stage { position: sticky; top: 0; }
+
+  /* camera: zoom around the light door, carry it to the middle, hide the video once the light has taken the frame */
+  .nl-plate { opacity: var(--j-plate, 1); translate: calc(var(--px, 0) * -10 * var(--u)) calc(var(--py, 0) * -6 * var(--u)); transition: translate .6s var(--ease); }
+  .nl-plate-video, .nl-plate-still {
+    transform-origin: 50% 55.6%;
+    transform: translateX(calc(-50% - calc(0.5 * var(--u)))) translateY(calc(var(--j-ty, 0) * var(--u))) scale(var(--j-scale, 1));
+    will-change: transform;
+  }
+  .nl-hero { opacity: var(--j-copy, 1); translate: 0 calc((1 - var(--j-copy, 1)) * -28 * var(--u)); }
+  .nl-headline { translate: calc(var(--px, 0) * 6 * var(--u)) calc(var(--py, 0) * 3 * var(--u)); transition: translate .6s var(--ease); }
+  .nl-sub { translate: calc(var(--px, 0) * 4.5 * var(--u)) calc(var(--py, 0) * 2.5 * var(--u)); transition: translate .6s var(--ease); }
+  .nl-actions { translate: calc(var(--px, 0) * 3 * var(--u)) calc(var(--py, 0) * 2 * var(--u)); transition: translate .6s var(--ease); }
+  .nl-logos { opacity: var(--j-copy, 1); }
+  .nl-topbar { opacity: var(--j-nav, 1); }
+
+  .nl-hero, .nl-flood, .nl-flood-text, .nl-plate { will-change: opacity; }
+  .nl-flood { display: block; position: absolute; inset: 0; z-index: 4; background: #fafafa; opacity: var(--j-white, 0); pointer-events: none; }
+  .nl-flood-text {
+    display: block; position: absolute; z-index: 4; left: calc(75.5 * var(--u)); top: calc(400 * var(--u)); margin: 0; pointer-events: none;
+    font-size: calc(64 * var(--h)); line-height: 1.1; letter-spacing: -.01em; color: #fff; mix-blend-mode: difference; opacity: var(--j-text, 0);
+    translate: 0 calc((1 - var(--j-text, 0)) * 24 * var(--u));
+  }
+  .nl-flood-text span { display: block; }
+  .nl-hint { display: block; position: absolute; z-index: 3; right: calc(75 * var(--u)); top: calc(1000 * var(--u)); margin: 0; font: 400 calc(13 * var(--u)) var(--mono); color: var(--strip); opacity: var(--j-hint, 1); pointer-events: none; }
+  .nl-hint::after { content: ""; display: block; width: 1px; height: calc(34 * var(--u)); margin: calc(8 * var(--u)) 0 0 auto; background: var(--strip); transform-origin: top; animation: nl-hint 2.2s var(--ease) infinite; }
+  @keyframes nl-hint { 0% { transform: scaleY(0); } 55% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+
+  /* clickable door: only while the camera is still outside */
+  .nl-door { display: block; position: absolute; z-index: 6; left: calc(50% - 107.5 * var(--u)); top: calc(360 * var(--u)); width: calc(215 * var(--u)); height: calc(450 * var(--u)); opacity: var(--j-hint, 1); pointer-events: none; cursor: pointer; transition: box-shadow .35s var(--ease); }
+  [data-p0="1"] .nl-door { pointer-events: auto; }
+  .nl-door:hover { box-shadow: inset 0 0 0 1px rgba(5, 5, 5, .55), 0 0 0 1px rgba(255,255,255,.7); }
+  .nl-door span { position: absolute; left: 50%; bottom: calc(-34 * var(--u)); translate: -50% 0; font: 500 calc(13 * var(--u)) var(--mono); color: #fff; white-space: nowrap; opacity: 0; transition: opacity .3s; }
+  .nl-door:hover span { opacity: 1; }
+}

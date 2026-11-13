@@ -1,0 +1,14 @@
+.nl-sticky {
+  position: fixed; inset: 0 0 auto 0; z-index: 40; height: 64px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--gutter); background: #050505; border-bottom: 1px solid var(--line);
+  transform: translateY(-101%); transition: transform .5s var(--ease);
+}
+.nl-sticky[data-show="1"] { transform: none; }
+.nl-sticky-brand { display: block; width: 18px; height: 28px; }
+.nl-sticky-nav { position: relative; display: flex; gap: 28px; font-size: 15px; color: var(--nav); }
+.nl-sticky-nav a { padding: 20px 0; min-height: 44px; transition: color .25s; }
+.nl-sticky-nav a:hover, .nl-sticky-nav a[aria-current] { color: #fff; }
+.nl-sticky-rule { position: absolute; left: 0; bottom: 14px; height: 1px; background: #fff; width: 0; opacity: 0; transition: transform .5s var(--ease), width .5s var(--ease), opacity .3s; }
+.nl-sticky-cta { display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 999px; background: #fff; color: #050505 !important; font-size: 15px; font-weight: 500; }
+@media (max-width: 760px) { .nl-sticky-nav { display: none; } }
+@media (prefers-reduced-motion: reduce) { .nl-sticky, .nl-sticky-rule { transition: none; } }

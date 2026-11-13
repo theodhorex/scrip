@@ -1,0 +1,20 @@
+/* Readability pass for the page body (everything below the hero). Layout is untouched: only text size, contrast and order.
+   Tokens are redefined inside #main, so the hero keeps its exact colours. */
+.nl #main { --muted: #cfcece; --strip: #b3b2b2; --line: rgba(250,250,250,.16); }
+.nl #main .nl-body { font-size: clamp(17px, 1.3vw, 19px); line-height: 1.7; }
+.nl #main .nl-note { font-family: var(--font-manrope), system-ui, sans-serif; font-size: 14.5px; line-height: 1.65; max-width: 70ch; }
+.nl #main .nl-idx { font-size: 13.5px; }
+.nl #main .nl-ticks, .nl #main .nl-meter-caption, .nl #main .nl-gates, .nl #main .nl-params, .nl #main .nl-stat small, .nl #main .nl-matrix thead th, .nl #main .nl-ledger-tag { font-size: 13.5px; }
+.nl #main .nl-log { font-size: 13px; }
+.nl #main .nl-ledger dt, .nl #main .nl-rm-nums dt, .nl #main .nl-field > label { font-size: 15px; }
+/* the plain sentence leads each section head; the technical lede follows it, quieter */
+.nl #main .nl-head > .nl-idx { order: 0; }
+.nl #main .nl-head > .nl-title { order: 1; }
+.nl #main .nl-head > .nl-plain { order: 2; }
+.nl #main .nl-head > .nl-lede { order: 3; font-size: clamp(16px, 1.15vw, 18px); max-width: 64ch; }
+.nl #main .nl-head > .nl-todo { order: 4; }
+.nl #main .nl-plain { display: block; max-width: 34em; font-size: clamp(19px, 1.7vw, 25px); line-height: 1.45; padding-left: 18px; }
+.nl #main .nl-plain span { display: block; margin-bottom: 6px; font-size: 12.5px; color: var(--strip); }
+.nl #main .nl-todo { display: flex; gap: 12px; align-items: baseline; max-width: 60ch; font-size: 16px; line-height: 1.55; color: var(--ink); }
+.nl #main .nl-todo span { flex: none; padding: 3px 10px; border: 1px solid #fff; border-radius: 999px; font-size: 12.5px; letter-spacing: .02em; }
+@media (max-width: 700px) { .nl #main .nl-todo { flex-direction: column; gap: 8px; align-items: flex-start; } }
