@@ -1,5 +1,6 @@
 import { formatTime, formatUsdc } from "@/lib/format";
 import type { ScripEvent } from "@/lib/types";
+import { EXPLORER_TX_BASE } from "@/lib/network";
 
 export function EventLog({ events }: { events: ScripEvent[] }) {
   if (events.length === 0) {
@@ -8,7 +9,7 @@ export function EventLog({ events }: { events: ScripEvent[] }) {
         <div className="bp-app-empty-icon bp-app-mono" aria-hidden="true">0</div>
         <h3 className="bp-app-notice-title">No events recorded yet</h3>
         <p className="bp-app-notice-body mx-auto max-w-md">
-          Nothing has been logged for this mandate. Events appear here once payments are requested.
+          Nothing was found for this mandate in the recent transactions the public indexer returned. Events appear here once payments are requested.
         </p>
       </div>
     );
@@ -24,13 +25,14 @@ export function EventLog({ events }: { events: ScripEvent[] }) {
             <th scope="col" className="bp-app-num">Amount</th>
             <th scope="col">Code / Status</th>
             <th scope="col" className="bp-app-num">Time</th>
+            <th scope="col">Transaction</th>
           </tr>
         </thead>
         <tbody>
           {events.map((event, idx) => (
             <tr key={`${event.mandateId}-${event.atMs}-${idx}`}>
               <td className="whitespace-nowrap">
-                <span className="bp-app-chip">{event.name}</span>
+                <span className={`bp-app-chip ${event.name === "settled" ? "bp-app-chip-pass" : event.name === "rejected" ? "bp-app-chip-reject" : ""}`}>{event.name}</span>
               </td>
               <td className="bp-app-mono max-w-[200px] truncate text-xs text-bp-ink">
                 {event.recipient ?? "—"}
@@ -52,6 +54,15 @@ export function EventLog({ events }: { events: ScripEvent[] }) {
               </td>
               <td className="bp-app-mono bp-app-num whitespace-nowrap text-xs text-bp-muted">
                 {formatTime(event.atMs)}
+              </td>
+              <td className="bp-app-mono whitespace-nowrap text-xs">
+                {event.txHash ? (
+                  <a className="bp-app-inline" href={`${EXPLORER_TX_BASE}/${event.txHash}`} target="_blank" rel="noopener noreferrer" aria-label={`Transaction ${event.txHash} on the explorer`}>
+                    {event.txHash.slice(0, 6)}…{event.txHash.slice(-4)} ↗
+                  </a>
+                ) : (
+                  <span className="text-bp-muted">—</span>
+                )}
               </td>
             </tr>
           ))}

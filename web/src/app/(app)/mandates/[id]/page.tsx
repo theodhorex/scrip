@@ -70,6 +70,7 @@ async function MandateDetail({ params }: { params: Promise<{ id: string }> }) {
           </div>
           <div className="flex flex-col items-start gap-2 sm:items-end">
             <StatusBadge status={mandate.status} />
+            <Link href="/try" className="bp-btn bp-btn-primary bp-btn-sm">Send a payment</Link>
             <span className="bp-app-mono text-xs text-bp-muted">Token {mandate.token}</span>
           </div>
         </header>
