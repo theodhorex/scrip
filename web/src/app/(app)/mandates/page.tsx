@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { connection } from "next/server";
@@ -8,6 +9,11 @@ import { ChainError } from "@/components/ChainError";
 import { LoadingState } from "@/components/LoadingState";
 import { SampleDataBanner } from "@/components/SampleDataBanner";
 import { StatusBadge } from "@/components/StatusBadge";
+
+export const metadata: Metadata = {
+  title: "Mandates | Scrip",
+  description: "Agent spending mandates on NEAR testnet: budget, allowed recipients and limits.",
+};
 
 export default function MandatesPage() {
   return (

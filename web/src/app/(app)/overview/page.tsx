@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { VERIFIED_STATS, VERIFIED_STATS_NOTE } from "@/lib/verified-stats";
+
+export const metadata: Metadata = {
+  title: "How it works | Scrip",
+  description: "How Scrip keeps an AI agent's money in a NEAR contract with rules the agent cannot change.",
+};
 
 const START = [
   {

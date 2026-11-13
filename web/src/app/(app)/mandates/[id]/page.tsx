@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -11,6 +12,11 @@ import { EventLog } from "@/components/EventLog";
 import { LoadingState } from "@/components/LoadingState";
 import { SampleDataBanner } from "@/components/SampleDataBanner";
 import { StatusBadge } from "@/components/StatusBadge";
+
+export const metadata: Metadata = {
+  title: "Mandate | Scrip",
+  description: "One agent spending mandate: budget, rules, parties and its event trail.",
+};
 
 // No generateStaticParams: it would hit the chain at build time. Ids resolve per
 // request inside Suspense (08-caching.md "Streaming uncached data" / "params").

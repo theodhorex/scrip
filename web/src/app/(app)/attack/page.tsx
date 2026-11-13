@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   loadAttackResults,
@@ -16,6 +17,11 @@ import {
 } from "@/lib/attack-data";
 import bundledAttackRun from "@/data/attack.json";
 import bundledCatalog from "@/data/attack-catalog.json";
+
+export const metadata: Metadata = {
+  title: "Attack results | Scrip",
+  description: "A 30-payment burst and 1,999 recorded attacks against Scrip. None got through.",
+};
 
 const VERDICT_MARK: Record<Verdict, string> = { PASS: "\u2713", FAIL: "\u2715", SKIPPED: "\u2013", BREACH: "\u26A0" };
 const VERDICT_CLASS: Record<Verdict, string> = {
