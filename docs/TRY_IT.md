@@ -4,7 +4,7 @@ Three ways in, from least to most effort. None of them needs a mainnet account o
 
 ## A. No install: read the evidence
 
-- **Web verifier**: open the `/verify` page of the deployed web app. It re-checks the 23 recorded testnet transactions on load, asking the FastNear transactions indexer first and the public archival RPC as fallback (no API key, no account; 23 of 23 verified on 12 Nov 2026). The page is in `web/src/app/verify/`; deployment steps are in `web/DEPLOY.md`.
+- **Web verifier**: open the `/verify` page of the deployed web app. It re-checks the 35 recorded testnet transactions on load, asking the FastNear transactions indexer first and the public archival RPC as fallback (no API key, no account; 35 of 35 verified on 13 Nov 2026). The page is in `web/src/app/verify/`; deployment steps are in `web/DEPLOY.md`.
 - **Attack results**: the `/attack` page renders the recorded attack catalog (`results/attack*.json`) with every label and verdict.
 - **Claims to evidence**: `JUDGES.md` maps each claim to a command, the expected output and the file that backs it.
 
