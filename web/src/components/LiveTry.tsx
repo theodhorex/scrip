@@ -2,11 +2,13 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { EXPLORER_ACCOUNT_BASE, EXPLORER_TX_BASE, RPC_URL } from "@/lib/network";
-import { LIVE, isValidAccountId, parsePaymentOutcome, remaining, unitsToUsdc, usdcToUnits, type LiveStats, type PaymentOutcome } from "@/lib/live";
+import { LIVE, isValidAccountId, parsePaymentOutcome, remaining, type LiveStats, type PaymentOutcome } from "@/lib/live";
+import { fromUnits, toUnits } from "@/lib/owner-flow";
 
 const GAS = "80000000000000"; // 80 Tgas; the contract requires at least 60
 const ATTACKER = "attacker.testnet";
 const COOLDOWN_MS = 2500;
+const now = () => Date.now(); // called from event handlers only
 
 const EXPLAIN: Record<string, string> = {
   RECIPIENT_NOT_ALLOWED: "Not on the allowlist. The contract refused before any token moved.",
@@ -16,6 +18,38 @@ const EXPLAIN: Record<string, string> = {
   EXPIRED: "The mandate has expired.",
   NOT_ACTIVE: "The mandate is no longer active.",
   TOO_MANY_OPEN: "Too many payments are still settling. Try again in a few seconds.",
+};
+
+/** Which mandate this panel spends from, and with which agent key. */
+export type TryTarget = {
+  contractId: string;
+  mandateId: number;
+  agentId: string;
+  agentKey: string;
+  agentPublicKey: string;
+  recipients: string[];
+  budget: string;
+  perPaymentCap: string;
+  approvalThreshold: string;
+  symbol: string;
+  decimals: number;
+  /** The shared demo: the key is in the page source on purpose. */
+  publicDemo: boolean;
+};
+
+export const DEMO_TARGET: TryTarget = {
+  contractId: LIVE.contractId,
+  mandateId: LIVE.mandateId,
+  agentId: LIVE.agentId,
+  agentKey: LIVE.agentKey,
+  agentPublicKey: LIVE.agentPublicKey,
+  recipients: LIVE.recipients,
+  budget: LIVE.budget,
+  perPaymentCap: LIVE.perPaymentCap,
+  approvalThreshold: LIVE.approvalThreshold,
+  symbol: "USDC",
+  decimals: 6,
+  publicDemo: true,
 };
 
 type Attempt = {
@@ -37,13 +71,16 @@ async function nearLib() {
 
 const short = (h: string) => `${h.slice(0, 6)}…${h.slice(-4)}`;
 const shortAcct = (a: string) => (a.length > 28 ? `${a.slice(0, 14)}…${a.slice(-12)}` : a);
+const label = (i: number) => String.fromCharCode(65 + i);
 
-export function LiveTry() {
+export function LiveTry({ target = DEMO_TARGET }: { target?: TryTarget }) {
+  const t = target;
   const rid = useId();
   const aid = useId();
-  const [recipient, setRecipient] = useState(LIVE.recipients[0]);
+  const [recipient, setRecipient] = useState(t.recipients[0]);
+  const smallUnits = (BigInt(t.perPaymentCap) / BigInt(10) || BigInt(1)).toString();
+  const [amount, setAmount] = useState(t.publicDemo ? "0.01" : fromUnits(smallUnits, t.decimals));
   const [custom, setCustom] = useState("");
-  const [amount, setAmount] = useState("0.01");
   const [stats, setStats] = useState<Stats | null>(null);
   const [allowance, setAllowance] = useState<string | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -52,51 +89,51 @@ export function LiveTry() {
   const lastSend = useRef(0);
   const seq = useRef(0);
 
-  const target = recipient === "custom" ? custom.trim() : recipient;
-  const units = usdcToUnits(amount);
-  const inputError = !isValidAccountId(target)
+  const target_ = recipient === "custom" ? custom.trim() : recipient;
+  const units = toUnits(amount, t.decimals);
+  const inputError = !isValidAccountId(target_)
     ? "Enter a valid NEAR account id (lowercase, for example someone.testnet)."
     : units === null
-      ? "Amount must be a number with up to 6 decimals."
+      ? `Amount must be a positive number with up to ${t.decimals} decimals.`
       : null;
 
   const refresh = useCallback(async () => {
     try {
       const { JsonRpcProvider } = await nearLib();
       const p = new JsonRpcProvider({ url: RPC_URL });
-      const s = (await p.callFunction({ contractId: LIVE.contractId, method: "get_stats", args: { id: LIVE.mandateId } })) as Stats;
+      const s = (await p.callFunction({ contractId: t.contractId, method: "get_stats", args: { id: t.mandateId } })) as Stats;
       setStats(s);
-      const key = (await p.viewAccessKey({ accountId: LIVE.agentId, publicKey: LIVE.agentPublicKey })) as unknown as { permission?: { FunctionCall?: { allowance?: string | null } } };
+      const key = (await p.viewAccessKey({ accountId: t.agentId, publicKey: t.agentPublicKey })) as unknown as { permission?: { FunctionCall?: { allowance?: string | null } } };
       const al = key.permission?.FunctionCall?.allowance;
       setAllowance(al ? (Number(BigInt(al) / BigInt("1000000000000000000000")) / 1000).toFixed(3) : null);
       setStatsError(null);
     } catch (e) {
       setStatsError(e instanceof Error ? e.message.slice(0, 160) : "Could not read the mandate.");
     }
-  }, []);
+  }, [t.contractId, t.mandateId, t.agentId, t.agentPublicKey]);
 
   useEffect(() => {
     const first = setTimeout(refresh, 0);
-    const t = setInterval(refresh, 15000);
-    return () => { clearTimeout(first); clearInterval(t); };
+    const timer = setInterval(refresh, 15000);
+    return () => { clearTimeout(first); clearInterval(timer); };
   }, [refresh]);
 
-  const send = async (to: string, units: string, label: string) => {
-    if (busy || Date.now() - lastSend.current < COOLDOWN_MS) return;
-    lastSend.current = Date.now();
+  const send = async (to: string, u: string, shown: string) => {
+    if (busy || now() - lastSend.current < COOLDOWN_MS) return;
+    lastSend.current = now();
     setBusy(true);
     const id = ++seq.current;
-    setLog((l) => [{ id, at: new Date().toISOString(), recipient: to, amount: label, state: "pending" as const }, ...l].slice(0, 12));
+    setLog((l) => [{ id, at: new Date().toISOString(), recipient: to, amount: shown, state: "pending" as const }, ...l].slice(0, 12));
     const update = (patch: Partial<Attempt>) => setLog((l) => l.map((a) => (a.id === id ? { ...a, ...patch } : a)));
     try {
       const { Account, JsonRpcProvider, KeyPair, KeyPairSigner } = await nearLib();
       const provider = new JsonRpcProvider({ url: RPC_URL });
-      const signer = new KeyPairSigner(KeyPair.fromString(LIVE.agentKey as `ed25519:${string}`));
-      const agent = new Account(LIVE.agentId, provider, signer);
+      const signer = new KeyPairSigner(KeyPair.fromString(t.agentKey as `ed25519:${string}`));
+      const agent = new Account(t.agentId, provider, signer);
       const call = () => agent.callFunctionRaw({
-        contractId: LIVE.contractId,
+        contractId: t.contractId,
         methodName: "request_payment",
-        args: { mandate_id: LIVE.mandateId, recipient: to, amount: units, nonce: Date.now() },
+        args: { mandate_id: t.mandateId, recipient: to, amount: u, nonce: now() },
         gas: BigInt(GAS),
         deposit: BigInt(0),
       });
@@ -117,34 +154,46 @@ export function LiveTry() {
     }
   };
 
-  const sendForm = () => { if (!inputError && units) send(target, units, amount.trim()); };
-  const preset = (to: string, usdc: string) => { const u = usdcToUnits(usdc); if (u) send(to, u, usdc); };
+  const sendForm = () => { if (!inputError && units) send(target_, units, amount.trim()); };
+  const presetUnits = (to: string, u: string) => send(to, u, fromUnits(u, t.decimals));
 
-  const left = stats ? unitsToUsdc(remaining(stats)) : null;
+  const left = stats ? fromUnits(remaining(stats), t.decimals) : null;
   const spentPct = stats ? Math.min(100, Number((BigInt(stats.spent) * BigInt(10000)) / BigInt(stats.budget || "1")) / 100) : 0;
-  const cap = unitsToUsdc(LIVE.perPaymentCap);
-  const threshold = unitsToUsdc(LIVE.approvalThreshold);
+  const cap = fromUnits(t.perPaymentCap, t.decimals);
+  const threshold = fromUnits(t.approvalThreshold, t.decimals);
+  const needsApprovalBand = BigInt(t.approvalThreshold) < BigInt(t.perPaymentCap);
+  const firstAmount = t.publicDemo ? (toUnits("0.01", t.decimals) ?? smallUnits) : smallUnits;
+  const sym = t.symbol;
 
   return (
     <div className="bp-app-grid2 nl-live">
       <section className="bp-plate bp-app-plate bp-app-enter" aria-labelledby={`${rid}-state`}>
         <h2 id={`${rid}-state`} className="bp-app-section-title">The mandate, read live</h2>
         <dl className="nl-live-facts">
-          <div><dt>Left to spend</dt><dd><b>{left ?? "…"}</b> USDC</dd></div>
-          <div><dt>Spent</dt><dd>{stats ? unitsToUsdc(stats.spent) : "…"} of {unitsToUsdc(LIVE.budget)} USDC</dd></div>
-          <div><dt>Per payment</dt><dd>up to {cap} USDC</dd></div>
-          <div><dt>Guardian approval</dt><dd>above {threshold} USDC</dd></div>
+          <div><dt>Left to spend</dt><dd><b>{left ?? "…"}</b> {sym}</dd></div>
+          <div><dt>Spent</dt><dd>{stats ? fromUnits(stats.spent, t.decimals) : "…"} of {fromUnits(t.budget, t.decimals)} {sym}</dd></div>
+          <div><dt>Per payment</dt><dd>up to {cap} {sym}</dd></div>
+          <div><dt>Guardian approval</dt><dd>{needsApprovalBand ? `above ${threshold} ${sym}` : "not needed up to the cap"}</dd></div>
         </dl>
         <div className="nl-live-meter" role="img" aria-label={`Budget used: ${spentPct.toFixed(1)} percent`}>
           <span style={{ width: `${spentPct}%` }} />
         </div>
         <h3 className="nl-live-h">Allowed recipients</h3>
         <ul className="nl-live-list">
-          {LIVE.recipients.map((r) => <li key={r}><a className="bp-app-inline font-mono" href={`${EXPLORER_ACCOUNT_BASE}/${r}`} target="_blank" rel="noopener noreferrer">{shortAcct(r)}</a></li>)}
+          {t.recipients.map((r) => <li key={r}><a className="bp-app-inline font-mono" href={`${EXPLORER_ACCOUNT_BASE}/${r}`} target="_blank" rel="noopener noreferrer">{shortAcct(r)}</a></li>)}
         </ul>
-        <h3 className="nl-live-h">The agent key, public on purpose</h3>
-        <p className="bp-app-hint">This page signs with the agent&apos;s key, and the key is in the page source. It is a function-call key: it can only call <code>request_payment</code> on <a className="bp-app-inline" href={`${EXPLORER_ACCOUNT_BASE}/${LIVE.contractId}`} target="_blank" rel="noopener noreferrer">the contract</a>. Stealing it gets you exactly what you can do here.</p>
-        <p className="bp-app-hint font-mono" style={{ overflowWrap: "anywhere" }}>{LIVE.agentPublicKey}</p>
+        {t.publicDemo ? (
+          <>
+            <h3 className="nl-live-h">The agent key, public on purpose</h3>
+            <p className="bp-app-hint">This page signs with the agent&apos;s key, and the key is in the page source. It is a function-call key: it can only call <code>request_payment</code> on <a className="bp-app-inline" href={`${EXPLORER_ACCOUNT_BASE}/${t.contractId}`} target="_blank" rel="noopener noreferrer">the contract</a>. Stealing it gets you exactly what you can do here.</p>
+          </>
+        ) : (
+          <>
+            <h3 className="nl-live-h">Your agent&apos;s key</h3>
+            <p className="bp-app-hint">Created in this browser for <span className="font-mono">{shortAcct(t.agentId)}</span>. It is a function-call key: it can only call <code>request_payment</code> on the contract, inside the mandate you set.</p>
+          </>
+        )}
+        <p className="bp-app-hint font-mono" style={{ overflowWrap: "anywhere" }}>{t.agentPublicKey}</p>
         {allowance ? <p className="bp-app-hint">Gas allowance left on the key: {allowance} NEAR (testnet).</p> : null}
         {statsError ? <p className="text-bp-reject text-xs" role="alert">Could not read the mandate right now: {statsError}</p> : null}
       </section>
@@ -155,14 +204,14 @@ export function LiveTry() {
           <div>
             <label htmlFor={rid} className="bp-app-label">Pay to</label>
             <select id={rid} className="bp-app-input" value={recipient} onChange={(e) => setRecipient(e.target.value)}>
-              {LIVE.recipients.map((r, i) => <option key={r} value={r}>Shop {i === 0 ? "A" : "B"} (allowed)</option>)}
+              {t.recipients.map((r, i) => <option key={r} value={r}>{t.publicDemo ? `Shop ${label(i)}` : shortAcct(r)} (allowed)</option>)}
               <option value={ATTACKER}>{ATTACKER} (not allowed)</option>
               <option value="custom">Another account…</option>
             </select>
             {recipient === "custom" ? <input aria-label="Account id" className="bp-app-input" value={custom} placeholder="someone.testnet" onChange={(e) => setCustom(e.target.value)} autoComplete="off" spellCheck={false} /> : null}
           </div>
           <div>
-            <label htmlFor={aid} className="bp-app-label">Amount (USDC)</label>
+            <label htmlFor={aid} className="bp-app-label">Amount ({sym})</label>
             <input id={aid} className="bp-app-input" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
           </div>
         </div>
@@ -174,10 +223,14 @@ export function LiveTry() {
         </div>
         <p className="bp-app-hint" style={{ marginTop: 16 }}>Or try one of these:</p>
         <div className="bp-app-try-actions" style={{ marginTop: 8 }}>
-          <button type="button" className="bp-btn bp-btn-secondary bp-btn-sm" disabled={busy} onClick={() => preset(LIVE.recipients[0], "0.01")}>Pay shop A 0.01</button>
-          <button type="button" className="bp-btn bp-btn-secondary bp-btn-sm" disabled={busy} onClick={() => preset(ATTACKER, "0.01")}>Pay the attacker</button>
-          <button type="button" className="bp-btn bp-btn-secondary bp-btn-sm" disabled={busy} onClick={() => preset(LIVE.recipients[1], String(Number(cap) * 2))}>Over the cap</button>
-          <button type="button" className="bp-btn bp-btn-secondary bp-btn-sm" disabled={busy} onClick={() => preset(LIVE.recipients[1], cap)}>Without approval</button>
+          <button type="button" className="bp-btn bp-btn-secondary bp-btn-sm" disabled={busy} onClick={() => presetUnits(t.recipients[0], firstAmount)}>
+            {t.publicDemo ? "Pay shop A 0.01" : `Pay ${fromUnits(firstAmount, t.decimals)} to the first recipient`}
+          </button>
+          <button type="button" className="bp-btn bp-btn-secondary bp-btn-sm" disabled={busy} onClick={() => presetUnits(ATTACKER, firstAmount)}>Pay the attacker</button>
+          <button type="button" className="bp-btn bp-btn-secondary bp-btn-sm" disabled={busy} onClick={() => presetUnits(t.recipients[t.recipients.length - 1], (BigInt(t.perPaymentCap) * BigInt(2)).toString())}>Over the cap</button>
+          {needsApprovalBand ? (
+            <button type="button" className="bp-btn bp-btn-secondary bp-btn-sm" disabled={busy} onClick={() => presetUnits(t.recipients[t.recipients.length - 1], t.perPaymentCap)}>Without approval</button>
+          ) : null}
         </div>
 
         <h3 className="nl-live-h" style={{ marginTop: 28 }}>Your attempts</h3>
@@ -186,7 +239,7 @@ export function LiveTry() {
           {log.map((a) => (
             <li key={a.id} data-state={a.state}>
               <div className="nl-live-row">
-                <span className="font-mono text-xs">{a.amount} USDC to {shortAcct(a.recipient)}</span>
+                <span className="font-mono text-xs">{a.amount} {sym} to {shortAcct(a.recipient)}</span>
                 <Verdict a={a} />
               </div>
               <div className="nl-live-sub">
@@ -195,6 +248,7 @@ export function LiveTry() {
               </div>
               {a.state === "done" && a.outcome?.kind === "rejected" ? <p className="nl-live-why">{EXPLAIN[a.outcome.code] ?? "Refused by the contract."}</p> : null}
               {a.state === "done" && a.outcome?.kind === "settled" ? <p className="nl-live-why">Inside every rule, so the contract paid it. The tokens moved on testnet.</p> : null}
+              {a.state === "done" && a.outcome?.kind === "refunded" ? <p className="nl-live-why">The token transfer failed (for example the recipient is not registered with the token), so the reservation was released.</p> : null}
               {a.state === "error" ? <p className="nl-live-why text-bp-reject">{a.error}</p> : null}
             </li>
           ))}

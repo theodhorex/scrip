@@ -1,0 +1,70 @@
+{
+  "network": "testnet",
+  "contractId": "live-scrip.envtest-theo-1747.testnet",
+  "startedAt": "2026-11-13T11:04:57.930Z",
+  "steps": [
+    {
+      "name": "create test owner",
+      "txHash": "9XcRrVLi5mcYHnrbXmqSg9AgENJfNL841knksBzGyCL5",
+      "ownerId": "e2e-owner-7j86.envtest-theo-1747.testnet"
+    },
+    {
+      "name": "create agent",
+      "txHash": "3gdSpR97mYz2wb8atDpp5aCM9ZHCa8NFWeWb1M2ogg29",
+      "agentId": "scrip-agent-7j86s9.e2e-owner-7j86.envtest-theo-1747.testnet"
+    },
+    {
+      "name": "create guardian",
+      "txHash": "EwojPsLKC8if5Zc4qLZGPTw8auJcnexFogt8wLgEqJVw",
+      "guardianId": "scrip-guard-7j86s9.e2e-owner-7j86.envtest-theo-1747.testnet"
+    },
+    {
+      "name": "create_mandate",
+      "txHash": "6rWMU8rMEFjtXyK7k1z97NnSfuoujeqcaFpkfSXMmn3z",
+      "mandateId": 2
+    },
+    {
+      "name": "agent key check",
+      "result": "1 key, FunctionCall request_payment only"
+    },
+    {
+      "name": "fund (wrap + ft_transfer_call)",
+      "txHash": "E8SDFQf3BJf6SAzyasbDHioBZUCWN2wmymTDz6ForRAx",
+      "result": "deposited 200000000000000000000000"
+    },
+    {
+      "name": "agent pays shop A 0.01 wNEAR",
+      "txHash": "8QmFUCpTEN1un3qunGGxzaPiDijxtdC3mZ5wRBNt8pFX",
+      "result": "Settled"
+    },
+    {
+      "name": "agent pays attacker",
+      "txHash": "7PRumcUqp3bWTBgcDmCsYp2cqKJJnXUHp7seodPXbMnP",
+      "result": "Rejected RECIPIENT_NOT_ALLOWED"
+    },
+    {
+      "name": "agent pays over the cap",
+      "txHash": "2Pga3G6ch7ZhTVGc3CAe4fv1smpC1djLthQebYJynSQf",
+      "result": "Rejected OVER_PER_PAYMENT_CAP"
+    },
+    {
+      "name": "agent key tries to send NEAR",
+      "result": "refused by the protocol (function-call key)"
+    },
+    {
+      "name": "revoke",
+      "txHash": "6yGLkfResVPmFyT9JwB7iryRaxYgneqSJ6csUPt9mqaw"
+    },
+    {
+      "name": "withdraw remainder",
+      "txHash": "5Awnhc34SNXMHvBsJYhickrQfXYCAwLzLfPB3JpM8qKw",
+      "result": "withdrawn 190000000000000000000000 (spent 10000000000000000000000)"
+    }
+  ],
+  "finishedAt": "2026-11-13T11:05:39.337Z",
+  "ownerId": "e2e-owner-7j86.envtest-theo-1747.testnet",
+  "agentId": "scrip-agent-7j86s9.e2e-owner-7j86.envtest-theo-1747.testnet",
+  "guardianId": "scrip-guard-7j86s9.e2e-owner-7j86.envtest-theo-1747.testnet",
+  "mandateId": 2,
+  "token": "wrap.testnet"
+}

@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@hot-labs/near-connect": "0.12.0",
     "lenis": "^1.3.27",
     "near-api-js": "7.4.0",
     "next": "16.4.3",
