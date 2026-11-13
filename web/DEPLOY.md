@@ -14,12 +14,14 @@ When importing this repository into Vercel:
 
 ## 2. Environment Variables
 
-All environment variables are optional. No private keys, seed phrases, or sensitive API secrets are ever required.
+All environment variables are optional. The pages need no private key. Only the optional hosted relayer (`/api/relay`) needs one: the key of a testnet account that pays gas, stored as a sensitive Vercel variable and read on the server only.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
 | `SCRIP_RPC_URL` | No | `https://rpc.testnet.fastnear.com` | Public NEAR testnet JSON-RPC endpoint. Must use HTTPS and include `testnet` in the hostname. |
 | `SCRIP_CONTRACT_ID` | No | *(unset)* | Testnet account ID of the deployed Scrip contract (e.g. `scrip-1.testnet`). |
+| `RELAYER_ACCOUNT_ID` | No | *(unset)* | Testnet account that pays gas for `/api/relay`. Without it (and the key below) `/api/relay` answers `RELAYER_NOT_CONFIGURED` and `/try` lets the agent key pay its own gas. |
+| `RELAYER_PRIVATE_KEY` | No | *(unset)* | Key of `RELAYER_ACCOUNT_ID` (`ed25519:...`). Mark it sensitive. The relayer refuses to relay once that account holds 0.5 NEAR or less. |
 
 ### Running with Sample Data vs On-Chain Mandates
 
