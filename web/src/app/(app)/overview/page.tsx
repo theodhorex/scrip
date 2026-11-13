@@ -4,26 +4,26 @@ import { VERIFIED_STATS, VERIFIED_STATS_NOTE } from "@/lib/verified-stats";
 const START = [
   {
     href: "/try",
-    title: "Try it live",
-    body: "Be the agent of a real mandate on testnet. Pay a shop, then try the attacker and an oversized payment. The relayer pays the gas.",
+    title: "Try to steal",
+    body: "You get a real agent's key. Try to send its money somewhere the rules do not allow. Every click is a real transaction.",
     meta: "No wallet needed",
   },
   {
     href: "/mandates/new",
-    title: "Create your own mandate",
-    body: "Connect a testnet wallet. One approval creates an agent account whose only key can request payments, a guardian, and the rules.",
+    title: "Make your own",
+    body: "Connect a testnet wallet, give your own agent a budget and rules, then try to break it yourself.",
     meta: "Testnet wallet",
   },
   {
     href: "/attack",
-    title: "Attack demo",
-    body: "30 parallel payments against a 1 USDC budget, and 1,999 recorded attack cases sorted by category and layer.",
+    title: "Attack results",
+    body: "30 payments fired at once at a 1 USDC budget, and 1,999 recorded attacks. None got through.",
     meta: "1,999 cases",
   },
   {
     href: "/verify",
     title: "Verify it yourself",
-    body: "Every recorded transaction is read back from the chain on page load and compared with what we claim happened.",
+    body: "Do not trust us: this page reads every transaction we cite back from the chain and compares it with our claim.",
     meta: "Public RPC, no key",
   },
 ];
@@ -43,14 +43,13 @@ export default function Home() {
           <span className="bp-chapter-label">Overview</span>
           <h1 className="bp-app-title">Give agents a budget, not your keys.</h1>
           <p className="bp-app-lede">
-            Scrip is a NEAR contract that holds an agent&apos;s spending money under rules the agent cannot change. The
-            agent&apos;s key can only ask for a payment; the contract decides, and a fooled agent loses at most what the
-            rules allow.
+            AI agents get tricked. Scrip keeps an agent&apos;s money in a NEAR contract with rules the agent cannot change:
+            who it may pay, how much at a time, and how much in total. The agent can only ask. The contract decides.
           </p>
         </div>
         <div className="nl-head-actions">
-          <Link href="/try" className="bp-btn bp-btn-primary">Try it live</Link>
-          <Link href="/mandates/new" className="bp-btn bp-btn-secondary">Create a mandate</Link>
+          <Link href="/try" className="bp-btn bp-btn-primary">Try to steal</Link>
+          <Link href="/mandates/new" className="bp-btn bp-btn-secondary">Make your own</Link>
         </div>
       </header>
 

@@ -12,7 +12,7 @@ export function SampleDataBanner() {
           <p className="bp-app-notice-body">
             Contract{" "}
             <a className="bp-app-inline font-mono" href={`${EXPLORER_ACCOUNT_BASE}/${CONTRACT}`} target="_blank" rel="noopener noreferrer">{CONTRACT}</a>.
-            Events come from the public FastNear indexer. Send a payment yourself on <Link className="bp-app-inline" href="/try">Try it live</Link>.
+            Events come from the public FastNear indexer. Send a payment yourself on <Link className="bp-app-inline" href="/try">Try to steal</Link>.
           </p>
         </div>
       </aside>

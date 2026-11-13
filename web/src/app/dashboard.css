@@ -328,3 +328,55 @@ html:has(.nl-app), body:has(.nl-app) { background: #050505; }
 .nl-app .bp-plate.nl-box { border: 1px solid var(--line); border-radius: 14px; background: #090909; }
 .nl-app .bp-plate.nl-box:hover { border-color: rgba(255,255,255,.4); }
 .nl-live .nl-live-list + .nl-live-h, .nl-live .nl-live-list + h3 { margin-top: 28px; }
+
+/* ───── playground (/try and the owner's "be your own agent") ───── */
+.nl-play { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; align-items: start; }
+@media (max-width: 960px) { .nl-play { grid-template-columns: minmax(0, 1fr); } }
+.nl-play-wallet, .nl-play-main { border: 1px solid var(--line); border-radius: 16px; background: #090909; padding: clamp(20px, 2.4vw, 32px); min-width: 0; }
+.nl-play-wallet { position: sticky; top: 88px; }
+@media (max-width: 960px) { .nl-play-wallet { position: static; } }
+.nl-play-h { margin: 0 0 16px; font-size: clamp(20px, 1.8vw, 26px); font-weight: 400; color: var(--ink); }
+.nl-play-h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin: 26px 0 10px; font-size: 15px; font-weight: 500; color: var(--ink); }
+.nl-play-left { margin: 0 0 12px; font-family: var(--mono); font-size: 15px; color: var(--muted); }
+.nl-play-left b { font-weight: 300; font-size: clamp(40px, 4vw, 60px); color: var(--ink); margin-right: 6px; font-variant-numeric: tabular-nums; }
+.nl-play .nl-live-meter { margin-bottom: 8px; }
+.nl-play-sub { margin: 0; font-size: 13px; color: var(--strip); }
+.nl-play-rules { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.nl-play-rules li { position: relative; padding: 11px 0 11px 26px; border-bottom: 1px solid var(--line); font-size: 14.5px; color: var(--ink); }
+.nl-play-rules li::before { content: ""; position: absolute; left: 2px; top: 16px; width: 10px; height: 6px; border-left: 1.6px solid #fff; border-bottom: 1.6px solid #fff; transform: rotate(-45deg); }
+.nl-play-key { margin: 0 0 10px; padding: 10px 12px; border: 1px dashed var(--line-strong); border-radius: 10px; font-size: 13px; color: var(--ink); overflow-wrap: anywhere; }
+.nl-play-keyrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-bottom: 10px; }
+.nl-play-note { margin: 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
+.nl-play-attacks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 560px) { .nl-play-attacks { grid-template-columns: minmax(0, 1fr); } }
+.nl-play-attacks li { display: flex; }
+.nl-play-attack { flex: 1; display: grid; gap: 4px; text-align: left; padding: 14px 16px; min-height: 72px; border: 1px solid var(--line-strong); border-radius: 12px; background: transparent; color: var(--ink); cursor: pointer; transition: border-color .25s var(--ease), background-color .25s var(--ease); }
+.nl-play-attack:hover:not(:disabled) { border-color: rgba(229,72,77,.7); background: rgba(229,72,77,.06); }
+.nl-play-attack.is-allowed:hover:not(:disabled) { border-color: #fff; background: rgba(255,255,255,.06); }
+.nl-play-attack:disabled { opacity: .5; cursor: wait; }
+.nl-play-attack-t { font-size: 15px; font-weight: 500; }
+.nl-play-attack-h { font-size: 13px; color: var(--muted); }
+.nl-play-custom { margin-top: 16px; }
+.nl-play-custom[open] { padding: 0 0 4px; }
+.nl-play-log { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line-strong); }
+.nl-play-log > li { padding: 14px 0; border-bottom: 1px solid var(--line); animation: nl-dash-row .45s var(--ease) both; }
+.nl-play-log > li[data-verdict="blocked"] { box-shadow: inset 2px 0 0 var(--reject); padding-left: 14px; }
+.nl-play-log > li[data-verdict="paid"] { box-shadow: inset 2px 0 0 #fff; padding-left: 14px; }
+.nl-play-empty { font-size: 14px; color: var(--muted); }
+.nl-play-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 6px 12px; }
+.nl-play-title { font-size: 14.5px; color: var(--ink); }
+.nl-play-text { margin: 6px 0 0; font-size: 14px; line-height: 1.6; color: var(--ink); opacity: .86; }
+.nl-play-meta { margin: 6px 0 0; font-size: 12px; color: var(--strip); }
+.nl-play-log > li .bp-app-chip { animation: nl-dash-pop .5s var(--ease) both; }
+.nl-app .nl-play-h3 { margin: 28px 0 10px; }
+.nl-app .nl-play-h { margin: 0 0 18px; }
+.nl-app .nl-play-sub { margin: 0; }
+/* `.nl p { margin: 0 }` and `.nl h3` (landing base) outrank single-class rules; restate the margins that matter */
+.nl-app .nl-ov-note { margin-top: 18px; }
+.nl-app .nl-play-left { margin: 0 0 12px; }
+.nl-app .nl-play-key { margin: 0 0 10px; }
+.nl-app .nl-play-text { margin: 6px 0 0; }
+.nl-app .nl-play-meta { margin: 6px 0 0; }
+.nl-app .nl-ov-rules h3 { font-weight: 500; }
+.nl-app .nl-ov-rules p { margin: 8px 0 0; }
+@media (max-width: 760px) { .nl-dash-links { flex-wrap: wrap; overflow: visible; gap: 0 18px; } .nl-dash-link { min-height: 40px; font-size: 14.5px; } }

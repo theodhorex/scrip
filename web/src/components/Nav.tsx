@@ -12,14 +12,13 @@ export function Nav() {
           <span className="nl-dash-tag">testnet</span>
         </Link>
         <nav aria-label="Main navigation" className="nl-dash-links">
-          <NavLink href="/overview">Overview</NavLink>
-          <NavLink href="/try">Try it live</NavLink>
-          <NavLink href="/mandates">Mandates</NavLink>
-          <NavLink href="/attack">Attack demo</NavLink>
-          <NavLink href="/mandates/new">New mandate</NavLink>
+          <NavLink href="/overview">How it works</NavLink>
+          <NavLink href="/try">Try to steal</NavLink>
+          <NavLink href="/mandates/new">Make your own</NavLink>
+          <NavLink href="/attack">Attack results</NavLink>
           <NavLink href="/verify">Verify</NavLink>
         </nav>
-        <Link href="/" className="nl-dash-home">Landing page</Link>
+        <Link href="/" className="nl-dash-home">Home</Link>
       </div>
     </header>
   );

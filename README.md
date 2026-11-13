@@ -44,11 +44,11 @@ Every step is "do X, see Y". Nothing to install for steps 1 to 6: no wallet, no 
 
 | # | Do | See |
 |---|---|---|
-| 1 | Open **[scrip-dev.vercel.app/try](https://scrip-dev.vercel.app/try)** | the live mandate read from NEAR testnet: budget left, per-payment cap 0.1 USDC, guardian approval above 0.05 USDC, two allowed shops |
-| 2 | Click **Pay shop A 0.01** | `PAID`, gasless: by default the agent signs a NEP-366 delegate and Scrip's hosted relayer pays the gas. The transaction link opens on the explorer; the budget meter goes down |
-| 3 | Click **Pay the attacker** | `REFUSED: RECIPIENT_NOT_ALLOWED`, a real transaction where the contract said no before any token moved |
-| 4 | Click **Over the cap**, then **Without approval** | `REFUSED: OVER_PER_PAYMENT_CAP`, then `REFUSED: NEEDS_APPROVAL` |
-| 5 | Scroll to **The agent key, public on purpose**, copy it and try to use it for anything else (send NEAR, call another method, add a key) | NEAR rejects it at the protocol level: the key is a function-call key bound to `request_payment` on one contract |
+| 1 | Open **[scrip-dev.vercel.app/try](https://scrip-dev.vercel.app/try)** ("Steal from this agent") | the agent's wallet read live from NEAR testnet: budget left, its rules in plain words (pays only Shop A and Shop B, at most 0.1 USDC per payment, guardian OK above 0.05 USDC), and its key, published on purpose |
+| 2 | Click **Pay Shop A 0.01 USDC** | `PAID`, gasless: the agent signs a NEP-366 delegate and Scrip's hosted relayer pays the gas. The transaction link opens on the explorer; the budget goes down |
+| 3 | Click **Send money to a stranger**, **Pay too much**, **Skip the guardian** | `BLOCKED` three times, each a real transaction the contract refused before any token moved (`RECIPIENT_NOT_ALLOWED`, `OVER_PER_PAYMENT_CAP`, `NEEDS_APPROVAL`), with the reason in one sentence |
+| 4 | Click **Use the key to send NEAR** and **Use the key to withdraw the budget** | `BLOCKED by NEAR itself`: the stolen key is a function-call key for `request_payment` only, so the protocol refuses the transaction |
+| 5 | Click **Replay a signed payment**, or copy the key and attack from your own machine | the first copy pays, the identical copy is refused (`DUPLICATE_DELEGATE`); **Write your own attempt** takes any recipient and amount |
 | 6 | Open **[/verify](https://scrip-dev.vercel.app/verify)** | the page re-reads 35 recorded transactions from the chain and compares each claim (paid, or refused with a code): **35 verified, 0 mismatched** |
 | 7 | Clone and run `make test` (Node 22.18+, Rust) | every offline suite passes; full list in [All tests](#all-tests) |
 | 8 | Run `make verify-onchain` | **21 verified, 0 mismatched, 0 unverifiable** from the terminal, no key needed |
@@ -114,7 +114,7 @@ Scrip moves the spending rules out of the agent and into a NEAR contract. Five p
 
 <img width="1440" alt="Mandate dashboard read live from NEAR testnet" src=".github/assets/mandate.jpg" />
 
-- **Try It Live**: [/try](https://scrip-dev.vercel.app/try) signs real `request_payment` calls on testnet with the published agent key; four presets show one payment and three refusals
+- **Try to Steal**: [/try](https://scrip-dev.vercel.app/try) hands every visitor the agent's key and seven one-click attacks (stranger, too much, skip the guardian, send NEAR with the key, call withdraw with the key, replay) plus a free-form attempt; each is a real testnet transaction or a protocol refusal, explained in one plain sentence
 - **Live Mandate Dashboard**: [/mandates/1](https://scrip-dev.vercel.app/mandates/1) reads `get_mandate` and `get_stats` from the chain and lists the mandate's NEP-297 events (created, deposited, reserved, settled, rejected) with explorer links
 - **Attack Demo**: [/attack](https://scrip-dev.vercel.app/attack) shows the parallel burst result and the full 1,999-case catalog by category and layer
 - **Verify It Yourself**: [/verify](https://scrip-dev.vercel.app/verify) re-checks 35 recorded transactions on every load through the public FastNear indexer, with an archival RPC fallback; unanswerable checks show `UNVERIFIABLE`, never a pass

@@ -68,16 +68,15 @@ export default function AttackPage() {
     <div className="bp-app-stack">
       <header className="bp-app-head">
         <div>
-          <span className="bp-chapter-label">Attack demo</span>
-          <h1 className="bp-app-title">Naive contract vs Scrip</h1>
+          <span className="bp-chapter-label">Attack results</span>
+          <h1 className="bp-app-title">We attacked it. Nothing got through.</h1>
           <p className="bp-app-lede">
-            Thirty payments of 0.1 USDC fired in parallel at a 1 USDC budget: once at a contract that checks the balance
-            after sending, once at Scrip, which reserves the amount first. Below that, every recorded attack case by
-            category and layer.
+            First, 30 payments of 0.1 USDC fired at the same moment at a 1 USDC budget: against an ordinary contract,
+            and against Scrip. Then 1,999 recorded attacks, from fake recipients to stolen keys.
           </p>
         </div>
         <div className="nl-head-actions">
-          <Link href="/try" className="bp-btn bp-btn-primary">Try an attack yourself</Link>
+          <Link href="/try" className="bp-btn bp-btn-primary">Try it yourself</Link>
           <Link href="/verify" className="bp-btn bp-btn-secondary">Verify the transactions</Link>
         </div>
       </header>
@@ -93,7 +92,7 @@ export default function AttackPage() {
       ) : (
         <div className="nl-burst">
           <div className="nl-burst-card nl-burst-bad">
-            <span className="nl-burst-k">Naive contract paid out</span>
+            <span className="nl-burst-k">An ordinary contract paid out</span>
             <span className="nl-burst-v">{naive ? formatUsdcUnits(naive.merchantReceived) : "–"}</span>
             <span className="nl-burst-s">{naive?.exceededBudget ? `${formatUsdcUnits(naive.overBudgetBy)} over a ${formatUsdcUnits(naive.budget)} budget` : "within budget"}</span>
           </div>
@@ -121,15 +120,15 @@ export default function AttackPage() {
               <tr>
                 <th scope="col" style={{ width: "36%" }}>Metric</th>
                 <th scope="col">
-                  Naive contract
+                  Ordinary contract
                   <span className="block text-[11px] font-normal normal-case tracking-normal text-bp-reject">
-                    Post-transfer balance check
+                    Checks the balance after paying
                   </span>
                 </th>
                 <th scope="col">
-                  Scrip contract
+                  Scrip
                   <span className="block text-[11px] font-normal normal-case tracking-normal text-bp-pass">
-                    Pre-transfer reservation lock
+                    Reserves the amount before paying
                   </span>
                 </th>
               </tr>

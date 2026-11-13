@@ -351,7 +351,7 @@ export function NewMandateForm() {
             Create it for real: connect a wallet above
           </a>
           <p className="bp-app-hint" style={{ marginTop: 10 }}>
-            This form only checks your input and shows the contract call. To create a real mandate on testnet, connect a wallet at the top of this page. To pay as an agent without a wallet, open <a className="bp-app-inline" href="/try">Try it live</a>.
+            This form only checks your input and shows the contract call. To create a real mandate on testnet, connect a wallet at the top of this page. To pay as an agent without a wallet, open <a className="bp-app-inline" href="/try">Try to steal</a>.
           </p>
         </div>
       </form>
