@@ -36,7 +36,7 @@ make script-test
 ```
 <!-- source: Makefile:30, scripts/test/ -->
 
-See: `38 passed` in ~140 ms. Tests CLI argument parsing, sub-account recovery sweeps, on-chain transaction verification, and link extraction.
+See: `48 passed` in ~140 ms. Tests CLI argument parsing, sub-account recovery sweeps, on-chain transaction verification, and link extraction.
 
 ### 2. Run client SDK test suite (~450 ms)
 
@@ -54,7 +54,7 @@ make demo-test
 ```
 <!-- source: Makefile:16, demo/test/ -->
 
-See: `29 passed` in ~460 ms. Verifies honest payments settling, a prompt-injected agent attempting to pay an attacker and getting rejected on-chain (`RECIPIENT_NOT_ALLOWED`), an overcharge attempt blocked (`OVER_PER_PAYMENT_CAP`), and x402 payment settlement.
+See: `35 passed` in ~460 ms. Verifies honest payments settling, a prompt-injected agent attempting to pay an attacker and getting rejected on-chain (`RECIPIENT_NOT_ALLOWED`), an overcharge attempt blocked (`OVER_PER_PAYMENT_CAP`), and x402 payment settlement.
 
 ### 4. Run relayer and facilitator test suite (~1.7 s)
 
