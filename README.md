@@ -36,7 +36,7 @@ Scrip is for **anyone who wants an AI agent to pay for things without handing it
 > - We gave four real language models a poisoned invoice. They were fooled up to 100% of the time. On testnet, the naive wallet paid the attacker; Scrip refused every one of those payments.
 > - **The live demo publishes the agent's key on purpose.** Take it. You can still only do what the mandate allows.
 
-<img width="1440" alt="Scrip: try it live. Pay a shop and it is paid; pay an attacker or go over the cap and the contract refuses on-chain." src=".github/assets/try.jpg" />
+<img width="1440" alt="Scrip: try to steal from a live agent. Its key is public; only the payment its rules allow goes through, every theft attempt is refused on-chain." src=".github/assets/try.jpg" />
 
 ## For judges: try it in 5 minutes
 
