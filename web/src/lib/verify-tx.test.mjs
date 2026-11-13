@@ -374,3 +374,11 @@ test("formatUtc is fixed to UTC", () => {
   assert.equal(formatUtc("2026-11-12T11:27:42.744Z"), "12 Nov 2026, 11:27:42 UTC");
   assert.equal(formatUtc("not a date"), "not a date");
 });
+
+test("fetchAndVerifyTx: retries the indexer once on 429 when there is no sender", async () => {
+  let calls = 0;
+  const fetchFn = async () => { calls += 1; return { status: 429, ok: false, json: async () => ({}) }; };
+  const res = await fetchAndVerifyTx({ txHash: "x", indexerUrl: "https://example.invalid", fetchFn, timeoutMs: 500 });
+  assert.equal(calls, 2);
+  assert.equal(res.verdict, "UNVERIFIABLE");
+});

@@ -334,8 +334,8 @@ export async function fetchAndVerifyTx(options: FetchAndVerifyOptions): Promise<
 
   if (options.indexerUrl) {
     let viaIndexer = await fetchViaIndexer(fetcher, options.indexerUrl, txHash, timeoutMs);
-    // One retry after a pause when the indexer is rate limited or briefly unreachable (a page load fires many lookups at once).
-    if (!viaIndexer.body && /429|timed out|network error/i.test(viaIndexer.reason ?? "")) {
+    // One retry after a pause when the indexer is rate limited or briefly unreachable and there is no sender to fall back on (a page load fires many lookups at once).
+    if (!viaIndexer.body && !senderId?.trim() && /429|timed out|network error/i.test(viaIndexer.reason ?? "")) {
       await new Promise((r) => setTimeout(r, 1200));
       viaIndexer = await fetchViaIndexer(fetcher, options.indexerUrl, txHash, timeoutMs);
     }
