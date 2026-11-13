@@ -40,7 +40,7 @@ export default function Home() {
     <div className="bp-app-stack">
       <header className="bp-app-head">
         <div>
-          <span className="bp-chapter-label">Overview</span>
+          <span className="bp-chapter-label">How it works</span>
           <h1 className="bp-app-title">Give agents a budget, not your keys.</h1>
           <p className="bp-app-lede">
             AI agents get tricked. Scrip keeps an agent&apos;s money in a NEAR contract with rules the agent cannot change:

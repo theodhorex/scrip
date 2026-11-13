@@ -175,7 +175,7 @@ export function NewMandateForm() {
             Mandate settings
           </h2>
           <p className="bp-app-hint">
-            Change any value: the contract call on the right and the payment check below it update as you type.
+            Change any value, then try a payment on the right. The same rules as the contract run here, in your browser.
           </p>
         </div>
 
@@ -357,6 +357,10 @@ export function NewMandateForm() {
       </form>
 
       <div className="space-y-4">
+        <TryPayment mandate={mandateArgsPreview} />
+
+        <details className="nl-fold">
+          <summary>Show the contract call this form builds</summary>
         <div className="bp-plate bp-app-plate">
           <div className="flex items-center justify-between pb-3 border-b border-bp-line">
             <h2 className="text-sm font-semibold text-bp-ink">
@@ -374,8 +378,7 @@ export function NewMandateForm() {
             <code>{JSON.stringify(mandateArgsPreview, null, 2)}</code>
           </pre>
         </div>
-
-        <TryPayment mandate={mandateArgsPreview} />
+        </details>
 
         <div className="bp-plate bp-app-plate text-xs text-bp-muted space-y-2">
           <p className="bp-kicker">

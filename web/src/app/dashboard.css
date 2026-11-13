@@ -380,3 +380,4 @@ html:has(.nl-app), body:has(.nl-app) { background: #050505; }
 .nl-app .nl-ov-rules h3 { font-weight: 500; }
 .nl-app .nl-ov-rules p { margin: 8px 0 0; }
 @media (max-width: 760px) { .nl-dash-links { flex-wrap: wrap; overflow: visible; gap: 0 18px; } .nl-dash-link { min-height: 40px; font-size: 14.5px; } }
+@media (max-width: 600px) { .nl-ov-stats dd:not(.nl-ov-src) { font-size: 24px; white-space: nowrap; } }
