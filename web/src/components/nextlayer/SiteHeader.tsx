@@ -71,7 +71,7 @@ export function SiteHeader() {
         {LINKS.map((l) => <a key={l.href} href={l.href}>{l.label}</a>)}
         <span className="nl-sticky-rule" ref={rule} aria-hidden="true" />
       </nav>
-      <a className="nl-sticky-cta" href="/overview">Dashboard</a>
+      <a className="nl-sticky-cta" href="/try">Try it live</a>
     </header>
   );
 }

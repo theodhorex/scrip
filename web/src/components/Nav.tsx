@@ -13,6 +13,7 @@ export function Nav() {
         </Link>
         <nav aria-label="Main navigation" className="nl-dash-links">
           <NavLink href="/overview">Overview</NavLink>
+          <NavLink href="/try">Try it live</NavLink>
           <NavLink href="/mandates">Mandates</NavLink>
           <NavLink href="/attack">Attack demo</NavLink>
           <NavLink href="/mandates/new">New mandate</NavLink>

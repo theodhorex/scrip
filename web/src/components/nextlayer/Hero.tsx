@@ -94,7 +94,7 @@ export function Hero() {
           </ul>
           <div className="nl-menu-foot">
             <a className="nl-pill nl-pill-cta" href="/overview" onClick={() => setOpen(false)}><span>Dashboard</span></a>
-            <a className="nl-ghost" href="/attack" onClick={() => setOpen(false)}>See the attacks</a>
+            <a className="nl-ghost" href="/try" onClick={() => setOpen(false)}>Try it live</a>
           </div>
         </div>
       </nav>
@@ -111,7 +111,7 @@ export function Hero() {
           <span>a budget, allowed recipients and a guardian.</span>
         </p>
         <div className="nl-actions">
-          <a className="nl-pill nl-pill-cta" href="/attack"><span>See the attacks</span></a>
+          <a className="nl-pill nl-pill-cta" href="/try"><span>Try it live on testnet</span></a>
           <a className="nl-ghost" href="#how">How it works</a>
         </div>
       </div>

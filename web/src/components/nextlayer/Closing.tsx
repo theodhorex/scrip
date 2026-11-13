@@ -7,7 +7,7 @@ import "./base.css";
 const COLS = [
   { h: "Understand", links: [{ t: "In plain words", href: "#what" }, { t: "How it works", href: "#how" }, { t: "Rule machine", href: "#rules" }, { t: "Guardian", href: "#guardian" }] },
   { h: "Evidence", links: [{ t: "Recorded run", href: "#race" }, { t: "Proof", href: "#proof" }, { t: "Real models", href: "#models" }, { t: "Attack results", href: "/attack" }, { t: "Verify transactions", href: "/verify" }, { t: "Limits", href: "#limits" }] },
-  { h: "Product", links: [{ t: "Dashboard", href: "/overview" }, { t: "Around the contract", href: "#envelope" }] },
+  { h: "Product", links: [{ t: "Try it live", href: "/try" }, { t: "Dashboard", href: "/overview" }, { t: "Around the contract", href: "#envelope" }] },
   { h: "Source", links: [{ t: "GitHub repository", href: "https://github.com/theodhorex/scrip", ext: true }, { t: "Notes for judges", href: "https://github.com/theodhorex/scrip/blob/main/JUDGES.md", ext: true }] },
 ] as const;
 /** Same facts as the Limits section. No dates beyond the one the verified numbers carry. */
@@ -19,7 +19,7 @@ export function Closing() {
       <section className="nl-sec nl-closing" id="closing" aria-labelledby="closing-title">
         <div className="nl-wrap">
           <SectionHead id="closing" n={9} label="Next" lines={["The agent can be fooled.", "The budget cannot."]} />
-          <a className="nl-pill nl-pill-cta" href="/attack" style={{ display: "inline-flex" }}><span>See the attacks</span></a>
+          <a className="nl-pill nl-pill-cta" href="/try" style={{ display: "inline-flex" }}><span>Try it live on testnet</span></a>
         </div>
       </section>
       <footer className="nl-footer" aria-label="Site footer">
