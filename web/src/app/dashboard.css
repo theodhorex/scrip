@@ -114,3 +114,39 @@ html:has(.nl-app), body:has(.nl-app) { background: #050505; }
 .nl-app .bp-app-table th { background: transparent; font-variant-caps: normal; letter-spacing: .01em; font-size: 12.5px; color: var(--strip); }
 .nl-app .bp-app-table tbody tr:hover { background: rgba(255, 255, 255, .04); }
 .nl-app .bp-app-table-wrap.bp-plate { border-bottom: 1px solid var(--line-strong); }
+
+/* ───── motion: one page-load sequence, plus feedback when a result arrives. All of it stops under reduced motion (rule above). ───── */
+@keyframes nl-dash-title { from { clip-path: inset(0 0 100% 0); transform: translateY(.3em); } to { clip-path: inset(0 0 -12% 0); transform: none; } }
+@keyframes nl-dash-draw { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes nl-dash-row { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes nl-dash-pop { 0% { opacity: 0; transform: scale(.82); } 60% { opacity: 1; transform: scale(1.05); } 100% { transform: scale(1); } }
+@keyframes nl-dash-scan { 0% { background-position: -120% 0; } 100% { background-position: 220% 0; } }
+
+/* the hairline under the page index draws from the left, then the title rises through a mask */
+.nl-app .bp-chapter-label::after { transform-origin: left; animation: nl-dash-draw 1s var(--ease) both; }
+.nl-app .bp-app-title { animation: nl-dash-title 1s var(--ease) .12s both; }
+.nl-app .bp-app-lede, .nl-app .bp-app-head > :not(div) { animation: nl-dash-row .8s var(--ease) .35s both; }
+.nl-center-in { animation: nl-dash-row .8s var(--ease) both; }
+
+/* ruled blocks draw their top line, staggered by the delay the page already sets */
+.nl-app .bp-plate.bp-app-enter { border-top-color: transparent; }
+.nl-app .bp-plate.bp-app-enter::before { content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 1px; background: var(--line-strong); transform-origin: left; animation: nl-dash-draw .9s var(--ease) both; animation-delay: var(--bp-app-delay, 0ms); }
+.nl-app .bp-plate-pass.bp-app-enter::before { background: #fff; }
+.nl-app .bp-plate-reject.bp-app-enter::before { background: var(--reject); }
+
+/* long tables: rows come in one after another, capped so a 1,999-row page never waits */
+.nl-app .bp-app-table tbody tr { animation: nl-dash-row .55s var(--ease) both; }
+.nl-app .bp-app-table tbody tr:nth-child(1) { animation-delay: .05s; } .nl-app .bp-app-table tbody tr:nth-child(2) { animation-delay: .09s; }
+.nl-app .bp-app-table tbody tr:nth-child(3) { animation-delay: .13s; } .nl-app .bp-app-table tbody tr:nth-child(4) { animation-delay: .17s; }
+.nl-app .bp-app-table tbody tr:nth-child(5) { animation-delay: .21s; } .nl-app .bp-app-table tbody tr:nth-child(6) { animation-delay: .25s; }
+.nl-app .bp-app-table tbody tr:nth-child(7) { animation-delay: .29s; } .nl-app .bp-app-table tbody tr:nth-child(8) { animation-delay: .33s; }
+.nl-app .bp-app-table tbody tr:nth-child(n+9) { animation-delay: .37s; }
+
+/* a verdict chip pops in when the result arrives; a pending check shows a slow light sweep */
+.nl-app td .bp-app-chip { animation: nl-dash-pop .5s var(--ease) both; }
+.nl-app .bp-app-checking { display: inline-block; padding: 3px 11px; border: 1px solid var(--line-strong); border-radius: 999px; font-family: var(--mono); font-size: 12px; color: var(--muted); background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.22) 50%, transparent 70%) 0 0 / 220% 100% no-repeat; animation: nl-dash-scan 1.6s linear infinite; }
+
+/* buttons: a soft ring answers hover on the main action */
+.nl-app .bp-btn-primary:hover { box-shadow: 0 0 0 4px rgba(255,255,255,.12); }
+.nl-app .bp-btn { transition: background-color .25s, color .25s, border-color .25s, box-shadow .35s var(--ease), transform .35s var(--ease); }
+.nl-app .bp-app-card .bp-app-link-cta span { transition: translate .35s var(--ease); }

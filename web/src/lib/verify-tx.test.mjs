@@ -362,3 +362,15 @@ test("extractVerificationItems: real-model replay txs are claimed as paid (naive
   assert.deepEqual(codes, ["OVER_PER_PAYMENT_CAP", "OVER_PER_PAYMENT_CAP", "OVER_PER_PAYMENT_CAP", "RECIPIENT_NOT_ALLOWED", "RECIPIENT_NOT_ALLOWED", "RECIPIENT_NOT_ALLOWED"]);
   assert.equal(new Set(llm.map((i) => i.txHash)).size, 12);
 });
+
+import { blockTimeFromBody, formatUtc } from "./verify-tx.ts";
+test("blockTimeFromBody reads nanosecond block timestamps", () => {
+  const body = { result: { transaction_outcome: { block_timestamp: 1794482909771164529 } } };
+  assert.equal(blockTimeFromBody(body), "2026-11-12T11:28:29.771Z");
+  assert.equal(blockTimeFromBody({ result: {} }), undefined);
+  assert.equal(blockTimeFromBody(null), undefined);
+});
+test("formatUtc is fixed to UTC", () => {
+  assert.equal(formatUtc("2026-11-12T11:27:42.744Z"), "12 Nov 2026, 11:27:42 UTC");
+  assert.equal(formatUtc("not a date"), "not a date");
+});

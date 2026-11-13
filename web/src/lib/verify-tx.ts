@@ -23,6 +23,8 @@ export interface VerificationItem {
   txHash: string;
   senderId?: string;
   claim: Claim;
+  /** ISO time the recorded run started (startedAt of the source file). The exact on-chain time comes from the verification result. */
+  recordedAt?: string;
 }
 
 export interface VerificationResult {
@@ -34,6 +36,25 @@ export interface VerificationResult {
   claim?: Claim;
   /** Where the transaction data came from: the FastNear indexer or a JSON-RPC node. */
   source?: "indexer" | "rpc";
+  /** ISO time of the block that included the transaction. Only the indexer path returns it. */
+  blockTime?: string;
+}
+
+/** Reads the block time (ISO, UTC) from a converted indexer body (`result.transaction_outcome.block_timestamp`, nanoseconds). */
+export function blockTimeFromBody(body: unknown): string | undefined {
+  const ts = (body as { result?: { transaction_outcome?: { block_timestamp?: unknown } } } | null)?.result?.transaction_outcome?.block_timestamp;
+  if (typeof ts !== "number" && typeof ts !== "string") return undefined;
+  const ms = Number(BigInt(ts) / BigInt(1000000));
+  const d = new Date(ms);
+  return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+}
+
+/** "13 Nov 2026, 04:25:09 UTC". Fixed zone so server and browser render the same text. */
+export function formatUtc(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const date = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(d);
+  return `${date}, ${d.toISOString().slice(11, 19)} UTC`;
 }
 
 const KNOWN_CODES = [
@@ -316,7 +337,7 @@ export async function fetchAndVerifyTx(options: FetchAndVerifyOptions): Promise<
     if (viaIndexer.body) {
       const classification = classifyRpcResponse(viaIndexer.body);
       const comparison = compareClaim(classification, claim);
-      return { txHash, senderId, classification, verdict: comparison.verdict, reason: comparison.reason, claim, source: "indexer" };
+      return { txHash, senderId, classification, verdict: comparison.verdict, reason: comparison.reason, claim, source: "indexer", blockTime: blockTimeFromBody(viaIndexer.body) };
     }
     // Indexer could not answer: fall through to the RPC node below.
   }
@@ -664,5 +685,11 @@ export function extractVerificationItems(): VerificationItem[] {
     });
   }
 
+  const runStart: Record<VerificationItem["source"], string | undefined> = {
+    "demo.json": demoJson?.startedAt,
+    "demo-llm.json": demoLlmJson?.startedAt,
+    "gate.json": gateJson?.startedAt,
+  };
+  for (const it of items) it.recordedAt = runStart[it.source];
   return items;
 }

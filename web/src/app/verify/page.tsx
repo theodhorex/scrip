@@ -5,6 +5,7 @@ import { DashShell } from "@/components/DashShell";
 import { EXPLORER_TX_BASE } from "@/lib/network";
 import {
   extractVerificationItems,
+  formatUtc,
   fetchAndVerifyTx,
   FASTNEAR_INDEXER_URL,
   runWithConcurrencyLimit,
@@ -171,6 +172,7 @@ export default function VerifyPage() {
               <thead>
                 <tr>
                   <th scope="col">Transaction / Item</th>
+                  <th scope="col">Time (UTC)</th>
                   <th scope="col">Source</th>
                   <th scope="col">Sender</th>
                   <th scope="col">Claim</th>
@@ -202,6 +204,20 @@ export default function VerifyPage() {
                         </div>
                       </th>
                       <td>
+                        {res?.blockTime ? (
+                          <time className="font-mono text-xs text-bp-ink" dateTime={res.blockTime} title="Block time reported by the indexer">
+                            {formatUtc(res.blockTime)}
+                          </time>
+                        ) : item.recordedAt ? (
+                          <time className="font-mono text-xs text-bp-muted" dateTime={item.recordedAt} title="Start of the recorded run. The block time appears once the indexer answers.">
+                            {formatUtc(item.recordedAt)}
+                            <span className="block">run start</span>
+                          </time>
+                        ) : (
+                          <span className="font-mono text-xs text-bp-muted">Not recorded</span>
+                        )}
+                      </td>
+                      <td>
                         <span className="font-mono text-xs text-bp-muted">
                           {item.source}
                         </span>
@@ -230,7 +246,7 @@ export default function VerifyPage() {
                       </td>
                       <td>
                         {verdict === "CHECKING" && (
-                          <span className="bp-app-chip opacity-70">
+                          <span className="bp-app-checking" role="status">
                             Checking...
                           </span>
                         )}
