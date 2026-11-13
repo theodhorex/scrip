@@ -17,7 +17,6 @@ const U128_RE = /^(?:0|[1-9][0-9]*)$/;
 const U64_RE = /^(?:0|[1-9][0-9]*)$/;
 const U64_MAX = (1n << 64n) - 1n;
 const U128_MAX = (1n << 128n) - 1n;
-const B64_URL = /^[A-Za-z0-9_-]+$/;
 
 /**
  * F-C: parse and validate the `request_payment` args buffer exactly like the contract expects:
