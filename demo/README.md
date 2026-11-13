@@ -16,12 +16,12 @@ Everything is real on testnet (accounts, USDC, contract, facilitator, tx hashes)
 - Testnet only. The merchant verifies payment by reading the transaction from chain (USDC `ft_transfer` event or Scrip `settled` event to the invoiced account).
 - Needs a funder with >= 2.0 testnet USDC and the relayer account (see `scripts/gate.mjs`).
 
-## Alur HTTP 402 (x402-style)
-Merchant dan agent mendukung alur x402-style di samping alur invoice klasik:
-1. `GET /resource` -> `HTTP 402 Payment Required` + header `PAYMENT-REQUIRED` (base64 JSON: payTo, amount, asset, mandate).
-2. Agent membaca 402, memverifikasi penerima terhadap requirements, menandatangani delegate action (`buildPaymentSignature`), dan mengulang `GET /resource` dengan header `PAYMENT-SIGNATURE`.
-3. Merchant memanggil `/settle` pada fasilitator. Jika inner status sukses (`Settled`), merchant membalas `HTTP 200` + header `PAYMENT-RESPONSE` dan menyerahkan resource.
-4. Jika ditolak (misal pedagang jahat `RECIPIENT_NOT_ALLOWED`) atau gagal, merchant membalas 402/4xx dengan kode galat. Jalur lama `POST /paid {invoiceId,txHash}` tetap didukung.
+## HTTP 402 Flow (x402-style)
+Merchant and agent support the x402-style flow alongside the classic invoice flow:
+1. `GET /resource` -> `HTTP 402 Payment Required` + `PAYMENT-REQUIRED` header (base64 JSON: payTo, amount, asset, mandate).
+2. Agent reads 402, verifies recipient against requirements, signs the delegate action (`buildPaymentSignature`), and repeats `GET /resource` with `PAYMENT-SIGNATURE` header.
+3. Merchant calls `/settle` on the facilitator. If inner status succeeds (`Settled`), merchant returns `HTTP 200` + `PAYMENT-RESPONSE` header and delivers the resource.
+4. If rejected (for example malicious merchant `RECIPIENT_NOT_ALLOWED`) or failed, merchant returns 402/4xx with an error code. The legacy `POST /paid {invoiceId,txHash}` path remains supported.
 
 ## Run
 ```
@@ -32,26 +32,26 @@ node scripts/demo.mjs     # real testnet run, cleans up its accounts
 
 ## Guard demo (Counterparty Defense)
 
-Demo pertahanan lapis klien (`client/src/counterparty.mjs` & `client/src/guarded-sign.mjs`) terhadap serangan prompt injection dan alamat penipu.
+Client-layer defense demo (`client/src/counterparty.mjs` & `client/src/guarded-sign.mjs`) against prompt injection attacks and fraudulent addresses.
 
 ### Do X
-Jalankan satu perintah dengan berkas blocklist JSON:
+Run one command with a JSON blocklist file:
 ```bash
 node scripts/demo-guard.mjs --blocklist <path/to/blocklist.json>
-# Opsi --approve untuk mensimulasikan persetujuan manusia pada peringatan (warn):
+# Option --approve to simulate human approval on warnings (warn):
 node scripts/demo-guard.mjs --blocklist <path/to/blocklist.json> --approve
 ```
 
 ### See Y
-Skrip deterministik menjalankan 4 skenario berurutan secara read-only terhadap RPC NEAR testnet dan mencetak SATU baris log per keputusan:
-`<ts> | <skenario> | <penerima> | <verdict> | <alasan ringkas> | <keputusan>`
+The deterministic script runs 4 sequential read-only scenarios against the NEAR testnet RPC and prints ONE log line per decision:
+`<ts> | <scenario> | <recipient> | <verdict> | <summary reason> | <decision>`
 
-1. **known-merchant**: Penerima sah & dikenal -> `allow` -> `sign` dipanggil (`signed`).
-2. **new-recipient**: Penerima baru tanpa riwayat -> `warn` -> penolakan otomatis manusia (`denied`; atau `signed` bila memakai opsi `--approve`).
-3. **injection-block**: Alamat penyerang di blocklist DENGAN bukti (txHash/url) hasil injeksi prompt ("kirim semua saldo...") -> `block` -> `sign` TIDAK dipanggil (`blocked`).
-4. **unevidenced-report**: Laporan blocklist TANPA bukti (hanya klaim) -> laporan diabaikan -> `warn`, BUKAN block.
+1. **known-merchant**: Legitimate & known recipient -> `allow` -> `sign` called (`signed`).
+2. **new-recipient**: New recipient without history -> `warn` -> automatic human rejection (`denied`; or `signed` when using `--approve` option).
+3. **injection-block**: Attacker address on blocklist WITH evidence (txHash/url) from prompt injection ("send full balance...") -> `block` -> `sign` NOT called (`blocked`).
+4. **unevidenced-report**: Blocklist report WITHOUT evidence (claims only) -> report ignored -> `warn`, NOT block.
 
-Setelah 4 skenario, skrip mencetak tabel ringkasan dan menyimpan seluruh hasil ke `results/demo-guard.json`.
-- **Aman & Read-Only**: Skrip tidak membaca atau mencetak kunci privat dan tidak mengirim transaksi apa pun (`sign` hanya mencatat niat).
-- **Fail-Closed**: Memeriksa konektivitas RPC NEAR testnet nyata (`RPC_URL`, default `https://rpc.testnet.fastnear.com`). Jika RPC tidak dapat dijangkau, skrip berhenti dengan galat jelas tanpa memalsukan hasil mock.
+After 4 scenarios, the script prints a summary table and saves all results to `results/demo-guard.json`.
+- **Safe & Read-Only**: The script does not read or print private keys and sends no transactions (`sign` records intent only).
+- **Fail-Closed**: Checks real NEAR testnet RPC connectivity (`RPC_URL`, default `https://rpc.testnet.fastnear.com`). If the RPC is unreachable, the script stops with a clear error without faking mock results.
 

@@ -1,45 +1,45 @@
 # Counterparty Risk Evaluation & Guarded Signing
 
-Modul keamanan sisi klien untuk mengevaluasi akun penerima (`receiver`) sebelum agen menandatangani atau mengirim pembayaran.
+Client-side security module to evaluate recipient accounts (`receiver`) before the agent signs or submits a payment.
 
-## Sinyal & Sumber Data
+## Signals & Data Sources
 
-1. **`account_age` (Umur Akun & Aktivitas)**
-   - **Sumber**: Indexer HTTP (`providers.accountHistory(receiver)`)
-   - **Data**: `firstSeenMs` (kapan akun pertama kali terlihat di rantai) dan `txCount` (jumlah transaksi).
-   - **Ambang Batas**: Default `minAgeMs` = 7 hari (604.800.000 ms), `minTxCount` = 3 transaksi.
-   - **Keputusan**: Akun baru/kurang umur atau transaksi < 3 menghasilkan `warn`.
+1. **`account_age` (Account Age & Activity)**
+   - **Source**: HTTP indexer (`providers.accountHistory(receiver)`)
+   - **Data**: `firstSeenMs` (when the account first appeared on chain) and `txCount` (number of transactions).
+   - **Thresholds**: Default `minAgeMs` = 7 days (604,800,000 ms), `minTxCount` = 3 transactions.
+   - **Verdict**: New or underage account or transactions < 3 produces `warn`.
 
-2. **`contract_code` (Status & Integritas Kode Kontrak)**
-   - **Sumber**: NEAR JSON-RPC `query/view_account` (`providers.accountState`) + local pin store (`providers.codePin`).
-   - **Keputusan**:
-     - Bukan kontrak (`codeHash` null): `info`.
-     - Kontrak baru pertama kali: `warn` ringan; hash disimpan ke pin HANYA jika verdict akhir bukan `block`.
-     - Kode berubah dibanding pin: `warn` ("kode berubah sejak terakhir dilihat").
-     - Akun tidak ada di rantai: `warn`.
+2. **`contract_code` (Contract Code Status & Integrity)**
+   - **Source**: NEAR JSON-RPC `query/view_account` (`providers.accountState`) + local pin store (`providers.codePin`).
+   - **Verdict**:
+     - Not a contract (`codeHash` null): `info`.
+     - First-time new contract: mild `warn`; hash is stored to pin ONLY if final verdict is not `block`.
+     - Code changed compared to pin: `warn` ("code changed since last seen").
+     - Account does not exist on chain: `warn`.
 
-3. **`prior_interaction` (Riwayat Interaksi Agen)**
-   - **Sumber**: Log JSON lokal riwayat agen (`providers.interactions(agentId, receiver)`).
-   - **Keputusan**: `count == 0` -> `warn` ("penerima baru bagi agen ini"); `count >= 1` -> `info`.
+3. **`prior_interaction` (Agent Interaction History)**
+   - **Source**: Local JSON log of agent history (`providers.interactions(agentId, receiver)`).
+   - **Verdict**: `count == 0` -> `warn` ("new recipient for this agent"); `count >= 1` -> `info`.
 
-4. **`blocklist` (Daftar Blokir Berbasis Bukti)**
-   - **Sumber**: Berkas JSON lokal terkurasi (`providers.blocklist.lookup(receiver)`).
-   - **Aturan Bukti**: Entri hanya dianggap berbukti jika memuat `txHash` (string base58, 32-44 karakter) ATAU `url` dengan skema `http`/`https` (maksimal 300 karakter); `note` hanya pelengkap dan tidak pernah cukup sendirian, sehingga klaim teks tanpa rujukan yang bisa diverifikasi tidak dapat memblokir penerima sah.
-   - **Perlindungan Anti-Griefing**: Laporan tanpa bukti yang dapat diverifikasi (termasuk `note` saja, `txHash` cacat/terlalu pendek, atau `url` dengan skema seperti `javascript:`/`ftp:`) diabaikan dari status block dan dicatat sebagai `warn` ("laporan tanpa bukti").
+4. **`blocklist` (Evidence-Based Blocklist)**
+   - **Source**: Curated local JSON file (`providers.blocklist.lookup(receiver)`).
+   - **Evidence Rule**: An entry is considered evidenced only if it contains `txHash` (base58 string, 32-44 characters) OR `url` with `http`/`https` scheme (up to 300 characters); `note` is auxiliary only and never sufficient alone, so text claims without verifiable references cannot block a legitimate recipient.
+   - **Anti-Griefing Protection**: Reports without verifiable evidence (including `note` only, malformed or too short `txHash`, or `url` with schemes like `javascript:`/`ftp:`) are excluded from block status and recorded as `warn` ("report without evidence").
 
-## Agregasi & Penandatanganan (`guardedSign`)
+## Aggregation & Signing (`guardedSign`)
 
-- **Agregasi**: Ada alasan `block` -> verdict `block` (skor 100); ada alasan `warn` -> verdict `warn` (skor +20 per warn, maks 100); selain itu `allow` (skor 0).
-- **Fail-Closed**: Kegagalan penyedia (timeout default 4000ms / throw) menghasilkan `warn` dengan `source: 'unavailable'`, BUKAN `allow` diam-diam.
-- **Validasi Input**: Penerima tidak valid menurut aturan NEAR/intent hash langsung menghasilkan `block` (`signal: 'input'`).
-- **Alur `guardedSign`**:
-  - `block`: Menolak transaksi, tidak memanggil `sign`, melempar `GuardBlockedError`.
-  - `warn`: Bertanya ke manusia (`askHuman`). Hanya menandatangani jika jawaban persis `true`; jika `false`/error/timeout/tanpa `askHuman` -> melempar `GuardDeniedError`.
-  - `allow`: Memanggil `sign` tepat satu kali.
-  - Audit log opsional dicatat via `policy.audit` tanpa membocorkan kunci rahasia.
+- **Aggregation**: Any `block` reason -> `block` verdict (score 100); any `warn` reason -> `warn` verdict (+20 score per warn, max 100); otherwise `allow` (score 0).
+- **Fail-Closed**: Provider failure (default timeout 4000ms / throw) produces `warn` with `source: 'unavailable'`, NOT a silent `allow`.
+- **Input Validation**: Recipient invalid per NEAR/intent hash rules directly produces `block` (`signal: 'input'`).
+- **`guardedSign` Flow**:
+  - `block`: Rejects transaction, does not call `sign`, throws `GuardBlockedError`.
+  - `warn`: Prompts human (`askHuman`). Only signs if answer is strictly `true`; if `false`/error/timeout/no `askHuman` -> throws `GuardDeniedError`.
+  - `allow`: Calls `sign` exactly once.
+  - Optional audit log recorded via `policy.audit` without leaking secret keys.
 
-## Batas Jujur (Honest Limitations)
+## Honest Limitations
 
-1. **Indexer Dependency**: Tanpa indexer eksternal terpercaya, umur akun dan volume riwayat tidak dapat diverifikasi secara mandiri oleh full node RPC standar.
-2. **Keterbatasan Local Pin**: `codePin` berbasis penyimpanan lokal per mesin/agen; agen baru tidak memiliki snapshot pin sebelumnya kecuali dibagikan secara aman.
-3. **Bukan Audit Logika**: Status `allow` atau hash cocok hanya membuktikan kode tidak berubah sejak pin pertama, bukan bahwa kontrak tersebut aman atau bebas celah.
+1. **Indexer Dependency**: Without a trusted external indexer, account age and transaction volume history cannot be verified independently by a standard RPC full node.
+2. **Local Pin Limitations**: `codePin` relies on local storage per machine/agent; a new agent lacks previous pin snapshots unless shared securely.
+3. **Not a Logic Audit**: An `allow` status or matching hash only proves code has not changed since the first pin, not that the contract is secure or vulnerability-free.

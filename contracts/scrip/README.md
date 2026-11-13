@@ -101,13 +101,13 @@ NEAR charges 1e19 yocto per byte (0.00001 NEAR) including ~40 bytes of per-recor
 ## Immutability & Upgrade Policy (K-E / K-11)
 
 The Scrip contract is designed to be **immutable** for the hackathon:
-- Kontrak bersifat **immutable, tanpa migrate**; tidak ada mekanisme migrasi kode atau fungsi upgrade (tidak ada `#[init(ignore_state)]`, tidak ada fungsi `migrate`).
-- **Kunci kontrak dihapus setelah init pada deploy demo** (full-access keys dihapus setelah inisialisasi).
-- Transisi status kontrak dan perubahan aturan hanya dapat terjadi melalui metode yang didefinisikan secara ketat (`tighten`, `loosen`, `revoke`, dsb.) yang diverifikasi oleh `predecessor_account_id`.
+- The contract is **immutable without migration support**; there is no code migration mechanism or upgrade function (no `#[init(ignore_state)]`, no `migrate` function).
+- **Contract keys are deleted after initialization in the demo deployment** (full-access keys deleted after initialization).
+- Contract state transitions and rule changes can only occur through strictly defined methods (`tighten`, `loosen`, `revoke`, etc.) verified by `predecessor_account_id`.
 
 ## Threat Model & Token Balance Isolation (K-F / K-3)
 
-- **Saldo token dipakai bersama (K-3)**: Kontrak menyimpan token NEP-141 pada saldo akun kontrak bersama untuk seluruh mandat yang menggunakan token tersebut.
-- **Batas yang diakui (Acknowledged Boundary)**: Akuntansi kontrak memisahkan limit pembukuan (`deposited`, `spent`, `reserved`, `withdrawn`) per mandat. Namun, karena saldo token berada di akun kontrak bersama di tingkat kontrak NEP-141, cacat akuntansi teoretis dapat mempengaruhi saldo bersama tersebut.
-- **Mitigasi**: Menerapkan mitigasi **satu kontrak per owner** atau per domain kepercayaan terisolasi.
-- **Pekerjaan lanjutan**: Penerapan **allowlist token sebagai pekerjaan lanjutan** (token allowlist enforcement) serta isolasi brankas sub-akun per mandat.
+- **Shared token balance (K-3)**: The contract holds NEP-141 tokens in a shared contract account balance for all mandates that use that token.
+- **Acknowledged Boundary**: Contract accounting separates bookkeeping limits (`deposited`, `spent`, `reserved`, `withdrawn`) per mandate. Because token balances live in a shared contract account at the NEP-141 contract level, a theoretical accounting flaw could affect that shared balance.
+- **Mitigation**: Deploy **one contract per owner** or per isolated trust domain.
+- **Future Work**: Enforce a **token allowlist** and sub-account vault isolation per mandate.
