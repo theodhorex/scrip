@@ -533,7 +533,7 @@ async function main() {
         if (localWasmHash) {
           console.log(`Local wasm sha256: ${localWasmHash} (${wasmMatched ? 'MATCH' : 'MISMATCH'})`);
         } else {
-          console.log('build lokal tidak ada: dilewati');
+          console.log('local build not found: skipped');
         }
       }
     }

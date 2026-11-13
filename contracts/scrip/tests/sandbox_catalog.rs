@@ -1,5 +1,5 @@
-//! Lapis D Sandbox Attack Catalog (near-workspaces sandbox against real scrip.wasm)
-//! Conforms to .agy/tasks/D1a-lapis-d-sandbox-bagian1.md
+//! Layer D Sandbox Attack Catalog (near-workspaces sandbox against real scrip.wasm)
+//! Conforms to internal task D1a (Layer D sandbox, part 1).
 #![allow(dead_code)]
 
 use std::path::Path;

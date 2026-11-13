@@ -140,7 +140,7 @@ export function detectMandateBreach(before, after, expectedOrActualLabel) {
 
 /**
  * Creates dynamic in-memory testnet mock provider & accounts for --dry mode.
- * Satisfies rule: "Tidak ada mode mock yang mengeluarkan angka tetap."
+ * Satisfies rule: "No mock mode that emits fixed numbers."
  */
 export function createMockTestnetEngine(funderId) {
   const accounts = new Map();
@@ -2431,7 +2431,7 @@ export async function executeLayerE(c, session) {
             note: json?.message || `HTTP ${status}`,
           };
         } else if (txHash) {
-          // Read transaction events without retries on failure (tanpa retry untuk TX_FAILED)
+          // Read transaction events without retries on failure (no retries for TX_FAILED)
           const txRes = await withRetry(() => session.provider.sendJsonRpc('tx', [txHash, session.relayerId]));
           actual = classifyTxResult(txRes);
           txHash = actual.txHash;
@@ -2499,7 +2499,7 @@ export async function runLayerEInWaves(cases, session, options = {}) {
 
   // Strict rule: Dry mode is NOT permitted to write to results/
   if (session.isDry && partialOutPath && isResultsPath(partialOutPath)) {
-    throw new Error('ATURAN KERAS: Mode dry TIDAK boleh dipakai untuk menulis ke results/');
+    throw new Error('HARD RULE: Dry mode CANNOT be used to write to results/');
   }
 
   const allResults = [];

@@ -267,7 +267,7 @@ test('signal 4: blocklist blocks on evidence and warns on unevidenced reports', 
       assert.equal(res.verdict, 'warn');
       const reason = res.reasons.find(r => r.signal === 'blocklist');
       assert.equal(reason?.level, 'warn');
-      assert.match(reason?.detail ?? '', /tanpa bukti|without evidence/i);
+      assert.match(reason?.detail ?? '', /without evidence/i);
     }
   }
 });
@@ -287,7 +287,7 @@ async function assertIgnoredWithoutEvidence(evidence, now) {
   assert.equal(res.verdict, 'warn');
   const reason = res.reasons.find(r => r.signal === 'blocklist');
   assert.equal(reason?.level, 'warn');
-  assert.match(reason?.detail ?? '', /tanpa bukti|without evidence/i);
+  assert.match(reason?.detail ?? '', /without evidence/i);
 }
 
 test('signal 4: note-only evidence is ignored as unverifiable', async () => {

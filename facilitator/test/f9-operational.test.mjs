@@ -34,7 +34,7 @@ const postJson = (url, body, headers = {}) =>
     body: typeof body === 'string' ? body : JSON.stringify(body),
   });
 
-test('F9 Step 2: Operasional - Banjir per IP (limiter)', async (t) => {
+test('F9 Step 2: Operational - Flood per IP (limiter)', async (t) => {
   const ipLimiter = createRateLimiter({ capacity: 3, refillPerSecond: 0.1 });
   const provider = fakeProvider();
   const relayer = makeRelayer({
@@ -119,7 +119,7 @@ test('F9 Step 2: Operasional - Banjir per IP (limiter)', async (t) => {
   }, { ipLimiter });
 });
 
-test('F9 Step 2: Operasional - Hash tx acak ke /status', async (t) => {
+test('F9 Step 2: Operational - Random tx hash to /status', async (t) => {
   const provider = fakeProvider();
   let rpcCalls = 0;
   provider.viewTransactionStatusWithReceipts = async () => {
@@ -208,7 +208,7 @@ test('F9 Step 2: Operasional - Hash tx acak ke /status', async (t) => {
   });
 });
 
-test('F9 Step 2: Operasional - Saldo relayer rendah', async (t) => {
+test('F9 Step 2: Operational - Low relayer balance', async (t) => {
   const minBalance = 1_000_000_000_000_000_000_000_000n; // 1 NEAR
   let currentBalance = 500_000_000_000_000_000_000_000n; // 0.5 NEAR (low)
   let balanceLookups = 0;
@@ -306,7 +306,7 @@ test('F9 Step 2: Operasional - Saldo relayer rendah', async (t) => {
   });
 });
 
-test('F9 Step 2: Operasional - RPC lambat, mati, mengembalikan sampah, terpotong', async (t) => {
+test('F9 Step 2: Operational - RPC slow, dead, returns garbage, truncated', async (t) => {
   await t.test('RPC viewBlock times out -> UPSTREAM_ERROR', async () => {
     const hangProvider = {
       ...fakeProvider(),
@@ -487,7 +487,7 @@ test('F9 Step 2: Operasional - RPC lambat, mati, mengembalikan sampah, terpotong
   });
 });
 
-test('F9 Step 2: Operasional - Replay setelah restart (dedupe persisten)', async (t) => {
+test('F9 Step 2: Operational - Replay after restart (persistent dedupe)', async (t) => {
   const tmpDir = mkdtempSync(join(tmpdir(), 'f9-dedupe-'));
   const dbPath = join(tmpDir, 'test-persistent.db');
 
@@ -557,7 +557,7 @@ test('F9 Step 2: Operasional - Replay setelah restart (dedupe persisten)', async
   }
 });
 
-test('F9 Step 2: Operasional - Pekerjaan relay gagal tidak menahan antrean', async (t) => {
+test('F9 Step 2: Operational - Failed relay job does not stall queue', async (t) => {
   let submitCount = 0;
   const r = makeRelayer({
     provider: fakeProvider(),

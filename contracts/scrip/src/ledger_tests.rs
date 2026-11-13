@@ -1,4 +1,4 @@
-//! Tests for H2: per-token ledger (buku besar saldo per token di kontrak).
+//! Tests for H2: per-token ledger (per-token balance ledger in the contract).
 //!
 //! Enforces the global invariant:
 //! ledger[token] == SUM(deposited - spent - withdrawn) across all mandates for that token.

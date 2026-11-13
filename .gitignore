@@ -18,7 +18,7 @@ priv_key*
 .facilitator*
 .DS_Store
 
-# Catatan kerja internal (web)
+# Internal working notes (web)
 web/docs/
 
 # Stryker mutation testing artefacts

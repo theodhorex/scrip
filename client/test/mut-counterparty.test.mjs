@@ -291,7 +291,7 @@ test('signal 3 prior_interaction: count boundary kills <= 0 vs < 0 mutant', asyn
     assert.deepEqual(reason, {
       signal: 'prior_interaction',
       level: 'warn',
-      detail: 'New receiver for this agent (penerima baru bagi agen ini)',
+      detail: 'New receiver for this agent',
       source: 'interactions'
     });
   }
@@ -481,7 +481,7 @@ test('signal 4 blocklist: base58 forbidden chars (0, O, I, l) are rejected as ev
     const res = await checkCounterparty({ receiver: 'target.near', providers });
     const reason = res.reasons.find((r) => r.signal === 'blocklist');
     assert.equal(reason.level, 'warn');
-    assert.equal(reason.detail, 'Blocklist entry ignored: report without evidence (laporan tanpa bukti)');
+    assert.equal(reason.detail, 'Blocklist entry ignored: report without evidence');
   }
 });
 

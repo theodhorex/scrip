@@ -80,7 +80,7 @@
         {
           "signal": "prior_interaction",
           "level": "warn",
-          "detail": "New receiver for this agent (penerima baru bagi agen ini)",
+          "detail": "New receiver for this agent",
           "source": "interactions"
         },
         {
@@ -121,7 +121,7 @@
         {
           "signal": "prior_interaction",
           "level": "warn",
-          "detail": "New receiver for this agent (penerima baru bagi agen ini)",
+          "detail": "New receiver for this agent",
           "source": "interactions"
         },
         {
@@ -145,7 +145,7 @@
       "signed": false,
       "signCalls": 0,
       "signResult": null,
-      "reason": "blocklist: Blocklist entry ignored: report without evidence (laporan tanpa bukti)",
+      "reason": "blocklist: Blocklist entry ignored: report without evidence",
       "reasons": [
         {
           "signal": "account_age",
@@ -162,20 +162,20 @@
         {
           "signal": "prior_interaction",
           "level": "warn",
-          "detail": "New receiver for this agent (penerima baru bagi agen ini)",
+          "detail": "New receiver for this agent",
           "source": "interactions"
         },
         {
           "signal": "blocklist",
           "level": "warn",
-          "detail": "Blocklist entry ignored: report without evidence (laporan tanpa bukti)",
+          "detail": "Blocklist entry ignored: report without evidence",
           "source": "blocklist"
         }
       ],
       "error": "GuardDeniedError: Execution denied after warning",
       "expectedVerdict": "warn",
       "expectation": "warn, not block (report ignored)",
-      "logLine": "2026-11-02T03:23:53.183Z | unevidenced-report | unverified-report.testnet | warn | blocklist: Blocklist entry ignored: report without evidence (laporan tanpa bukti) | denied",
+      "logLine": "2026-11-02T03:23:53.183Z | unevidenced-report | unverified-report.testnet | warn | blocklist: Blocklist entry ignored: report without evidence | denied",
       "pass": true
     }
   ],

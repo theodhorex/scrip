@@ -30,7 +30,7 @@ function buildLargeJsonPayload(targetBytes) {
 }
 
 // =============================================================================
-// CATEGORY 5: Akses dan Identitas HTTP (50 kasus: KAT-B-05-101 .. KAT-B-05-150)
+// CATEGORY 5: HTTP Access and Identity (50 cases: KAT-B-05-101 .. KAT-B-05-150)
 // =============================================================================
 
 function generateCategory5Extra() {
@@ -295,7 +295,7 @@ function generateCategory5Extra() {
 }
 
 // =============================================================================
-// CATEGORY 7: Gas dan Sumber Daya (45 kasus: KAT-B-07-101 .. KAT-B-07-145)
+// CATEGORY 7: Gas and Resources (45 cases: KAT-B-07-101 .. KAT-B-07-145)
 // =============================================================================
 
 function generateCategory7Extra() {
@@ -432,7 +432,7 @@ function generateCategory7Extra() {
 }
 
 // =============================================================================
-// CATEGORY 8: Format HTTP dan Parsing (60 kasus: KAT-B-08-101 .. KAT-B-08-160)
+// CATEGORY 8: HTTP Format and Parsing (60 cases: KAT-B-08-101 .. KAT-B-08-160)
 // =============================================================================
 
 function generateCategory8Extra() {
@@ -580,7 +580,7 @@ function generateCategory8Extra() {
 }
 
 // =============================================================================
-// CATEGORY 9: Fasilitator Operasional HTTP (50 kasus: KAT-B-09-101 .. KAT-B-09-150)
+// CATEGORY 9: Facilitator Operational HTTP (50 cases: KAT-B-09-101 .. KAT-B-09-150)
 // =============================================================================
 
 function generateCategory9Extra() {
@@ -831,7 +831,7 @@ function generateCategory9Extra() {
 }
 
 // =============================================================================
-// CATEGORY 12: Absurd dan Di Luar Model Ancaman (45 kasus: KAT-B-12-101 .. KAT-B-12-145)
+// CATEGORY 12: Absurd and Beyond Threat Model (45 cases: KAT-B-12-101 .. KAT-B-12-145)
 // =============================================================================
 
 function generateCategory12Extra() {

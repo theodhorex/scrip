@@ -1,92 +1,92 @@
 # Scrip Attack Catalog
 
-Kerangka katalog serangan terstruktur untuk membuktikan ketahanan protokol Scrip di berbagai skenario eksekusi (lapis A-E) sesuai `web/docs/RENCANA_ATTACK_2500.md` dan `.agy/BRIEF_BACKEND.md`.
+Structured attack catalog framework proving Scrip protocol resilience across execution layers (Layers A-E) according to `web/docs/RENCANA_ATTACK_2500.md` and `.agy/BRIEF_BACKEND.md`.
 
-## Definisi Label Hasil
+## Result Label Definitions
 
-Hasil eksekusi serangan diklasifikasikan ke dalam 4 label objektif:
-- `BLOCKED`: Serangan ditolak dengan kode galat/pengecualian yang diharapkan, tanpa perubahan saldo maupun mutasi state yang tidak sah.
-- `INERT`: Input absurd atau tidak valid yang tidak berpengaruh apa pun pada sistem dan tidak menyebabkan crash atau kegagalan tak terduga.
-- `OUT_OF_SCOPE`: Skenario di luar model ancaman (misal: kunci full-access bocor, kontrak token berbahaya, RPC berbohong); tidak diklaim dicegah oleh protokol, dicatat secara jujur sebagai batasan yang diakui.
-- `BREACH`: Serangan yang berhasil menembus batasan keamanan sistem. Setiap temuan BREACH wajib dilaporkan apa adanya dan tidak boleh disembunyikan.
+Attack execution results fall into 4 objective labels:
+- `BLOCKED`: The attack was rejected with the expected error code or exception, without balance changes or unauthorized state mutation.
+- `INERT`: Absurd or invalid input that had no effect on the system and caused no crash or unexpected failure.
+- `OUT_OF_SCOPE`: Scenario outside the threat model (e.g., leaked full-access key, malicious token contract, lying RPC); not claimed as prevented by the protocol, recorded honestly as a recognized boundary.
+- `BREACH`: An attack that penetrated system security boundaries. Every BREACH finding must be reported directly without omission.
 
-## Definisi Verdict
+## Verdict Definitions
 
-- `PASS`: Hasil eksekusi `actual` sama dengan `expected` (label dan code cocok).
-- `FAIL`: Hasil eksekusi `actual` berbeda dari `expected` desain.
-- `BREACH`: Serangan berhasil menembus proteksi (`actual.label === 'BREACH'`).
-- `SKIPPED`: Eksekutor untuk lapis yang bersangkutan belum tersedia (dihitung terpisah, tidak pernah dianggap PASS).
+- `PASS`: The `actual` execution result matches the `expected` design (both label and code match).
+- `FAIL`: The `actual` execution result differs from the `expected` design.
+- `BREACH`: The attack bypassed protection (`actual.label === 'BREACH'`).
+- `SKIPPED`: The executor for the relevant layer is not yet available (counted separately, never counted as PASS).
 
-## Cara Menjalankan
+## Running the Catalog
 
-Jalankan seluruh kasus contoh untuk lapis C (klien dan parser offline):
+Run all sample cases for Layer C (offline client and parser):
 ```bash
 node scripts/attack-catalog/run.mjs --layers C
 ```
 
-Opsi CLI yang tersedia:
+Available CLI options:
 ```bash
-# Menentukan lapisan yang dijalankan
+# Specify which layers to run
 node scripts/attack-catalog/run.mjs --layers C
 
-# Menentukan jalur berkas keluaran
+# Specify output file path
 node scripts/attack-catalog/run.mjs --layers C --out results/attack-catalog.json
 
-# Menentukan batas waktu per kasus (milidetik)
+# Specify timeout per case (milliseconds)
 node scripts/attack-catalog/run.mjs --layers C --timeout 3000
 ```
 
-Secara default, hasil eksekusi disimpan ke `scripts/attack-catalog/.out/attack-catalog.json` (diabaikan oleh git).
+By default, execution results are saved to `scripts/attack-catalog/.out/attack-catalog.json` (ignored by git).
 
-Menjalankan seluruh pengujian unit katalog:
+Run all catalog unit tests:
 ```bash
 node --test scripts/attack-catalog
 ```
 
-## Cara Menambah Kasus Baru
+## Adding New Cases
 
-1. Buat atau perbarui generator kasus di `scripts/attack-catalog/cases/`:
-   - Gunakan pendekatan parametrik (vektor variasi parameter) alih-alih mengetik objek berulang.
-   - Tetapkan `id` unik (format rekomendasi: `KAT-<LAPIS>-<KATEGORI>-<NOMOR>`).
-   - Tentukan `category` (1..12), `layer` ('A'|'B'|'C'|'D'|'E'), `title`, dan `params`.
-   - Tentukan `expected` berdasarkan **DESAIN/SPESIFIKASI**, bukan dari hasil eksekusi kode saat ini.
-2. Daftarkan kasus baru pada `getSampleCases()` di `scripts/attack-catalog/cases/index.mjs`.
-3. Sediakan fungsi eksekutor lapis di `defaultExecutors` jika menguji lapis baru.
+1. Create or update case generators in `scripts/attack-catalog/cases/`:
+   - Use parametric generation (parameter variation vectors) rather than repetitive object literals.
+   - Assign a unique `id` (recommended format: `KAT-<LAYER>-<CATEGORY>-<NUMBER>`).
+   - Specify `category` (1..12), `layer` ('A'|'B'|'C'|'D'|'E'), `title`, and `params`.
+   - Specify `expected` based on **DESIGN/SPECIFICATION**, not current implementation output.
+2. Register new cases in `getSampleCases()` in `scripts/attack-catalog/cases/index.mjs`.
+3. Provide layer executor functions in `defaultExecutors` if testing a new layer.
 
-## Aturan Kejujuran (Strict Honesty)
+## Strict Honesty Rules
 
-Jika terdapat kasus di mana hasil nyata (`actual`) berbeda dari ekspektasi desain (`expected`), **LAPORKAN sebagai FAIL**. Dilarang mengubah nilai `expected` secara diam-diam hanya untuk membuat hasil laporan menjadi hijau.
+When an actual result (`actual`) differs from design expectation (`expected`), **REPORT it as FAIL**. Never change `expected` silently just to produce green test reports.
 
-### Catatan Koreksi Desain Lapis C
-- `KAT-C-02-01` (jumlah "0"): harapan awal salah tempat: lapis C hanya memeriksa format; penolakan nol diuji di lapis A -> expected diubah menjadi INERT.
+### Layer C Design Correction Notes
+- `KAT-C-02-01` (amount "0"): original expectation was misplaced: Layer C only validates format; zero rejection is tested in Layer A -> expected changed to INERT.
 
-## Lapis E (Harness Testnet)
+## Layer E (Testnet Harness)
 
-Harness eksekusi end-to-end pada NEAR Testnet melalui fasilitator riil / RPC (`scripts/attack-catalog/layers/testnet.mjs`).
+End-to-end execution harness on NEAR Testnet via real facilitator / RPC (`scripts/attack-catalog/layers/testnet.mjs`).
 
-### Aturan Keamanan & Operasional
-- **Rate Limiting**: Dibatasi ketat `<= 8 rps` menggunakan Token-Bucket limiter.
-- **Fail-Closed & State Audit**: Membandingkan status mandat (`get_mandate`) dan saldo sebelum vs sesudah; kasus `BLOCKED` yang mengubah state diklasifikasikan sebagai `BREACH`.
-- **Eksekusi Per Gelombang**: Kasus diproses dalam gelombang `<= 60 kasus` dengan penyimpanan hasil parsial untuk mencegah kehilangan progres akibat timeout.
-- **Siklus Hidup & Pemulihan**: Berkas `.recovery-catalog-<ts>.json` (mode `0600`) wajib dibuat SEBELUM akun on-chain dibuat. Di blok `finally`, seluruh mandat di-revoke & withdraw, saldo NEAR/USDC disapu ke funder, dan akun dihapus. Berkas pemulih hanya dihapus bila akun sisa bernilai `[]`.
+### Safety and Operational Rules
+- **Rate Limiting**: Strictly limited to `<= 8 rps` via a Token-Bucket limiter.
+- **Fail-Closed & State Audit**: Compares mandate status (`get_mandate`) and balances before vs after; `BLOCKED` cases that mutate state are classified as `BREACH`.
+- **Wave Execution**: Cases process in waves `<= 60 cases` with partial result saves to prevent progress loss from timeouts.
+- **Lifecycle & Recovery**: A `.recovery-catalog-<ts>.json` file (`0600` mode) must exist BEFORE on-chain accounts are created. In the `finally` block, all mandates are revoked & withdrawn, NEAR/USDC balances sweep back to the funder, and accounts are deleted. The recovery file is removed only when leftover accounts equal `[]`.
 
-### Perkiraan Biaya
-Berdasarkan `web/docs/RENCANA_ATTACK_2500.md`:
-- **Deploy Kontrak**: ~1.4 NEAR (biaya storage sekali deploy; di-refund ke funder saat deleteAccount).
-- **Mandat**: ~2–3 NEAR untuk 40–60 mandat (0.05 NEAR per mandat deposit awal; ditarik kembali via withdraw).
-- **Relayer Gas**: ~0.15 NEAR untuk ~600 transaksi relay (~0.00025 NEAR per tx, ditanggung relayer).
-- **USDC**: Sejumlah kecil unit token USDC testnet untuk pengujian pembayaran sah (disapu kembali ke funder).
-- **Kebutuhan Saldo Funder**: Minimal 5 NEAR di akun funder dan 3 NEAR di akun relayer.
+### Cost Estimates
+Based on `web/docs/RENCANA_ATTACK_2500.md`:
+- **Contract Deploy**: ~1.4 NEAR (one-time storage cost; refunded to funder upon deleteAccount).
+- **Mandates**: ~2–3 NEAR for 40–60 mandates (0.05 NEAR initial deposit per mandate; recovered via withdraw).
+- **Relayer Gas**: ~0.15 NEAR for ~600 relay transactions (~0.00025 NEAR per tx, covered by relayer).
+- **USDC**: Small testnet USDC amount for valid payment testing (swept back to funder).
+- **Funder Balance Requirements**: Minimum 5 NEAR in funder account and 3 NEAR in relayer account.
 
-### Cara Menjalankan
-1. **Mode Uji Unit & Dry Run (Offline / Tanpa Jaringan)**:
+### Execution Instructions
+1. **Unit Test & Dry Run Mode (Offline / No Network)**:
    ```bash
    node --test scripts/attack-catalog/test/testnet.test.mjs
    node --test scripts/attack-catalog
    ```
-   *Catatan: Mode dry menggunakan simulasi status dinamis di memori dan dilarang menulis ke direktori `results/`.*
+   *Note: Dry mode uses in-memory dynamic state simulation and cannot write to the `results/` directory.*
 
-2. **Mode Eksekusi Testnet Nyata (Hanya dijalankan oleh Project Manager)**:
+2. **Real Testnet Execution Mode (Project Manager Only)**:
    ```javascript
    import { createTestnetSession, runLayerEInWaves } from './layers/testnet.mjs';
 
@@ -101,49 +101,49 @@ Berdasarkan `web/docs/RENCANA_ATTACK_2500.md`:
    }
    ```
 
-## Menjalankan lapis E dan menggabungkan
+## Running Layer E and Merging Results
 
-### 1. Runner Lapis E (`run-testnet.mjs`)
+### 1. Layer E Runner (`run-testnet.mjs`)
 
-Runner CLI khusus untuk menjalankan kasus serangan Lapis E dalam gelombang terkontrol (maksimum 60 kasus per gelombang, limiter `<= 8 rps`):
+Dedicated CLI runner to execute Layer E attack cases in controlled waves (maximum 60 cases per wave, limiter `<= 8 rps`):
 
 ```bash
-# Menjalankan gelombang ke-1 dalam mode dry (offline / tanpa jaringan)
+# Run wave 1 in dry mode (offline / no network)
 node scripts/attack-catalog/run-testnet.mjs --wave 1 --dry
 
-# Menjalankan rentang indeks tertentu
+# Run a specific index range
 node scripts/attack-catalog/run-testnet.mjs --from 0 --to 60 --dry
 
-# Menjalankan kasus pembanding naif (baseline)
+# Run naive baseline comparison cases
 node scripts/attack-catalog/run-testnet.mjs --comparison --dry
 
-# Menentukan jalur berkas keluaran khusus
+# Specify custom output path
 node scripts/attack-catalog/run-testnet.mjs --wave 1 --dry --out scripts/attack-catalog/.out/testnet-wave-1.json
 ```
 
-**Karakteristik & Penjagaan:**
-- Sesi testnet diinisialisasi sekali per perintah eksekusi.
-- Hasil sebagian (partial results) ditulis bertahap ke berkas keluaran setelah setiap kasus diproses, mencegah hilangnya progres jika terjadi abort.
-- `closeSession()` dipanggil secara ketat di blok `finally`, serta pada sinyal interupsi `SIGINT` dan `SIGTERM`.
-- Mencetak ringkasan hasil (PASS, FAIL, BREACH), jumlah total txHash yang terkumpul (tanpa mencetak daftar hash penuh ke log), dan memastikan sisa akun adalah `[]`.
-- Pada mode `--dry`, dilarang keras menulis langsung ke direktori `results/`. Setiap kasus ditandai dengan `source: "dry"` (atau `source: "real"` pada eksekusi nyata).
+**Guardrails:**
+- Initializes testnet session once per run command.
+- Writes partial results incrementally to the output file after each processed case to prevent loss on abort.
+- Calls `closeSession()` strictly in `finally` blocks, as well as on `SIGINT` and `SIGTERM`.
+- Prints execution summary (PASS, FAIL, BREACH), collected txHash count (without dumping full hash lists to log), and verifies remaining accounts are `[]`.
+- In `--dry` mode, forbids writing directly to `results/`. Every case is tagged with `source: "dry"` (or `source: "real"` on real runs).
 
-### 2. Penggabung Hasil Katalog (`merge.mjs`)
+### 2. Catalog Result Merging (`merge.mjs`)
 
-Membaca seluruh berkas hasil per lapis (seperti `.out/attack-catalog.json` untuk A/B/C, `.out/testnet-wave-*.json` untuk E, `.out/layer-a.json`, `.out/layer-d.json`) dan menggabungkannya menjadi satu katalog utuh:
+Reads layer result files (such as `.out/attack-catalog.json` for A/B/C, `.out/testnet-wave-*.json` for E, `.out/layer-a.json`, `.out/layer-d.json`) and merges them into one complete catalog:
 
 ```bash
-# Menggabungkan seluruh hasil yang ada di .out/ ke .out/attack-catalog.merged.json
+# Merge all existing outputs in .out/ into .out/attack-catalog.merged.json
 node scripts/attack-catalog/merge.mjs
 
-# Menentukan berkas input dan output tertentu
+# Specify specific input and output files
 node scripts/attack-catalog/merge.mjs --inputs .out/attack-catalog.json,.out/testnet-wave-1.json --out .out/merged.json
 
-# Mempublikasikan hasil ke results/attack-catalog.json (Hanya untuk hasil eksekusi nyata!)
+# Publish results to results/attack-catalog.json (Real testnet runs only!)
 node scripts/attack-catalog/merge.mjs --publish
 ```
 
-**Karakteristik & Penjagaan Keamanan:**
-- Menghasilkan ringkasan matriks dimensi 3: `kategori x lapis x label`.
-- Mengumpulkan daftar terpisah untuk seluruh kasus `BREACH`, kasus `FAIL`, jumlah `SKIPPED`, kasus `OUT_OF_SCOPE`, serta kasus pembanding naif (`comparisonCases`).
-- **Penjagaan Publikasi Ketat**: Menulis ke direktori `results/` hanya diperbolehkan dengan flag eksplisit `--publish`. Perintah akan **menolak keras dan gagal** jika ada satu pun kasus yang memiliki label `source: "dry"`.
+**Guardrails:**
+- Produces a 3-dimensional summary matrix: `category x layer x label`.
+- Separately indexes all `BREACH` cases, `FAIL` cases, `SKIPPED` counts, `OUT_OF_SCOPE` cases, and naive comparison cases (`comparisonCases`).
+- **Strict Publication Guard**: Writing to `results/` requires the explicit `--publish` flag. The command fails immediately if any included case has `source: "dry"`.

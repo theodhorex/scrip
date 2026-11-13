@@ -22,8 +22,8 @@ export const AMOUNT_VARIATIONS = [
     amount: '0',
     expectedLabel: 'INERT',
     expectedCode: null,
-    // Catatan tertulis: harapan awal salah tempat: lapis C hanya memeriksa format; penolakan nol diuji di lapis A
-    reason: 'harapan awal salah tempat: lapis C hanya memeriksa format; penolakan nol diuji di lapis A',
+    // Recorded note: the original expectation was in the wrong layer: Layer C only checks format; the zero rejection is tested in Layer A
+    reason: 'original expectation was in the wrong layer: Layer C only checks format; the zero rejection is tested in Layer A',
   },
   {
     subId: '02',

@@ -1,6 +1,6 @@
 # Scrip: Backend and Contract PRD v1.3 (Oct 30, 2026)
 
-Continuing PRD v1.2 (Obsidian: `Hackathon/NEAR/PRD Scrip v1.1 - spesifikasi, rencana, task.md`). This document contains only what CHANGED or REMAINS OPEN in contract, facilitator, client, testing, operations, and audit readiness, based on actual repo conditions and research (`reports/Riset backend dan kontrak Scrip.md`). Labels: **[proven]** directly tested/observed; **[research]** from sources in research report; **[decision]** PM decision.
+Continuing PRD v1.2 (an internal planning note, not in this repository). This document contains only what CHANGED or REMAINS OPEN in contract, facilitator, client, testing, operations, and audit readiness, based on actual repo conditions and research (`reports/Riset backend dan kontrak Scrip.md`). Labels: **[proven]** directly tested/observed; **[research]** from sources in research report; **[decision]** PM decision.
 
 ## 1. Actual Status (Oct 30)
 - [proven] Final contract deployed and tested on testnet: `results/gate.json` (2 valid payments, 5 rejected attacks, `OVER_BUDGET`, revoke, withdraw, 0 accounts remaining), `attack.json` (30 parallel requests: naive leaked 0.4, Scrip exact 1.0), `demo.json` (prompt injection). Nov 2 gate **passed**.

@@ -113,7 +113,7 @@ export async function runTestnetExecution(options = {}) {
   }
 
   if (casesToRun.length > 60) {
-    throw new RangeError(`Gelombang kasus melebihi batas maksimum 60 kasus (diminta: ${casesToRun.length})`);
+    throw new RangeError(`Case wave exceeds maximum limit of 60 cases (requested: ${casesToRun.length})`);
   }
 
   // 3. Resolve output destination
@@ -128,7 +128,7 @@ export async function runTestnetExecution(options = {}) {
 
   // Strict safety rule: dry mode cannot write to results/
   if (isDry && isResultsPath(outPath)) {
-    throw new Error('ATURAN KERAS: Mode dry TIDAK boleh dipakai untuk menulis ke results/');
+    throw new Error('HARD RULE: Dry mode CANNOT be used to write to results/');
   }
 
   // 4. Create or reuse session ONCE

@@ -878,7 +878,7 @@ pub(crate) fn build_category_10_cases() -> Vec<TestCaseDef> {
         });
     }
 
-    // 3. Payments on Revoked or Expired Mandates ("revoke lalu bayar", "mandat kedaluwarsa") (KAT-A-10-21 .. 30)
+    // 3. Payments on Revoked or Expired Mandates ("revoke then pay", "expired mandate") (KAT-A-10-21 .. 30)
     // 21: revoked mandate, payment 25
     cases.push(TestCaseDef {
         id: "KAT-A-10-21",

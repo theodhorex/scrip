@@ -64,7 +64,7 @@ function setupRelayer({
   return { relayer, calls, policy, limiter, keyVerifier, setTime: (v) => { t = v; } };
 }
 
-test('F9b Step 1: Kunci - Verifikasi tipe dan permission access key', async (t) => {
+test('F9b Step 1: Keys - Verification of access key type and permissions', async (t) => {
   await t.test('1.1 FullAccess key is rejected with KEY_NOT_ALLOWED and no submit', async () => {
     const { relayer, calls } = setupRelayer({ permission: 'FullAccess' });
     const { b64 } = await makeSigned();
@@ -152,7 +152,7 @@ test('F9b Step 1: Kunci - Verifikasi tipe dan permission access key', async (t) 
   });
 });
 
-test('F9b Step 2: Tanda tangan - Sampel 64 posisi bit flip (property-based testing)', async (t) => {
+test('F9b Step 2: Signature - 64 bit flip sample positions (property-based testing)', async (t) => {
   const policy = loadPolicy(basePolicy);
   const { b64 } = await makeSigned();
   const rawBytes = Buffer.from(b64, 'base64');
@@ -221,8 +221,8 @@ test('F9b Step 2: Tanda tangan - Sampel 64 posisi bit flip (property-based testi
   });
 });
 
-test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas nonce', async (t) => {
-  await t.test('3.1 Dobel delegate persis (replay attack) ditolak DUPLICATE_DELEGATE (409)', async () => {
+test('F9b Step 3: Delegate - Validation of duplication, account boundaries, expiry, and nonce limits', async (t) => {
+  await t.test('3.1 Exact double delegate (replay attack) rejected with DUPLICATE_DELEGATE (409)', async () => {
     const { relayer, calls } = setupRelayer();
     const { b64 } = await makeSigned({ nonce: 10n });
     const r1 = await relayer.relay(b64);
@@ -236,7 +236,7 @@ test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas n
     assert.equal(calls.submit, 1, 'Duplicate delegate must never be submitted twice');
   });
 
-  await t.test('3.2 Nonce delegate lama / sama dengan on-chain access key ditolak NONCE_TOO_LOW', async () => {
+  await t.test('3.2 Stale delegate nonce / equal to on-chain access key rejected with NONCE_TOO_LOW', async () => {
     const { relayer, calls } = setupRelayer({ keyNonce: 20n });
     // Nonce lower than keyNonce
     const rLower = await relayer.relay((await makeSigned({ nonce: 19n })).b64);
@@ -255,7 +255,7 @@ test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas n
     assert.equal(calls.submit, 1);
   });
 
-  await t.test('3.3 Delegate untuk akun pengirim asing (tidak ada di allowedAgents) ditolak AGENT_NOT_ALLOWED', async () => {
+  await t.test('3.3 Delegate for foreign sender account (not in allowedAgents) rejected with AGENT_NOT_ALLOWED', async () => {
     const { relayer, calls } = setupRelayer();
     const { b64 } = await makeSigned({ senderId: 'foreign.testnet' });
     const res = await relayer.relay(b64);
@@ -264,7 +264,7 @@ test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas n
     assert.equal(calls.submit, 0);
   });
 
-  await t.test('3.4 Delegate untuk akun pengirim non-testnet ditolak AGENT_NOT_ALLOWED', async () => {
+  await t.test('3.4 Delegate for non-testnet sender account rejected with AGENT_NOT_ALLOWED', async () => {
     const { relayer, calls } = setupRelayer();
     const { b64 } = await makeSigned({ senderId: 'mainnet_account.near' });
     const res = await relayer.relay(b64);
@@ -273,7 +273,7 @@ test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas n
     assert.equal(calls.submit, 0);
   });
 
-  await t.test('3.5 Delegate untuk kontrak penerima salah ditolak WRONG_RECEIVER', async () => {
+  await t.test('3.5 Delegate for wrong receiver contract rejected with WRONG_RECEIVER', async () => {
     const { relayer, calls } = setupRelayer();
     const { b64 } = await makeSigned({ receiverId: 'other-app.testnet' });
     const res = await relayer.relay(b64);
@@ -282,7 +282,7 @@ test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas n
     assert.equal(calls.submit, 0);
   });
 
-  await t.test('3.6 Blok kedaluwarsa di masa lalu / margin tipis ditolak EXPIRES_TOO_SOON', async () => {
+  await t.test('3.6 Expiry block in the past / thin margin rejected with EXPIRES_TOO_SOON', async () => {
     const { relayer, calls } = setupRelayer({ height: 1000 });
     // Margin is 5 in basePolicy. Current height = 1000.
     // maxBlockHeight = 1004 < 1000 + 5 -> EXPIRES_TOO_SOON
@@ -297,7 +297,7 @@ test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas n
     assert.equal(calls.submit, 0);
   });
 
-  await t.test('3.7 Blok kedaluwarsa melampaui jendela window ditolak EXPIRES_TOO_FAR', async () => {
+  await t.test('3.7 Expiry block beyond window rejected with EXPIRES_TOO_FAR', async () => {
     const { relayer, calls } = setupRelayer({ height: 1000 });
     // Window is 200. Current height = 1000.
     // maxBlockHeight = 1201 > 1000 + 200 -> EXPIRES_TOO_FAR
@@ -307,7 +307,7 @@ test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas n
     assert.equal(calls.submit, 0);
   });
 
-  await t.test('3.8 Nonce 0 pada delegateAction ditolak NONCE_INVALID', async () => {
+  await t.test('3.8 Nonce 0 on delegateAction rejected with NONCE_INVALID', async () => {
     const { relayer, calls } = setupRelayer();
     const { b64 } = await makeSigned({ nonce: 0n });
     const res = await relayer.relay(b64);
@@ -316,7 +316,7 @@ test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas n
     assert.equal(calls.submit, 0);
   });
 
-  await t.test('3.9 Nonce sangat besar u64::MAX (2^64 - 1) diterima jika di atas keyNonce', async () => {
+  await t.test('3.9 Very large nonce u64::MAX (2^64 - 1) accepted if above keyNonce', async () => {
     const { relayer, calls } = setupRelayer({ keyNonce: 1000n });
     const u64Max = (1n << 64n) - 1n; // 18446744073709551615n
     const { b64 } = await makeSigned({ nonce: u64Max });
@@ -325,7 +325,7 @@ test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas n
     assert.equal(calls.submit, 1);
   });
 
-  await t.test('3.10 Nonce melebihi u64::MAX pada call args request_payment ditolak BAD_CALL_ARGS', async () => {
+  await t.test('3.10 Nonce exceeding u64::MAX in request_payment call args rejected with BAD_CALL_ARGS', async () => {
     const { relayer, calls } = setupRelayer();
     const overflowNonceStr = (1n << 64n).toString();
     const arg = Buffer.from(JSON.stringify({
@@ -343,7 +343,7 @@ test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas n
     assert.equal(calls.submit, 0);
   });
 
-  await t.test('3.11 Nonce 2^64 pada delegateAction wrap-around modulo 2^64 jadi 0 -> NONCE_INVALID', async () => {
+  await t.test('3.11 Nonce 2^64 on delegateAction modulo wrap-around to 0 -> NONCE_INVALID', async () => {
     const { relayer, calls } = setupRelayer();
     const exactly2To64 = 1n << 64n;
     const { b64 } = await makeSigned({ nonce: exactly2To64 });
@@ -353,7 +353,7 @@ test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas n
     assert.equal(calls.submit, 0);
   });
 
-  await t.test('3.12 Nonce negatif pada call args request_payment ditolak BAD_CALL_ARGS', async () => {
+  await t.test('3.12 Negative nonce in request_payment call args rejected with BAD_CALL_ARGS', async () => {
     const { relayer, calls } = setupRelayer();
     const arg = Buffer.from(JSON.stringify({
       mandate_id: 1,
@@ -370,7 +370,7 @@ test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas n
     assert.equal(calls.submit, 0);
   });
 
-  await t.test('3.13 Delegate dengan aksi bukan functionCall (Transfer) ditolak NOT_FUNCTION_CALL', async () => {
+  await t.test('3.13 Delegate with non-functionCall action (Transfer) rejected with NOT_FUNCTION_CALL', async () => {
     const { relayer, calls } = setupRelayer();
     const { b64 } = await makeSigned({
       actions: [actions.transfer(100n)],
@@ -381,7 +381,7 @@ test('F9b Step 3: Delegate - Validasi duplikasi, batas akun, expiry, dan batas n
     assert.equal(calls.submit, 0);
   });
 
-  await t.test('3.14 Delegate dengan nol aksi ditolak WRONG_ACTION_COUNT', async () => {
+  await t.test('3.14 Delegate with zero actions rejected with WRONG_ACTION_COUNT', async () => {
     const { relayer, calls } = setupRelayer();
     const { b64 } = await makeSigned({
       actions: [],

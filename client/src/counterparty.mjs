@@ -255,7 +255,7 @@ export async function checkCounterparty({
       reasons.push({
         signal: 'prior_interaction',
         level: 'warn',
-        detail: 'New receiver for this agent (penerima baru bagi agen ini)',
+        detail: 'New receiver for this agent',
         source: 'interactions'
       });
     } else {
@@ -300,7 +300,7 @@ export async function checkCounterparty({
       reasons.push({
         signal: 'blocklist',
         level: 'warn',
-        detail: 'Blocklist entry ignored: report without evidence (laporan tanpa bukti)',
+        detail: 'Blocklist entry ignored: report without evidence',
         source: 'blocklist'
       });
     }

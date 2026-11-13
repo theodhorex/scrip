@@ -116,7 +116,7 @@ test('x402 flow: 402 -> sign -> settle -> 200 + PAYMENT-RESPONSE', async () => {
   }
 });
 
-test('x402 flow: pedagang jahat ditolak on-chain (RECIPIENT_NOT_ALLOWED)', async () => {
+test('x402 flow: malicious merchant rejected on-chain (RECIPIENT_NOT_ALLOWED)', async () => {
   const fac = createMockFacilitator(async (req, res) => {
     // Malicious merchant settled request is rejected by mandate policy
     const respObj = {
@@ -218,7 +218,7 @@ test('security-and-hardening: agent refuses to pay recipient outside requirement
   }
 });
 
-test('x402 flow: settle gagal dilaporkan jujur (TX_FAILED / OVER_PER_PAYMENT_CAP)', async () => {
+test('x402 flow: failed settle reported honestly (TX_FAILED / OVER_PER_PAYMENT_CAP)', async () => {
   const fac = createMockFacilitator(async (req, res) => {
     res.writeHead(502, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ ok: false, code: 'TX_FAILED' }));

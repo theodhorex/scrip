@@ -168,7 +168,7 @@ test('mut-killer: evidence validation trimming and URL error handling', async ()
   assert.equal(resBadUrl.verdict, 'warn');
   const blReason = resBadUrl.reasons.find((r) => r.signal === 'blocklist');
   assert.equal(blReason.level, 'warn');
-  assert.equal(blReason.detail, 'Blocklist entry ignored: report without evidence (laporan tanpa bukti)');
+  assert.equal(blReason.detail, 'Blocklist entry ignored: report without evidence');
 });
 
 test('mut-killer: default providers accountState RPC behavior', async () => {
@@ -632,7 +632,7 @@ test('mut-killer: omitted provider functions produce proper signals instead of t
 
   const interReason = res.reasons.find((r) => r.signal === 'prior_interaction');
   assert.equal(interReason.source, 'interactions');
-  assert.equal(interReason.detail, 'New receiver for this agent (penerima baru bagi agen ini)');
+  assert.equal(interReason.detail, 'New receiver for this agent');
 
   const blReason = res.reasons.find((r) => r.signal === 'blocklist');
   assert.equal(blReason.source, 'blocklist');

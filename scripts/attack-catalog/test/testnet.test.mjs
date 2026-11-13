@@ -300,7 +300,7 @@ test('runLayerEInWaves forbids writing to results/ in dry mode', async () => {
           partialOutPath: join(REPO_ROOT, 'results', 'attack-catalog.json'),
         });
       },
-      /Mode dry TIDAK boleh dipakai untuk menulis ke results\//
+      /Dry mode CANNOT be used to write to results\//
     );
   } finally {
     await session.closeSession();

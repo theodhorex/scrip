@@ -1,19 +1,19 @@
-# Triase Kasus FAIL Katalog Serangan (Lapis B dan Lapis C)
+# Attack Catalog FAIL Triage (Layer B and Layer C)
 
-Dokumen ini menyajikan analisis triase objektif dan menyeluruh terhadap seluruh **68 kasus FAIL** (64 kasus di Lapis B dan 4 kasus di Lapis C) yang teridentifikasi dalam kerangka katalog serangan protokol Scrip, sesuai spesifikasi `.agy/BRIEF_BACKEND.md` dan `scripts/attack-catalog/README.md`.
+This document triages all **68 FAIL cases** (64 in Layer B, 4 in Layer C) from the Scrip protocol attack catalog, per `.agy/BRIEF_BACKEND.md` and `scripts/attack-catalog/README.md`.
 
-Setiap kasus dinilai tanpa mengubah file pengujian maupun kode produksi, dan diklasifikasikan ke dalam 3 kelas standar:
-- **A. SAFE_MISMATCH**: Sistem tetap aman dan menolak serangan (fail-closed), namun kode galat atau format status yang dikembalikan berbeda dari ekspektasi pengujian.
-- **B. HARNESS_ARTIFACT**: Kasus pengujian tidak mengevaluasi target yang dimaksudkan karena batasan harness/runner (misal: state rate-limit terisolasi, normalisasi otomatis client HTTP, atau header wajib tidak disertakan).
-- **C. REAL_DEFECT**: Perilaku nyata tidak sesuai spesifikasi desain/kontrak yang memerlukan perbaikan kode sumber.
+Each case was assessed without changing test files or production code, and put into one of 3 classes:
+- **A. SAFE_MISMATCH**: The system stays safe and rejects the attack (fail-closed), but the error code or status format returned differs from what the test expects.
+- **B. HARNESS_ARTIFACT**: The test does not exercise its intended target because of a harness/runner limit (e.g. isolated rate-limit state, automatic normalization by the HTTP client, or a required header not sent).
+- **C. REAL_DEFECT**: Actual behavior violates the design spec or contract and needs a source code fix.
 
 ---
 
-## 1. Tabel Ringkasan Klasifikasi
+## 1. Classification Summary
 
-### Matriks Distribusi per Kategori dan Kelas
+### Distribution Matrix by Category and Class
 
-| Kategori Serangan | Jumlah Kasus FAIL | Kelas A (SAFE_MISMATCH) | Kelas B (HARNESS_ARTIFACT) | Kelas C (REAL_DEFECT) |
+| Attack Category | FAIL Cases | Class A (SAFE_MISMATCH) | Class B (HARNESS_ARTIFACT) | Class C (REAL_DEFECT) |
 | :--- | :---: | :---: | :---: | :---: |
 | **05. Agent Identity & Header Security** | 17 | 14 | 3 | 0 |
 | **07. Burst & Concurrency Limits** | 4 | 4 | 0 | 0 |
@@ -24,13 +24,13 @@ Setiap kasus dinilai tanpa mengubah file pengujian maupun kode produksi, dan dik
 
 ---
 
-## 2. Temuan Kelas C (REAL_DEFECT): Verifikasi Jalur dan Baris Kode
+## 2. Class C (REAL_DEFECT) Findings: Verified File Paths and Lines
 
-Dua kasus dalam Kategori 9 diidentifikasi sebagai **REAL_DEFECT**:
+Two cases in Category 9 are **REAL_DEFECT**:
 
-### `KAT-B-09-123` & `KAT-B-09-124`: Malformed RPC Block Height Dianggap Valid
-- **Jalur Berkas & Baris**: [`facilitator/src/relay.mjs:169-170`](<repo>/facilitator/src/relay.mjs#L169-L170)
-- **Kode Bermasalah**:
+### `KAT-B-09-123` & `KAT-B-09-124`: Malformed RPC Block Height Accepted as Valid
+- **File and lines**: [`facilitator/src/relay.mjs:169-170`](<repo>/facilitator/src/relay.mjs#L169-L170)
+- **Faulty code**:
   ```javascript
   const block = await withTimeout(provider.viewBlock({ finality: 'final' }), rpcTimeoutMs);
   const h = Number(block.header.height);
@@ -38,16 +38,16 @@ Dua kasus dalam Kategori 9 diidentifikasi sebagai **REAL_DEFECT**:
   lastHeight = Math.max(lastHeight, h);
   return h;
   ```
-- **Skenario Konkret & Bukti Kode**:
-  1. Pada `KAT-B-09-123`, mock RPC mengembalikan `{ header: { height: null } }`. Dalam JavaScript, `Number(null)` menghasilkan angka `0`.
-  2. Pada `KAT-B-09-124`, mock RPC mengembalikan `{ header: { height: -10 } }`. `Number(-10)` menghasilkan angka `-10`.
-  3. Evaluasi `Number.isSafeInteger(0)` dan `Number.isSafeInteger(-10)` keduanya bernilai `true`.
-  4. Akibatnya, `getHeight()` menganggap `0` dan `-10` sebagai tinggi blok final yang sah dan tidak melempar galat `bad height`. Nilai ini kemudian diteruskan ke fungsi `checkExpiry(v.maxBlockHeight, policy, currentBlockHeight)`.
-  5. Karena tinggi blok delegate (~1100) jauh lebih besar daripada `0 + maxBlockHeightWindow`, delegasi ditolak dengan kode `EXPIRES_TOO_FAR` bukan `UPSTREAM_ERROR`.
-- **Dampak Keamanan**:
-  Tidak terjadi kebocoran saldo maupun eksekusi relay liar (sistem tetap menolak transaksi / fail-closed melalui jalur kadaluarsa). Namun, pemrosesan respon RPC yang rusak melanggar prinsip "only a final height is honest" (`relay.mjs:168`).
-- **Usulan Perbaikan**:
-  Ubah validasi pada `facilitator/src/relay.mjs:170` menjadi:
+- **Scenario and code evidence**:
+  1. In `KAT-B-09-123`, the mock RPC returns `{ header: { height: null } }`. In JavaScript, `Number(null)` is `0`.
+  2. In `KAT-B-09-124`, the mock RPC returns `{ header: { height: -10 } }`. `Number(-10)` is `-10`.
+  3. `Number.isSafeInteger(0)` and `Number.isSafeInteger(-10)` are both `true`.
+  4. As a result, `getHeight()` treats `0` and `-10` as valid final block heights and does not throw `bad height`. The value is then passed to `checkExpiry(v.maxBlockHeight, policy, currentBlockHeight)`.
+  5. The delegate block height (~1100) is far above `0 + maxBlockHeightWindow`, so the delegate is rejected with `EXPIRES_TOO_FAR` instead of `UPSTREAM_ERROR`.
+- **Security impact**:
+  No balance leak and no stray relay execution (the system still rejects the transaction, fail-closed, via the expiry path). However, accepting a corrupt RPC response violates the principle "only a final height is honest" (`relay.mjs:168`).
+- **Proposed fix**:
+  Change the validation at `facilitator/src/relay.mjs:170` to:
   ```javascript
   if (typeof block?.header?.height !== 'number' || !Number.isSafeInteger(h) || h <= 0) {
     throw new Error('bad height');
@@ -56,148 +56,148 @@ Dua kasus dalam Kategori 9 diidentifikasi sebagai **REAL_DEFECT**:
 
 ---
 
-## 3. Analisis Kelompok Kasus Serupa
+## 3. Analysis of Similar Case Groups
 
-### Keluarga 1: Isolasi Jam Runner Mengosongkan Bucket Rate Limiting (Kelas B)
-- **Kasus Terkait**: `KAT-B-09-02`, `KAT-B-09-03`, `KAT-B-09-04`, `KAT-B-09-05` (4 kasus)
-- **Akar Masalah**: Runner Lapis B (`scripts/attack-catalog/layers/facilitator.mjs:240`) memajukan jam tiruan sebesar 5000 ms (`state.now += 5000`) sebelum mengeksekusi setiap kasus demi menjaga isolasi cache tinggi blok. Namun, token bucket IP rate limiter (`capacity: 20, refillPerSecond: 1`) ikut terisi kembali sebesar 5 token. Kasus-kasus ini tidak menyertakan parameter `floodCount: 25` mandiri dan keliru mengasumsikan status rate limit dari kasus `KAT-B-09-01` sebelumnya masih tertahan.
-- **Usulan Tindakan**: Tambahkan parameter `floodCount: 25` secara eksplisit pada setiap kasus di `scripts/attack-catalog/cases/category_9.mjs` agar tidak bergantung pada status kasus lain.
+### Family 1: Runner Clock Isolation Refills the Rate Limit Bucket (Class B)
+- **Related cases**: `KAT-B-09-02`, `KAT-B-09-03`, `KAT-B-09-04`, `KAT-B-09-05` (4 cases)
+- **Root cause**: The Layer B runner (`scripts/attack-catalog/layers/facilitator.mjs:240`) advances the mock clock by 5000 ms (`state.now += 5000`) before each case to keep the block height cache isolated. This also refills the IP rate limiter token bucket (`capacity: 20, refillPerSecond: 1`) by 5 tokens. These cases do not set their own `floodCount: 25` and wrongly assume the rate limit state from the earlier case `KAT-B-09-01` is still in effect.
+- **Proposed action**: Add `floodCount: 25` explicitly to each case in `scripts/attack-catalog/cases/category_9.mjs` so no case depends on another case's state.
 
-### Keluarga 2: Normalisasi Huruf Besar/Kecil HTTP Method oleh Klien HTTP (Kelas B)
-- **Kasus Terkait**: `KAT-B-05-109`, `KAT-B-05-110`, `KAT-B-05-111` (3 kasus)
-- **Akar Masalah**: Pengujian mengirimkan variasi metode HTTP `post`, `Post`, dan `pOsT`. Namun modul `node:http.request` di sisi klien secara otomatis menormalisasi string metode standar menjadi huruf kapital `"POST"` sebelum paket dikirim ke socket TCP. Server menerima `"POST"` biasa dan memproses body dummy `{"signed_delegate":"dummy"}` yang berujung pada penolakan `BAD_ENCODING` (HTTP 400).
-- **Usulan Tindakan**: Perbarui eksekutor pengujian lapis B untuk menggunakan socket mentah (`net.connect`) jika ingin menguji transmisi kata kerja HTTP dengan casing tidak baku tanpa terintersepsi normalisasi klien.
+### Family 2: HTTP Method Case Normalization by the HTTP Client (Class B)
+- **Related cases**: `KAT-B-05-109`, `KAT-B-05-110`, `KAT-B-05-111` (3 cases)
+- **Root cause**: The tests send the HTTP method variants `post`, `Post`, and `pOsT`. The client-side `node:http.request` module automatically normalizes standard method strings to uppercase `"POST"` before the packet reaches the TCP socket. The server receives a plain `"POST"` and processes the dummy body `{"signed_delegate":"dummy"}`, which is rejected with `BAD_ENCODING` (HTTP 400).
+- **Proposed action**: Update the Layer B test executor to use a raw socket (`net.connect`) when testing HTTP verbs with non-standard casing, so client normalization does not intercept them.
 
-### Keluarga 3: Resolusi Path Traversal URL oleh Klien Runner (Kelas B)
-- **Kasus Terkait**: `KAT-B-12-102` (1 kasus)
-- **Akar Masalah**: Kasus menguji path traversal `/relay/../relay` dengan harapan `NOT_FOUND`. Di dalam `scripts/attack-catalog/layers/facilitator.mjs:186`, fungsi `sendHttpRequest` membuat objek `new URL(urlStr)`. Standar WHATWG URL secara otomatis menyederhanakan segmen `/relay/../relay` menjadi `/relay`. Permintaan yang tiba di fasilitator adalah `/relay`, yang kemudian menolak body dummy dengan `BAD_ENCODING`.
-- **Usulan Tindakan**: Gunakan transmisi path HTTP mentah pada socket atau jangan lakukan normalisasi via `new URL()`.
+### Family 3: URL Path Traversal Resolution by the Runner Client (Class B)
+- **Related cases**: `KAT-B-12-102` (1 case)
+- **Root cause**: The case tests the path traversal `/relay/../relay`, expecting `NOT_FOUND`. In `scripts/attack-catalog/layers/facilitator.mjs:186`, `sendHttpRequest` builds a `new URL(urlStr)` object. The WHATWG URL standard automatically collapses the segment `/relay/../relay` to `/relay`. The request that reaches the facilitator is `/relay`, which rejects the dummy body with `BAD_ENCODING`.
+- **Proposed action**: Send the raw HTTP path over a socket, or do not normalize through `new URL()`.
 
-### Keluarga 4: Pengujian Mandate Lookup Tanpa Header Wajib Signature (Kelas B)
-- **Kasus Terkait**: `KAT-B-09-130`, `KAT-B-09-131`, `KAT-B-09-132` (3 kasus)
-- **Akar Masalah**: Pengujian bermaksud memverifikasi penanganan galat saat fungsi RPC `get_mandate` gagal pada endpoint `/verify`. Namun, generator pengujian (`scripts/attack-catalog/cases/b2_extra.mjs:768`) mengirimkan request tanpa menyertakan header `payment-signature`. Handler `/verify` di `facilitator/src/server.mjs:143` langsung menolak request dengan `MISSING_PAYMENT_SIGNATURE` sebelum RPC lookup `get_mandate` sempat dipanggil.
-- **Usulan Tindakan**: Sertakan header `payment-signature` valid dummy yang lolos validasi offline awal agar alur eksekusi mencapai tahap pengecekan mandat `relayer.checkMandateAsset()`.
+### Family 4: Mandate Lookup Tests Missing the Required Signature Header (Class B)
+- **Related cases**: `KAT-B-09-130`, `KAT-B-09-131`, `KAT-B-09-132` (3 cases)
+- **Root cause**: The tests aim to verify error handling when the `get_mandate` RPC call fails on the `/verify` endpoint. However, the test generator (`scripts/attack-catalog/cases/b2_extra.mjs:768`) sends the request without a `payment-signature` header. The `/verify` handler in `facilitator/src/server.mjs:143` rejects the request with `MISSING_PAYMENT_SIGNATURE` before the `get_mandate` RPC lookup is ever called.
+- **Proposed action**: Include a dummy `payment-signature` header that passes the initial offline validation, so execution reaches the mandate check in `relayer.checkMandateAsset()`.
 
-### Keluarga 5: Header dan Parameter Ekstra dengan Payload Body Kosong/Dummy (Kelas A)
-- **Kasus Terkait**:
-  - `KAT-B-05-125` .. `KAT-B-05-138` (14 kasus)
-  - `KAT-B-07-140` .. `KAT-B-07-143` (4 kasus)
-  - `KAT-B-08-110`, `KAT-B-08-111`, `KAT-B-08-112` (3 kasus)
-  - `KAT-B-09-106`, `KAT-B-09-109`, `KAT-B-09-110` (3 kasus)
-  - `KAT-B-12-112`, `KAT-B-12-113`, `KAT-B-12-114`, `KAT-B-12-116` (4 kasus)
-  - `KAT-B-12-129`, `KAT-B-12-130`, `KAT-B-12-131`, `KAT-B-12-132`, `KAT-B-12-133`, `KAT-B-12-134` (6 kasus)
-  *(Total 34 kasus)*
-- **Akar Masalah**: Kasus-kasus ini memvariasikan header (spoofed IP, auth, query injections, custom headers) atau mengirimkan konkurensi di bawah ambang batas rate limit. Karena body yang dikirim adalah payload dummy `{"signed_delegate":""}`, server lolos dari lapisan HTTP transport lalu memeriksa delegasi di `facilitator/src/validate.mjs:91` dan menolak dengan kode spesifik `BAD_ENCODING` (HTTP 400).
-- **Status Keamanan**: Seluruh kasus aman (fail-closed). Kode `BAD_ENCODING` lebih akurat daripada ekspektasi umum `BAD_REQUEST` karena struktur JSON valid tetapi string borsh delegasi kosong.
-- **Usulan Tindakan**: Sesuaikan ekspektasi pengujian menjadi `BAD_ENCODING`.
+### Family 5: Extra Headers and Parameters with an Empty/Dummy Body Payload (Class A)
+- **Related cases**:
+  - `KAT-B-05-125` .. `KAT-B-05-138` (14 cases)
+  - `KAT-B-07-140` .. `KAT-B-07-143` (4 cases)
+  - `KAT-B-08-110`, `KAT-B-08-111`, `KAT-B-08-112` (3 cases)
+  - `KAT-B-09-106`, `KAT-B-09-109`, `KAT-B-09-110` (3 cases)
+  - `KAT-B-12-112`, `KAT-B-12-113`, `KAT-B-12-114`, `KAT-B-12-116` (4 cases)
+  - `KAT-B-12-129`, `KAT-B-12-130`, `KAT-B-12-131`, `KAT-B-12-132`, `KAT-B-12-133`, `KAT-B-12-134` (6 cases)
+  *(Total 34 cases)*
+- **Root cause**: These cases vary headers (spoofed IP, auth, query injections, custom headers) or send concurrency below the rate limit threshold. Because the body sent is the dummy payload `{"signed_delegate":""}`, the server passes the HTTP transport layer, then checks the delegate in `facilitator/src/validate.mjs:91` and rejects with the specific code `BAD_ENCODING` (HTTP 400).
+- **Security status**: All cases are safe (fail-closed). `BAD_ENCODING` is more accurate than the generic expected `BAD_REQUEST`, because the JSON structure is valid but the borsh delegate string is empty.
+- **Proposed action**: Change the test expectation to `BAD_ENCODING`.
 
-### Keluarga 6: Validasi Header Protokol x402 pada Route /verify dan /settle (Kelas A)
-- **Kasus Terkait**:
-  - `KAT-B-08-113` (1 kasus)
-  - `KAT-B-09-107`, `KAT-B-09-108` (2 kasus)
-  - `KAT-B-09-140`, `KAT-B-09-141`, `KAT-B-09-142`, `KAT-B-09-144`, `KAT-B-09-145`, `KAT-B-09-146`, `KAT-B-09-147` (7 kasus)
-  *(Total 10 kasus)*
-- **Akar Masalah**: Fasilitator mengimplementasikan parser header pembayaran x402 (`facilitator/src/validate.mjs:268`). Permintaan tanpa header atau header kosong ditolak dengan `MISSING_PAYMENT_SIGNATURE`, sedangkan base64 rusak ditolak dengan `BAD_PAYMENT_SIGNATURE`. Pengujian mengharapkan galat generik `BAD_REQUEST`.
-- **Status Keamanan**: Respons berstatus HTTP 400 fail-closed. Kode galat aktual memberikan kejelasan kontrak yang jauh lebih baik bagi integrasi klien.
-- **Usulan Tindakan**: Perbarui ekspektasi pengujian ke kode spesifik `MISSING_PAYMENT_SIGNATURE` atau `BAD_PAYMENT_SIGNATURE`.
+### Family 6: x402 Protocol Header Validation on the /verify and /settle Routes (Class A)
+- **Related cases**:
+  - `KAT-B-08-113` (1 case)
+  - `KAT-B-09-107`, `KAT-B-09-108` (2 cases)
+  - `KAT-B-09-140`, `KAT-B-09-141`, `KAT-B-09-142`, `KAT-B-09-144`, `KAT-B-09-145`, `KAT-B-09-146`, `KAT-B-09-147` (7 cases)
+  *(Total 10 cases)*
+- **Root cause**: The facilitator implements an x402 payment header parser (`facilitator/src/validate.mjs:268`). Requests with a missing or empty header are rejected with `MISSING_PAYMENT_SIGNATURE`, and malformed base64 is rejected with `BAD_PAYMENT_SIGNATURE`. The tests expect the generic error `BAD_REQUEST`.
+- **Security status**: Responses are fail-closed with HTTP 400. The actual error code gives client integrations a much clearer contract.
+- **Proposed action**: Update the test expectation to the specific code `MISSING_PAYMENT_SIGNATURE` or `BAD_PAYMENT_SIGNATURE`.
 
-### Keluarga 7: Parsing Body Kosong dan Karakter Null Byte (Kelas A)
-- **Kasus Terkait**: `KAT-B-08-114`, `KAT-B-08-115`, `KAT-B-08-147` (3 kasus)
-- **Akar Masalah**:
-  1. Pada body kosong atau whitespace (`114`, `115`), `JSON.parse` melemparkan `SyntaxError`. Fasilitator menangkapnya di `facilitator/src/server.mjs:80` dan mengembalikan `{ ok: false, code: 'BAD_JSON' }`.
-  2. Pada buffer berisi null byte unescaped (`147`: `{"signed_delegate":"\0"}`), parser JSON internal V8 menolak karakter kontrol tak ter-escape sesuai RFC 8259, menghasilkan `BAD_JSON` sebelum delegasi diperiksa.
-- **Status Keamanan**: Fail-closed HTTP 400. `BAD_JSON` adalah kode yang paling presisi.
-- **Usulan Tindakan**: Perbarui ekspektasi dari `BAD_REQUEST`/`BAD_ENCODING` menjadi `BAD_JSON`.
+### Family 7: Empty Body and Null Byte Parsing (Class A)
+- **Related cases**: `KAT-B-08-114`, `KAT-B-08-115`, `KAT-B-08-147` (3 cases)
+- **Root cause**:
+  1. For an empty or whitespace body (`114`, `115`), `JSON.parse` throws `SyntaxError`. The facilitator catches it in `facilitator/src/server.mjs:80` and returns `{ ok: false, code: 'BAD_JSON' }`.
+  2. For a buffer with an unescaped null byte (`147`: `{"signed_delegate":"\0"}`), the internal V8 JSON parser rejects the unescaped control character per RFC 8259, yielding `BAD_JSON` before the delegate is checked.
+- **Security status**: Fail-closed HTTP 400. `BAD_JSON` is the most precise code.
+- **Proposed action**: Change the expectation from `BAD_REQUEST`/`BAD_ENCODING` to `BAD_JSON`.
 
-### Keluarga 8: Penolakan Kata Kerja & Header Konflik di Parser HTTP Node.js (Kelas A)
-- **Kasus Terkait**: `KAT-B-12-119`, `KAT-B-12-120`, `KAT-B-12-121`, `KAT-B-12-135` (4 kasus)
-- **Akar Masalah**:
-  1. Kata kerja absurd (`BREACH`, `ATTACK`, `HACK`) ditolak langsung oleh pustaka C `llhttp` Node.js sebelum mencapai handler aplikasi, memicu event `clientError` dengan respons mentah `400 Bad Request` (`HTTP_400`). Pengujian mengharapkan `METHOD_NOT_ALLOWED` (405).
-  2. Header `Content-Length` dan `Transfer-Encoding` yang konflik melanggar RFC HTTP/1.1 dan ditolak langsung oleh parser Node dengan status 400 (`HTTP_400`).
-- **Status Keamanan**: Penolakan di tingkat transport socket jauh lebih aman dan efisien dalam mencegah request smuggling.
-- **Usulan Tindakan**: Perbarui ekspektasi pengujian menjadi `HTTP_400`.
+### Family 8: Verb Rejection and Conflicting Headers in the Node.js HTTP Parser (Class A)
+- **Related cases**: `KAT-B-12-119`, `KAT-B-12-120`, `KAT-B-12-121`, `KAT-B-12-135` (4 cases)
+- **Root cause**:
+  1. Absurd verbs (`BREACH`, `ATTACK`, `HACK`) are rejected directly by Node.js's C library `llhttp` before reaching the application handler. This triggers a `clientError` event with a raw `400 Bad Request` response (`HTTP_400`). The tests expect `METHOD_NOT_ALLOWED` (405).
+  2. Conflicting `Content-Length` and `Transfer-Encoding` headers violate RFC HTTP/1.1 and are rejected directly by the Node parser with status 400 (`HTTP_400`).
+- **Security status**: Rejection at the socket transport level is safer and more efficient at preventing request smuggling.
+- **Proposed action**: Update the test expectation to `HTTP_400`.
 
-### Keluarga 9: Parser Klien Lapis C (Kelas A)
-- **Kasus Terkait**: `KAT-C-08-11`, `KAT-C-08-25`, `KAT-C2-08-12`, `KAT-C2-12-11` (4 kasus)
-- **Akar Masalah**:
-  1. `KAT-C-08-11`: JSON bersarang 1500 level berhasil di-parse oleh parser V8 tanpa crash, menghasilkan objek dengan `ok: false, success: false`. Parser klien mengembalikan objek `INERT` aman dan tidak melempar `RangeError`.
-  2. `KAT-C-08-25`: Respons dengan header base64 rusak gagal didekode dan fallback ke payload respons yang aman (`ok: false, success: false`), tidak melempar `RangeError`.
-  3. `KAT-C2-08-12`: Null byte dalam string JSON ditolak oleh `JSON.parse` sesuai RFC 8259, memicu `RangeError` aman. Pengujian keliru mengharapkan `INERT`.
-  4. `KAT-C2-12-11`: Array kosong `[]` diberikan ke `intentHash`. Pembacaan properti `input.mandateId` menghasilkan `undefined`, yang memicu `TypeError` di `toU64`. Pengujian mengharapkan `RangeError`.
-- **Status Keamanan**: Seluruhnya aman dan menolak state transaksi palsu.
-- **Usulan Tindakan**: Perbarui ekspektasi pengujian agar selaras dengan semantik ECMAScript dan RFC 8259.
+### Family 9: Layer C Client Parser (Class A)
+- **Related cases**: `KAT-C-08-11`, `KAT-C-08-25`, `KAT-C2-08-12`, `KAT-C2-12-11` (4 cases)
+- **Root cause**:
+  1. `KAT-C-08-11`: JSON nested 1500 levels deep is parsed by the V8 parser without a crash, producing an object with `ok: false, success: false`. The client parser returns a safe `INERT` object and does not throw `RangeError`.
+  2. `KAT-C-08-25`: A response with a malformed base64 header fails to decode and falls back to a safe response payload (`ok: false, success: false`), without throwing `RangeError`.
+  3. `KAT-C2-08-12`: A null byte in a JSON string is rejected by `JSON.parse` per RFC 8259, triggering a safe `RangeError`. The test wrongly expects `INERT`.
+  4. `KAT-C2-12-11`: An empty array `[]` is passed to `intentHash`. Reading `input.mandateId` gives `undefined`, which triggers a `TypeError` in `toU64`. The test expects `RangeError`.
+- **Security status**: All are safe and reject forged transaction state.
+- **Proposed action**: Update the test expectations to match ECMAScript semantics and RFC 8259.
 
 ---
 
-## 4. Daftar Rinci 68 Kasus FAIL
+## 4. Detailed List of the 68 FAIL Cases
 
-| ID Kasus | Expected | Actual | Kelas | Alasan Ringkas | Usulan Tindakan |
+| Case ID | Expected | Actual | Class | Reason | Proposed Action |
 | :--- | :--- | :--- | :---: | :--- | :--- |
-| **KAT-B-05-109** | BLOCKED (METHOD_NOT_ALLOWED) | BLOCKED (BAD_ENCODING) | **B** | `node:http.request` mengkapitalkan verb `post` ke `POST`, body dummy memicu BAD_ENCODING. | Gunakan raw socket untuk transmisi case method non-standar. |
-| **KAT-B-05-110** | BLOCKED (METHOD_NOT_ALLOWED) | BLOCKED (BAD_ENCODING) | **B** | `node:http.request` mengkapitalkan verb `Post` ke `POST`. | Gunakan raw socket untuk transmisi case method non-standar. |
-| **KAT-B-05-111** | BLOCKED (METHOD_NOT_ALLOWED) | BLOCKED (BAD_ENCODING) | **B** | `node:http.request` mengkapitalkan verb `pOsT` ke `POST`. | Gunakan raw socket untuk transmisi case method non-standar. |
-| **KAT-B-05-125** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header XFF diizinkan; payload body string kosong ditolak fail-closed dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-05-126** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Whitespace XFF diparsing; body string kosong ditolak fail-closed dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-05-127** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header Authorization diabaikan relayer; body ditolak fail-closed dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-05-128** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header Basic Auth diabaikan; body ditolak fail-closed dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-05-129** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header AWS4 signature diabaikan; body ditolak fail-closed dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-05-130** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header Host eksternal diterima transport; body ditolak fail-closed dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-05-131** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header X-Forwarded-Host diabaikan; body ditolak fail-closed dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-05-132** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header X-Forwarded-Proto diabaikan; body ditolak fail-closed dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-05-133** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header X-Real-IP diabaikan (menggunakan XFF); body ditolak dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-05-134** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header x-request-id valid dicatat di log; body ditolak dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-05-135** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Tanda baca pada x-request-id diterima; body ditolak dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-05-136** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Karakter URL-encoded x-request-id diterima; body ditolak dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-05-137** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header versi ganda diabaikan; body ditolak dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-05-138** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header bypass rate-limit palsu diabaikan; body ditolak dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-07-140** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Burst 10 request berada dalam batas kapasitas 20; body ditolak dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-07-141** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Burst 15 request berada dalam batas kapasitas 20; body ditolak dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-07-142** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Konkurensi 5 request berada dalam batas kapasitas 20; body ditolak dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-07-143** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Konkurensi 12 request berada dalam batas kapasitas 20; body ditolak dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-08-110** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Content-type charset utf-8 valid diterima; body string kosong ditolak BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-08-111** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Content-type APPLICATION/JSON case-insensitive valid; body ditolak BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-08-112** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Parameter boundary pada application/json diabaikan; body ditolak BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-08-113** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | Route /verify menolak header payment-signature yang hilang lebih dulu daripada CT. | Perbarui ekspektasi menjadi MISSING_PAYMENT_SIGNATURE. |
-| **KAT-B-08-114** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_JSON) | **A** | Body string kosong gagal di-parse oleh JSON.parse dan mengembalikan kode BAD_JSON. | Perbarui ekspektasi menjadi BAD_JSON. |
-| **KAT-B-08-115** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_JSON) | **A** | Body spasi/whitespace gagal di-parse oleh JSON.parse dan mengembalikan kode BAD_JSON. | Perbarui ekspektasi menjadi BAD_JSON. |
-| **KAT-B-08-147** | BLOCKED (BAD_ENCODING) | BLOCKED (BAD_JSON) | **A** | Null byte unescaped dalam string JSON adalah galat sintaks RFC 8259 (BAD_JSON). | Perbarui ekspektasi menjadi BAD_JSON. |
-| **KAT-B-09-02** | BLOCKED (IP_RATE_LIMITED) | BLOCKED (BAD_ENCODING) | **B** | Clock jump runner (+5s) merefill token; request tidak rate-limited dan ditolak via body. | Tambahkan parameter floodCount: 25 pada kasus. |
-| **KAT-B-09-03** | BLOCKED (IP_RATE_LIMITED) | BLOCKED (TX_NOT_FOUND) | **B** | Token IP limiter telah terisi kembali; endpoint /status mengembalikan TX_NOT_FOUND. | Tambahkan parameter floodCount: 25 pada kasus. |
-| **KAT-B-09-04** | BLOCKED (IP_RATE_LIMITED) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **B** | Token IP limiter telah terisi kembali; /verify menolak ketiadaan header signature. | Tambahkan parameter floodCount: 25 pada kasus. |
-| **KAT-B-09-05** | BLOCKED (IP_RATE_LIMITED) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **B** | Token IP limiter telah terisi kembali; /settle menolak ketiadaan header signature. | Tambahkan parameter floodCount: 25 pada kasus. |
-| **KAT-B-09-106** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Konkurensi 20 request pada /relay gagal validasi delegasi (BAD_ENCODING). | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-09-107** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | Konkurensi pada /verify ditolak fail-closed karena header payment-signature tidak ada. | Perbarui ekspektasi menjadi MISSING_PAYMENT_SIGNATURE. |
-| **KAT-B-09-108** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | Konkurensi pada /settle ditolak fail-closed karena header payment-signature tidak ada. | Perbarui ekspektasi menjadi MISSING_PAYMENT_SIGNATURE. |
-| **KAT-B-09-109** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Request beruntun 18x (kapasitas 20) ditolak fail-closed oleh validator delegasi. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-09-110** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Konkurensi 10 request ditolak fail-closed oleh validator delegasi dengan BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-09-123** | BLOCKED (UPSTREAM_ERROR) | BLOCKED (EXPIRES_TOO_FAR) | **C** | `relay.mjs:170` mengonversi `height: null` menjadi 0, sehingga lolos ke cek kadaluarsa. | Perbaiki validasi `typeof height === 'number' && h > 0`. |
-| **KAT-B-09-124** | BLOCKED (UPSTREAM_ERROR) | BLOCKED (EXPIRES_TOO_FAR) | **C** | `relay.mjs:170` menganggap height negatif (-10) aman, sehingga lolos ke cek kadaluarsa. | Perbaiki validasi tinggi blok agar mewajibkan `h > 0`. |
-| **KAT-B-09-130** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **B** | Pengujian get_mandate pada /verify tidak menyertakan header payment-signature. | Tambahkan header payment-signature pada definisi kasus. |
-| **KAT-B-09-131** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **B** | Pengujian get_mandate null pada /verify tidak menyertakan header payment-signature. | Tambahkan header payment-signature pada definisi kasus. |
-| **KAT-B-09-132** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **B** | Pengujian token mismatch pada /verify tidak menyertakan header payment-signature. | Tambahkan header payment-signature pada definisi kasus. |
-| **KAT-B-09-140** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | /verify menolak ketiadaan payment-signature dengan kode terstruktur dan presisi. | Perbarui ekspektasi menjadi MISSING_PAYMENT_SIGNATURE. |
-| **KAT-B-09-141** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | /verify menolak header payment-signature kosong dengan kode presisi. | Perbarui ekspektasi menjadi MISSING_PAYMENT_SIGNATURE. |
-| **KAT-B-09-142** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_PAYMENT_SIGNATURE) | **A** | /verify menolak base64 payment-signature rusak dengan BAD_PAYMENT_SIGNATURE. | Perbarui ekspektasi menjadi BAD_PAYMENT_SIGNATURE. |
-| **KAT-B-09-144** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | /settle menolak ketiadaan payment-signature dengan kode terstruktur dan presisi. | Perbarui ekspektasi menjadi MISSING_PAYMENT_SIGNATURE. |
-| **KAT-B-09-145** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | /settle menolak header payment-signature kosong dengan kode presisi. | Perbarui ekspektasi menjadi MISSING_PAYMENT_SIGNATURE. |
-| **KAT-B-09-146** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_PAYMENT_SIGNATURE) | **A** | /settle menolak base64 payment-signature rusak dengan BAD_PAYMENT_SIGNATURE. | Perbarui ekspektasi menjadi BAD_PAYMENT_SIGNATURE. |
-| **KAT-B-09-147** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_PAYMENT_SIGNATURE) | **A** | /settle dengan body {} dan signature 'abc' (bukan JSON) ditolak BAD_PAYMENT_SIGNATURE. | Perbarui ekspektasi menjadi BAD_PAYMENT_SIGNATURE. |
-| **KAT-B-12-102** | BLOCKED (NOT_FOUND) | BLOCKED (BAD_ENCODING) | **B** | `new URL()` di runner menormalisasi `/relay/../relay` ke `/relay`, lalu ditolak via body. | Gunakan raw path HTTP tanpa resolusi client. |
-| **KAT-B-12-112** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Query string pada POST /relay diabaikan routing; body ditolak BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-12-113** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Query SQL injection diabaikan routing; body ditolak BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-12-114** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Query Log4j JNDI diabaikan routing; body ditolak BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-12-116** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Query string panjang (2KB) diabaikan routing; body ditolak BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-12-119** | BLOCKED (METHOD_NOT_ALLOWED) | BLOCKED (HTTP_400) | **A** | HTTP parser Node.js (llhttp) menolak kata kerja 'BREACH' dengan 400 Bad Request. | Perbarui ekspektasi menjadi HTTP_400. |
-| **KAT-B-12-120** | BLOCKED (METHOD_NOT_ALLOWED) | BLOCKED (HTTP_400) | **A** | HTTP parser Node.js (llhttp) menolak kata kerja 'ATTACK' dengan 400 Bad Request. | Perbarui ekspektasi menjadi HTTP_400. |
-| **KAT-B-12-121** | BLOCKED (METHOD_NOT_ALLOWED) | BLOCKED (HTTP_400) | **A** | HTTP parser Node.js (llhttp) menolak kata kerja 'HACK' dengan 400 Bad Request. | Perbarui ekspektasi menjadi HTTP_400. |
-| **KAT-B-12-129** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header custom 4KB berada dalam batas 16KB Node; body ditolak BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-12-130** | BLOCKED (REQUEST_HEADER_FIELDS_TOO_LARGE) | BLOCKED (BAD_ENCODING) | **A** | Header 10KB tidak melampaui batas default 16KB Node; body ditolak BAD_ENCODING. | Naikkan ukuran header tes >16KB atau ubah ekspektasi. |
-| **KAT-B-12-131** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | 50 custom header diterima oleh HTTP parser; body ditolak BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-12-132** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header spasi diterima oleh HTTP parser; body ditolak BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-12-133** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header dengan trailing colon diterima; body ditolak BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-12-134** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header dengan URL-encoded carriage return diterima; body ditolak BAD_ENCODING. | Perbarui ekspektasi menjadi BAD_ENCODING. |
-| **KAT-B-12-135** | BLOCKED (BAD_REQUEST) | BLOCKED (HTTP_400) | **A** | Header Content-Length dan Transfer-Encoding konflik ditolak langsung oleh llhttp (400). | Perbarui ekspektasi menjadi HTTP_400. |
-| **KAT-C-08-11** | BLOCKED (RangeError) | INERT | **A** | JSON bersarang 1500 level diparsing aman oleh V8 dan menghasilkan ok=false tanpa crash. | Perbarui ekspektasi menjadi INERT. |
-| **KAT-C-08-25** | BLOCKED (RangeError) | INERT | **A** | Header base64 rusak diabaikan dan fallback ke objek respons aman (ok=false). | Perbarui ekspektasi menjadi INERT. |
-| **KAT-C2-08-12** | INERT | BLOCKED (RangeError) | **A** | Karakter null byte unescaped dalam string dilarang oleh RFC 8259, memicu RangeError. | Perbarui ekspektasi menjadi BLOCKED (RangeError). |
-| **KAT-C2-12-11** | BLOCKED (RangeError) | BLOCKED (TypeError) | **A** | Input array `[]` memicu TypeError pada toU64 (tipe salah), bukan RangeError. | Perbarui ekspektasi menjadi BLOCKED (TypeError). |
+| **KAT-B-05-109** | BLOCKED (METHOD_NOT_ALLOWED) | BLOCKED (BAD_ENCODING) | **B** | `node:http.request` uppercases verb `post` to `POST`, dummy body triggers BAD_ENCODING. | Use a raw socket to send non-standard method casing. |
+| **KAT-B-05-110** | BLOCKED (METHOD_NOT_ALLOWED) | BLOCKED (BAD_ENCODING) | **B** | `node:http.request` uppercases verb `Post` to `POST`. | Use a raw socket to send non-standard method casing. |
+| **KAT-B-05-111** | BLOCKED (METHOD_NOT_ALLOWED) | BLOCKED (BAD_ENCODING) | **B** | `node:http.request` uppercases verb `pOsT` to `POST`. | Use a raw socket to send non-standard method casing. |
+| **KAT-B-05-125** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | XFF header is allowed; empty string body payload is rejected fail-closed with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-05-126** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Whitespace XFF is parsed; empty string body is rejected fail-closed with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-05-127** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Authorization header is ignored by the relayer; body is rejected fail-closed with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-05-128** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Basic Auth header is ignored; body is rejected fail-closed with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-05-129** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | AWS4 signature header is ignored; body is rejected fail-closed with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-05-130** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | External Host header is accepted by transport; body is rejected fail-closed with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-05-131** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | X-Forwarded-Host header is ignored; body is rejected fail-closed with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-05-132** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | X-Forwarded-Proto header is ignored; body is rejected fail-closed with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-05-133** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | X-Real-IP header is ignored (XFF is used); body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-05-134** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Valid x-request-id header is logged; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-05-135** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Punctuation in x-request-id is accepted; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-05-136** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | URL-encoded characters in x-request-id are accepted; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-05-137** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Duplicate version header is ignored; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-05-138** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Fake rate-limit bypass header is ignored; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-07-140** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Burst of 10 requests is within the capacity of 20; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-07-141** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Burst of 15 requests is within the capacity of 20; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-07-142** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Concurrency of 5 requests is within the capacity of 20; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-07-143** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Concurrency of 12 requests is within the capacity of 20; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-08-110** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Valid content-type charset utf-8 is accepted; empty string body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-08-111** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Case-insensitive content-type APPLICATION/JSON is valid; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-08-112** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Boundary parameter on application/json is ignored; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-08-113** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | Route /verify rejects the missing payment-signature header before the content-type check. | Update expectation to MISSING_PAYMENT_SIGNATURE. |
+| **KAT-B-08-114** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_JSON) | **A** | Empty string body fails JSON.parse and returns code BAD_JSON. | Update expectation to BAD_JSON. |
+| **KAT-B-08-115** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_JSON) | **A** | Whitespace-only body fails JSON.parse and returns code BAD_JSON. | Update expectation to BAD_JSON. |
+| **KAT-B-08-147** | BLOCKED (BAD_ENCODING) | BLOCKED (BAD_JSON) | **A** | Unescaped null byte in a JSON string is an RFC 8259 syntax error (BAD_JSON). | Update expectation to BAD_JSON. |
+| **KAT-B-09-02** | BLOCKED (IP_RATE_LIMITED) | BLOCKED (BAD_ENCODING) | **B** | Runner clock jump (+5s) refills tokens; request is not rate-limited and is rejected via body. | Add parameter floodCount: 25 to the case. |
+| **KAT-B-09-03** | BLOCKED (IP_RATE_LIMITED) | BLOCKED (TX_NOT_FOUND) | **B** | IP limiter tokens have been refilled; endpoint /status returns TX_NOT_FOUND. | Add parameter floodCount: 25 to the case. |
+| **KAT-B-09-04** | BLOCKED (IP_RATE_LIMITED) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **B** | IP limiter tokens have been refilled; /verify rejects the missing signature header. | Add parameter floodCount: 25 to the case. |
+| **KAT-B-09-05** | BLOCKED (IP_RATE_LIMITED) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **B** | IP limiter tokens have been refilled; /settle rejects the missing signature header. | Add parameter floodCount: 25 to the case. |
+| **KAT-B-09-106** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Concurrency of 20 requests on /relay fails delegate validation (BAD_ENCODING). | Update expectation to BAD_ENCODING. |
+| **KAT-B-09-107** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | Concurrent requests on /verify are rejected fail-closed because the payment-signature header is missing. | Update expectation to MISSING_PAYMENT_SIGNATURE. |
+| **KAT-B-09-108** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | Concurrent requests on /settle are rejected fail-closed because the payment-signature header is missing. | Update expectation to MISSING_PAYMENT_SIGNATURE. |
+| **KAT-B-09-109** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | 18 sequential requests (capacity 20) are rejected fail-closed by the delegate validator. | Update expectation to BAD_ENCODING. |
+| **KAT-B-09-110** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Concurrency of 10 requests is rejected fail-closed by the delegate validator with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-09-123** | BLOCKED (UPSTREAM_ERROR) | BLOCKED (EXPIRES_TOO_FAR) | **C** | `relay.mjs:170` converts `height: null` to 0, so it reaches the expiry check. | Fix validation: `typeof height === 'number' && h > 0`. |
+| **KAT-B-09-124** | BLOCKED (UPSTREAM_ERROR) | BLOCKED (EXPIRES_TOO_FAR) | **C** | `relay.mjs:170` treats a negative height (-10) as valid, so it reaches the expiry check. | Fix block height validation to require `h > 0`. |
+| **KAT-B-09-130** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **B** | The get_mandate test on /verify does not send a payment-signature header. | Add a payment-signature header to the case definition. |
+| **KAT-B-09-131** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **B** | The null get_mandate test on /verify does not send a payment-signature header. | Add a payment-signature header to the case definition. |
+| **KAT-B-09-132** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **B** | The token mismatch test on /verify does not send a payment-signature header. | Add a payment-signature header to the case definition. |
+| **KAT-B-09-140** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | /verify rejects a missing payment-signature with a precise structured code. | Update expectation to MISSING_PAYMENT_SIGNATURE. |
+| **KAT-B-09-141** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | /verify rejects an empty payment-signature header with a precise code. | Update expectation to MISSING_PAYMENT_SIGNATURE. |
+| **KAT-B-09-142** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_PAYMENT_SIGNATURE) | **A** | /verify rejects malformed payment-signature base64 with BAD_PAYMENT_SIGNATURE. | Update expectation to BAD_PAYMENT_SIGNATURE. |
+| **KAT-B-09-144** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | /settle rejects a missing payment-signature with a precise structured code. | Update expectation to MISSING_PAYMENT_SIGNATURE. |
+| **KAT-B-09-145** | BLOCKED (BAD_REQUEST) | BLOCKED (MISSING_PAYMENT_SIGNATURE) | **A** | /settle rejects an empty payment-signature header with a precise code. | Update expectation to MISSING_PAYMENT_SIGNATURE. |
+| **KAT-B-09-146** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_PAYMENT_SIGNATURE) | **A** | /settle rejects malformed payment-signature base64 with BAD_PAYMENT_SIGNATURE. | Update expectation to BAD_PAYMENT_SIGNATURE. |
+| **KAT-B-09-147** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_PAYMENT_SIGNATURE) | **A** | /settle with body {} and signature 'abc' (not JSON) is rejected with BAD_PAYMENT_SIGNATURE. | Update expectation to BAD_PAYMENT_SIGNATURE. |
+| **KAT-B-12-102** | BLOCKED (NOT_FOUND) | BLOCKED (BAD_ENCODING) | **B** | `new URL()` in the runner normalizes `/relay/../relay` to `/relay`, then it is rejected via body. | Use a raw HTTP path without client resolution. |
+| **KAT-B-12-112** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Query string on POST /relay is ignored by routing; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-12-113** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | SQL injection query is ignored by routing; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-12-114** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Log4j JNDI query is ignored by routing; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-12-116** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Long query string (2KB) is ignored by routing; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-12-119** | BLOCKED (METHOD_NOT_ALLOWED) | BLOCKED (HTTP_400) | **A** | Node.js HTTP parser (llhttp) rejects verb 'BREACH' with 400 Bad Request. | Update expectation to HTTP_400. |
+| **KAT-B-12-120** | BLOCKED (METHOD_NOT_ALLOWED) | BLOCKED (HTTP_400) | **A** | Node.js HTTP parser (llhttp) rejects verb 'ATTACK' with 400 Bad Request. | Update expectation to HTTP_400. |
+| **KAT-B-12-121** | BLOCKED (METHOD_NOT_ALLOWED) | BLOCKED (HTTP_400) | **A** | Node.js HTTP parser (llhttp) rejects verb 'HACK' with 400 Bad Request. | Update expectation to HTTP_400. |
+| **KAT-B-12-129** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | 4KB custom header is within Node's 16KB limit; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-12-130** | BLOCKED (REQUEST_HEADER_FIELDS_TOO_LARGE) | BLOCKED (BAD_ENCODING) | **A** | 10KB header does not exceed Node's default 16KB limit; body is rejected with BAD_ENCODING. | Raise the test header size above 16KB or change the expectation. |
+| **KAT-B-12-131** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | 50 custom headers are accepted by the HTTP parser; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-12-132** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Space header is accepted by the HTTP parser; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-12-133** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header with a trailing colon is accepted; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-12-134** | BLOCKED (BAD_REQUEST) | BLOCKED (BAD_ENCODING) | **A** | Header with a URL-encoded carriage return is accepted; body is rejected with BAD_ENCODING. | Update expectation to BAD_ENCODING. |
+| **KAT-B-12-135** | BLOCKED (BAD_REQUEST) | BLOCKED (HTTP_400) | **A** | Conflicting Content-Length and Transfer-Encoding headers are rejected directly by llhttp (400). | Update expectation to HTTP_400. |
+| **KAT-C-08-11** | BLOCKED (RangeError) | INERT | **A** | JSON nested 1500 levels deep is parsed safely by V8 and yields ok=false without a crash. | Update expectation to INERT. |
+| **KAT-C-08-25** | BLOCKED (RangeError) | INERT | **A** | Malformed base64 header is ignored and falls back to a safe response object (ok=false). | Update expectation to INERT. |
+| **KAT-C2-08-12** | INERT | BLOCKED (RangeError) | **A** | Unescaped null byte in a string is forbidden by RFC 8259, triggering RangeError. | Update expectation to BLOCKED (RangeError). |
+| **KAT-C2-12-11** | BLOCKED (RangeError) | BLOCKED (TypeError) | **A** | Input array `[]` triggers TypeError in toU64 (wrong type), not RangeError. | Update expectation to BLOCKED (TypeError). |

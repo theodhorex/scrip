@@ -116,7 +116,7 @@ test('runTestnetExecution forbids writing to results/ in dry mode', async () => 
         maxCases: 1,
       });
     },
-    /Mode dry TIDAK boleh dipakai untuk menulis ke results\//
+    /Dry mode CANNOT be used to write to results\//
   );
 });
 
