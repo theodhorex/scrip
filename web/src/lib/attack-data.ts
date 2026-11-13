@@ -72,18 +72,18 @@ export type AttackCatalog = {
 };
 
 export const CATEGORY_NAMES: Record<string, string> = {
-  "1": "1. Penerima",
-  "2": "2. Jumlah",
-  "3": "3. Anggaran & paralel",
-  "4": "4. Persetujuan & nonce",
-  "5": "5. Akses & identitas",
-  "6": "6. Delegate & kunci",
-  "7": "7. Gas & sumber daya",
+  "1": "1. Recipient",
+  "2": "2. Amount",
+  "3": "3. Budget & parallel",
+  "4": "4. Approval & nonce",
+  "5": "5. Access & identity",
+  "6": "6. Delegate & keys",
+  "7": "7. Gas & resources",
   "8": "8. Format & parsing",
-  "9": "9. Fasilitator operasional",
-  "10": "10. Siklus hidup mandat",
-  "11": "11. Token & keuangan",
-  "12": "12. Di luar jaminan (absurd)",
+  "9": "9. Facilitator operations",
+  "10": "10. Mandate lifecycle",
+  "11": "11. Token & accounting",
+  "12": "12. Outside the guarantee (absurd)",
 };
 
 export type CategoryMatrixRow = {
@@ -104,7 +104,7 @@ export function buildCategoryMatrix(cases: AttackCatalogCase[]): CategoryMatrixR
     if (!map.has(catKey)) {
       map.set(catKey, {
         category: catKey,
-        categoryName: CATEGORY_NAMES[catKey] ?? `Kategori ${catKey}`,
+        categoryName: CATEGORY_NAMES[catKey] ?? `Category ${catKey}`,
         blocked: 0,
         inert: 0,
         outOfScope: 0,
@@ -161,7 +161,7 @@ export function buildLayerMatrix(cases: AttackCatalogCase[]): LayerMatrixRow[] {
     if (!row) {
       row = {
         category: catKey,
-        categoryName: CATEGORY_NAMES[catKey] ?? `Kategori ${catKey}`,
+        categoryName: CATEGORY_NAMES[catKey] ?? `Category ${catKey}`,
         cells: {},
         total: emptyCounts(),
       };

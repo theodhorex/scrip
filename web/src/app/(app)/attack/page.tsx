@@ -28,9 +28,9 @@ const VERDICT_CLASS: Record<Verdict, string> = {
 function VerdictCell({ counts }: { counts?: VerdictCounts }) {
   if (!counts || counts.total === 0) {
     return (
-      <span className="text-bp-muted bp-app-mono" title="Belum dijalankan / tidak ada kasus">
+      <span className="text-bp-muted bp-app-mono" title="Not run / no cases">
         <span aria-hidden="true">&ndash;</span>
-        <span className="sr-only">belum dijalankan</span>
+        <span className="sr-only">not run</span>
       </span>
     );
   }
@@ -80,9 +80,9 @@ export default function AttackPage() {
       {!results ? (
         <div role="status" aria-live="polite" className="bp-plate bp-app-empty">
           <div className="bp-app-empty-icon bp-app-mono" aria-hidden="true">&ndash;</div>
-          <h2 className="bp-app-notice-title">Hasil pengujian paralel belum dijalankan</h2>
+          <h2 className="bp-app-notice-title">The parallel burst test has not been run</h2>
           <p className="bp-app-notice-body mx-auto max-w-lg">
-            Hasil benchmark akan dimuat dari <code className="bp-app-chip">results/attack.json</code> setelah testnet attack dijalankan.
+            Results load from <code className="bp-app-chip">results/attack.json</code> once the testnet attack has run.
           </p>
         </div>
       ) : (
@@ -245,34 +245,34 @@ export default function AttackPage() {
       <section aria-labelledby="catalog-heading" className="mt-8">
         <div className="flex items-center justify-between mb-3">
           <h2 id="catalog-heading" className="bp-app-section-title" style={{ marginBottom: 0 }}>
-            Katalog variasi serangan
+            Attack variation catalog
           </h2>
-          {!catalog && <span className="bp-app-chip text-bp-muted">Belum dijalankan</span>}
+          {!catalog && <span className="bp-app-chip text-bp-muted">Not run</span>}
         </div>
 
         {!catalog || catalog.cases.length === 0 ? (
           <div role="status" aria-live="polite" className="bp-plate bp-app-empty">
             <div className="bp-app-empty-icon bp-app-mono" aria-hidden="true">&ndash;</div>
-            <h3 className="bp-app-notice-title">Katalog serangan belum dijalankan</h3>
+            <h3 className="bp-app-notice-title">The attack catalog has not been run</h3>
             <p className="bp-app-notice-body mx-auto max-w-lg">
-              Hasil pengujian katalog variasi serangan akan dimuat dari <code className="bp-app-chip">results/attack-catalog.json</code> setelah dijalankan.
+              Catalog results load from <code className="bp-app-chip">results/attack-catalog.json</code> once it has run.
             </p>
           </div>
         ) : (
           <>
             <p className="text-xs text-bp-muted mb-3 max-w-2xl leading-relaxed">
-              Sumber: <code className="bp-app-chip">results/attack-catalog.json</code>. {grand} kasus tercatat; label PASS, FAIL, SKIPPED, dan BREACH ditampilkan apa adanya dari katalog.
+              Source: <code className="bp-app-chip">results/attack-catalog.json</code>. {grand} recorded cases; PASS, FAIL, SKIPPED and BREACH labels are shown exactly as the catalog records them.
               {layersMissing.length > 0 && (
-                <> Lapis {layersMissing.join(", ")} belum punya data dan ditandai &quot;belum dijalankan&quot;, bukan nol yang lolos.</>
+                <> Layer {layersMissing.join(", ")} has no data yet and is marked &quot;not run&quot;, not counted as zero passes.</>
               )}
             </p>
             <div className="bp-plate bp-app-table-wrap">
               <table className="bp-app-table">
                 <thead>
                   <tr>
-                    <th scope="col">Kategori</th>
+                    <th scope="col">Category</th>
                     {LAYERS.map((l) => (
-                      <th scope="col" key={l}>Lapis {l}</th>
+                      <th scope="col" key={l}>Layer {l}</th>
                     ))}
                     <th scope="col">Total</th>
                   </tr>
@@ -292,7 +292,7 @@ export default function AttackPage() {
                 </tbody>
                 <tfoot>
                   <tr>
-                    <th scope="row">Semua kategori</th>
+                    <th scope="row">All categories</th>
                     {LAYERS.map((l) => (
                       <td key={l}>
                         <VerdictCell counts={layerTotals[l]} />
@@ -307,7 +307,7 @@ export default function AttackPage() {
               </table>
             </div>
             <p className="text-[11px] text-bp-muted mt-2" aria-hidden={layersWithData.length === 0}>
-              Legenda: {VERDICTS.map((v) => `${VERDICT_MARK[v]} ${v}`).join(" · ")} · &ndash; tidak ada kasus
+              Legend: {VERDICTS.map((v) => `${VERDICT_MARK[v]} ${v}`).join(" · ")} · &ndash; no cases
             </p>
           </>
         )}
@@ -317,26 +317,26 @@ export default function AttackPage() {
         <section aria-labelledby="out-of-scope-heading" className="mt-8">
           <div className="mb-3">
             <h3 id="out-of-scope-heading" className="bp-app-section-title" style={{ marginBottom: 0 }}>
-              Di luar jaminan
+              Outside the guarantee
             </h3>
             <p className="text-xs text-bp-muted mt-1 max-w-2xl leading-relaxed">
-              Skenario di luar model ancaman Scrip (misal: kunci full-access owner bocor, kontrak token berbahaya, RPC berbohong). Kasus-kasus ini tidak diklaim dapat dicegah oleh protokol dan sengaja dicatat secara jujur sebagai batasan yang diakui.
+              Scenarios outside the Scrip threat model (for example a leaked owner full-access key, a malicious token contract, or a lying RPC). Scrip does not claim to prevent these; they are recorded on purpose as stated limits.
             </p>
           </div>
 
           {outOfScopeCases.length === 0 ? (
             <div className="bp-plate p-4 text-xs text-bp-muted">
-              Tidak ada kasus OUT_OF_SCOPE dalam katalog saat ini.
+              The catalog has no OUT_OF_SCOPE cases right now.
             </div>
           ) : (
             <div className="bp-plate bp-app-table-wrap">
               <table className="bp-app-table">
                 <thead>
                   <tr>
-                    <th scope="col" style={{ width: "25%" }}>ID / Kategori</th>
-                    <th scope="col" style={{ width: "15%" }}>Lapis</th>
-                    <th scope="col" style={{ width: "20%" }}>Label Diharapkan</th>
-                    <th scope="col" style={{ width: "20%" }}>Label Aktual</th>
+                    <th scope="col" style={{ width: "25%" }}>ID / Category</th>
+                    <th scope="col" style={{ width: "15%" }}>Layer</th>
+                    <th scope="col" style={{ width: "20%" }}>Expected label</th>
+                    <th scope="col" style={{ width: "20%" }}>Actual label</th>
                     <th scope="col" style={{ width: "20%" }}>Verdict</th>
                   </tr>
                 </thead>
@@ -344,9 +344,9 @@ export default function AttackPage() {
                   {outOfScopeCases.map((c, i) => (
                     <tr key={c.id ?? `oos-${i}`}>
                       <th scope="row">
-                        <div className="font-semibold">{c.id ?? `Kasus ${i + 1}`}</div>
+                        <div className="font-semibold">{c.id ?? `Case ${i + 1}`}</div>
                         <div className="text-[11px] text-bp-muted font-normal">
-                          {CATEGORY_NAMES[String(c.category)] ?? `Kategori ${c.category}`}
+                          {CATEGORY_NAMES[String(c.category)] ?? `Category ${c.category}`}
                         </div>
                       </th>
                       <td className="bp-app-mono text-bp-muted">{c.layer}</td>

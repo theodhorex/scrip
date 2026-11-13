@@ -1323,7 +1323,7 @@ export async function classifyTxError(err, session = null, signerAccountId = nul
         label: 'BLOCKED',
         code: inferred,
         txHash: failedHash ? String(failedHash) : null,
-        note: 'kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic',
+        note: 'code derived from the call shape because the release wasm emits no panic message',
       };
     }
   }

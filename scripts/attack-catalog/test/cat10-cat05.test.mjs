@@ -326,7 +326,7 @@ test('classifyTxError integrates inferVmRejection on trap errors with caller con
   });
   assert.equal(resPayable.label, 'BLOCKED');
   assert.equal(resPayable.code, 'METHOD_NOT_PAYABLE');
-  assert.match(resPayable.note, /kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic/);
+  assert.match(resPayable.note, /code derived from the call shape because the release wasm emits no panic message/);
 
   // Private callback method called externally
   const resPrivate = await classifyTxError(trapErr, null, 'agent.testnet', {
@@ -336,7 +336,7 @@ test('classifyTxError integrates inferVmRejection on trap errors with caller con
   });
   assert.equal(resPrivate.label, 'BLOCKED');
   assert.equal(resPrivate.code, 'METHOD_IS_PRIVATE');
-  assert.match(resPrivate.note, /kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic/);
+  assert.match(resPrivate.note, /code derived from the call shape because the release wasm emits no panic message/);
 
   // Payable method with deposit on trap: must stay TX_FAILED
   const resMandate = await classifyTxError(trapErr, null, 'alice.testnet', {

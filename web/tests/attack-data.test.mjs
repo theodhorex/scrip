@@ -23,7 +23,7 @@ test("formatUsdcUnits formats raw 6-decimal units to clean display string", () =
   assert.equal(formatUsdcUnits("0"), "0.00 USDC");
 });
 
-test("loadAttackResults: berkas ada (real results/attack.json)", () => {
+test("loadAttackResults: file present (real results/attack.json)", () => {
   const result = loadAttackResults();
   assert.ok(result !== null, "Expected loadAttackResults() to load real results/attack.json");
   assert.equal(result.network, "testnet");
@@ -49,13 +49,13 @@ test("loadAttackResults: berkas ada (real results/attack.json)", () => {
   assert.equal(result.scrip.paymentsPaid, "10");
 });
 
-test("loadAttackResults: berkas hilang mengembalikan null tanpa melempar", () => {
+test("loadAttackResults: missing file returns null without throwing", () => {
   const nonExistentPath = join(tempDir, "does-not-exist.json");
   const result = loadAttackResults(nonExistentPath);
   assert.equal(result, null);
 });
 
-test("loadAttackResults: JSON rusak mengembalikan null tanpa melempar", () => {
+test("loadAttackResults: malformed JSON returns null without throwing", () => {
   const brokenPath = join(tempDir, "broken.json");
   writeFileSync(brokenPath, "{ broken json content", "utf8");
   try {
@@ -66,7 +66,7 @@ test("loadAttackResults: JSON rusak mengembalikan null tanpa melempar", () => {
   }
 });
 
-test("loadAttackResults: bidang kurang mengembalikan null tanpa melempar", () => {
+test("loadAttackResults: missing fields return null without throwing", () => {
   // Test via parseAttackResults
   assert.equal(parseAttackResults(null), null);
   assert.equal(parseAttackResults([]), null);
@@ -104,7 +104,7 @@ test("loadAttackResults: bidang kurang mengembalikan null tanpa melempar", () =>
   }
 });
 
-test("loadAttackCatalog: berkas ada mengembalikan tipe katalog terketik", () => {
+test("loadAttackCatalog: present file returns a typed catalog", () => {
   const validCatalog = {
     cases: [
       {
@@ -141,13 +141,13 @@ test("loadAttackCatalog: berkas ada mengembalikan tipe katalog terketik", () => 
   }
 });
 
-test("loadAttackCatalog: berkas hilang mengembalikan null tanpa melempar", () => {
+test("loadAttackCatalog: missing file returns null without throwing", () => {
   const nonExistent = join(tempDir, "non-existent-catalog.json");
   const result = loadAttackCatalog(nonExistent);
   assert.equal(result, null);
 });
 
-test("loadAttackCatalog: JSON rusak mengembalikan null tanpa melempar", () => {
+test("loadAttackCatalog: malformed JSON returns null without throwing", () => {
   const brokenPath = join(tempDir, "broken-catalog.json");
   writeFileSync(brokenPath, "{ invalid json @@", "utf8");
   try {
@@ -158,7 +158,7 @@ test("loadAttackCatalog: JSON rusak mengembalikan null tanpa melempar", () => {
   }
 });
 
-test("loadAttackCatalog: bidang kurang mengembalikan null tanpa melempar", () => {
+test("loadAttackCatalog: missing fields return null without throwing", () => {
   // Missing cases array
   assert.equal(parseAttackCatalog({}), null);
   assert.equal(parseAttackCatalog({ cases: "not an array" }), null);
@@ -190,7 +190,7 @@ test("loadAttackCatalog: bidang kurang mengembalikan null tanpa melempar", () =>
   );
 });
 
-test("loadAttackCatalog: mendukung kategori integer dan string", () => {
+test("loadAttackCatalog: accepts integer and string categories", () => {
   const parsed = parseAttackCatalog({
     cases: [
       {
@@ -207,7 +207,7 @@ test("loadAttackCatalog: mendukung kategori integer dan string", () => {
   assert.equal(parsed.cases[0].category, 1);
 });
 
-test("buildCategoryMatrix dan getOutOfScopeCases menyusun matriks dan memfilter OUT_OF_SCOPE", () => {
+test("buildCategoryMatrix and getOutOfScopeCases build the matrix and filter OUT_OF_SCOPE", () => {
   const cases = [
     {
       id: "C1",

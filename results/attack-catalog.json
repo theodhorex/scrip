@@ -43314,7 +43314,7 @@
         "label": "BLOCKED",
         "code": "METHOD_IS_PRIVATE",
         "txHash": "Ap4wNsz9RxDx23WkSzM2M6MJy9vFzVGVjuyMfhqVJeit",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -43343,7 +43343,7 @@
         "label": "BLOCKED",
         "code": "METHOD_IS_PRIVATE",
         "txHash": "6z6fbBgLJ2PS4Y95KrrooYoZE9856sAk6iK436DHSVYM",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -43372,7 +43372,7 @@
         "label": "BLOCKED",
         "code": "METHOD_IS_PRIVATE",
         "txHash": "4peNm5jMoT8TDVQkxy7yivhgudmPNturCKXS7TzirVvH",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -43401,7 +43401,7 @@
         "label": "BLOCKED",
         "code": "METHOD_IS_PRIVATE",
         "txHash": "7oPfT2JTUNZ5mnY61qcLasvbbf5Si7Dwya1JSH8B31yr",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -43430,7 +43430,7 @@
         "label": "BLOCKED",
         "code": "METHOD_IS_PRIVATE",
         "txHash": "FQBksESPpCLayhcu7pCNxe5UxDwM4oQQ3NzRypesrRZS",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -43459,7 +43459,7 @@
         "label": "BLOCKED",
         "code": "METHOD_IS_PRIVATE",
         "txHash": "A6dHsBSqDXwjzi182aiQmHm84ERFwVdHAuP5ArCD7uKz",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -43931,7 +43931,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "CWLohsWrB9uQZQiBkXWzbFumhGLaLxtkNaD5gpVXbMPM",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic; top-up: 80042061586059200000001 yoctoNEAR from funder (deposit: 1)"
+        "note": "code derived from the call shape because the release wasm emits no panic message; top-up: 80042061586059200000001 yoctoNEAR from funder (deposit: 1)"
       },
       "verdict": "PASS"
     },
@@ -43962,7 +43962,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "2PDVbxCrTzNkq9HgRqr3Da8TtYdbXX3mRRYiGc6CG9yP",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic; top-up: 81042061586059200000000 yoctoNEAR from funder (deposit: 1000000000000000000000)"
+        "note": "code derived from the call shape because the release wasm emits no panic message; top-up: 81042061586059200000000 yoctoNEAR from funder (deposit: 1000000000000000000000)"
       },
       "verdict": "PASS"
     },
@@ -43993,7 +43993,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "CkRZhgRK8zCkt4tQTrewvPZeVQpGeRpTwymG18RcMPww",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic; top-up: 90042061586059200000000 yoctoNEAR from funder (deposit: 10000000000000000000000)"
+        "note": "code derived from the call shape because the release wasm emits no panic message; top-up: 90042061586059200000000 yoctoNEAR from funder (deposit: 10000000000000000000000)"
       },
       "verdict": "PASS"
     },
@@ -44024,7 +44024,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "9S2WHLtmNWgK3o2L2LNeJFdENKUMyWZGBshhzw3q8L1",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic; top-up: 1080042061586059200000000 yoctoNEAR from funder (deposit: 1000000000000000000000000)"
+        "note": "code derived from the call shape because the release wasm emits no panic message; top-up: 1080042061586059200000000 yoctoNEAR from funder (deposit: 1000000000000000000000000)"
       },
       "verdict": "PASS"
     },
@@ -44053,7 +44053,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "6aQ9L4BFAy92KgVCcr214WVMMHZ1KrJvvRB8xrx7jsyF",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -44082,7 +44082,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "CBXAPBKoKAVZpeFRHbnAxqe7Nh9S597ZAJRL2i8LkDXM",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -44111,7 +44111,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "Dt613xtkkkmPSQhMc4roPWgndGnFQMmDrkKbXzyMW9RN",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -44140,7 +44140,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "DX5peD1m1QwnoT6UWUa8dQpJe6iRSTGKR7NJYZ6gd44N",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -44171,7 +44171,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "G8vnszzmU4N3ntVNEDxQ6f53BYJmRVBMPaBcsjdoEyi8",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -44202,7 +44202,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "61uD3B2m6gVn2tdFFj6VxniiUR6wuYTRGMrU6b92qm9U",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -44233,7 +44233,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "5WLNTa6tSF5vnWBJWa2T5QfbMuWZQtYGBpdCxKbnnizW",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -44264,7 +44264,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "5ArZrCsbF5YYDSGfMA7BuBSyb8D3r2vdic9QVmEFv2b",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -44295,7 +44295,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "HKVMmyCPnnpHVcCcho26ZAtXVTeUjHdM4nyS9aueqhYU",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic; top-up: 80000000000000000000001 yoctoNEAR from funder (deposit: 1)"
+        "note": "code derived from the call shape because the release wasm emits no panic message; top-up: 80000000000000000000001 yoctoNEAR from funder (deposit: 1)"
       },
       "verdict": "PASS"
     },
@@ -44326,7 +44326,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "GH1KTQbPmMGbZuiqVSg8Q883csdXRkoBoid6G56mvVyY",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic; top-up: 81000000000000000000000 yoctoNEAR from funder (deposit: 1000000000000000000000)"
+        "note": "code derived from the call shape because the release wasm emits no panic message; top-up: 81000000000000000000000 yoctoNEAR from funder (deposit: 1000000000000000000000)"
       },
       "verdict": "PASS"
     },
@@ -44357,7 +44357,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "7FNk5aNFeTUf2ZmZNsyVjFkrjuajRGX5hTZDSJMEvwUM",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic; top-up: 90000000000000000000000 yoctoNEAR from funder (deposit: 10000000000000000000000)"
+        "note": "code derived from the call shape because the release wasm emits no panic message; top-up: 90000000000000000000000 yoctoNEAR from funder (deposit: 10000000000000000000000)"
       },
       "verdict": "PASS"
     },
@@ -44388,7 +44388,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "38qG7j7eh8j6CxpJv2tQXTgQsAoSj73ZniS7WS1kZ8fY",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic; top-up: 1080000000000000000000000 yoctoNEAR from funder (deposit: 1000000000000000000000000)"
+        "note": "code derived from the call shape because the release wasm emits no panic message; top-up: 1080000000000000000000000 yoctoNEAR from funder (deposit: 1000000000000000000000000)"
       },
       "verdict": "PASS"
     },
@@ -44416,7 +44416,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "3tNumFDjXhV3pbL5zCsdao22iSHBb1FQae8YPTgEThuU",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -44444,7 +44444,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "6Rg1XxXWqeShRZ6vo3rjn22Wkss2k1KCBhhPDwkD9YYd",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -44472,7 +44472,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "C6yFnFRCkxJFfDyBSBPbZ2VED1uNh4JSnFtUeAr4Yepu",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
@@ -44500,7 +44500,7 @@
         "label": "BLOCKED",
         "code": "METHOD_NOT_PAYABLE",
         "txHash": "DTZHYhZX24qzGNMC9vaNQD5J3Mw3nipQo6ENTcmSPCYQ",
-        "note": "kode diturunkan dari bentuk panggilan karena wasm rilis tidak mengeluarkan pesan panic"
+        "note": "code derived from the call shape because the release wasm emits no panic message"
       },
       "verdict": "PASS"
     },
