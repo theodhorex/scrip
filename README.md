@@ -45,7 +45,7 @@ Every step is "do X, see Y". Nothing to install for steps 1 to 6: no wallet, no 
 | # | Do | See |
 |---|---|---|
 | 1 | Open **[scrip-dev.vercel.app/try](https://scrip-dev.vercel.app/try)** | the live mandate read from NEAR testnet: budget left, per-payment cap 0.1 USDC, guardian approval above 0.05 USDC, two allowed shops |
-| 2 | Click **Pay shop A 0.01** | `PAID`. The transaction link opens on the explorer; the budget meter goes down |
+| 2 | Click **Pay shop A 0.01** | `PAID`, gasless: by default the agent signs a NEP-366 delegate and Scrip's hosted relayer pays the gas. The transaction link opens on the explorer; the budget meter goes down |
 | 3 | Click **Pay the attacker** | `REFUSED: RECIPIENT_NOT_ALLOWED`, a real transaction where the contract said no before any token moved |
 | 4 | Click **Over the cap**, then **Without approval** | `REFUSED: OVER_PER_PAYMENT_CAP`, then `REFUSED: NEEDS_APPROVAL` |
 | 5 | Scroll to **The agent key, public on purpose**, copy it and try to use it for anything else (send NEAR, call another method, add a key) | NEAR rejects it at the protocol level: the key is a function-call key bound to `request_payment` on one contract |
@@ -121,7 +121,8 @@ Scrip moves the spending rules out of the agent and into a NEAR contract. Five p
 - **Create Your Own Mandate**: [/mandates/new](https://scrip-dev.vercel.app/mandates/new) connects a NEAR testnet wallet (Meteor, Intear, Nightly, Ledger and others via near-connect). One approval creates an agent sub-account whose only key can call `request_payment`, a guardian sub-account, and the mandate; then you fund it (wNEAR wrapped in the same transaction, or testnet USDC), pay as your own agent, revoke, and withdraw what is left. A browser simulator of the same rules sits below it for visitors without a wallet
 - **Guardian Approvals**: payments at or above the threshold need a single-use, expiring approval bound to an exact intent hash
 - **Signing Guard**: the client SDK checks account age, contract code hash, prior interactions and an evidenced blocklist before signing; `allow` signs, `warn` asks a human, `block` stops
-- **Gasless Relayer**: the facilitator validates the key, rate-limits, deduplicates nonces and sponsors gas for NEP-366 delegate actions
+- **Hosted Gasless Relayer**: `POST https://scrip-dev.vercel.app/api/relay` runs the facilitator's checks (signature, function-call key over RPC, nonce, expiry window, dedupe, rate limits, relayer balance floor) plus one more: the sender must be the agent recorded on the mandate it pays from. Any mandate on the live contract can pay gasless, and nobody else can make the relayer spend gas. `/try` uses it by default
+- **SDK**: `scrip-client` 0.1.0 on a [GitHub release](https://github.com/theodhorex/scrip/releases/tag/client-v0.1.0); `payGasless()` signs and relays a payment in one call and returns the contract's answer
 - **Disposable Envelopes**: one sub-account per task, deleted at the end with its storage refunded
 - **Real-Model Trials**: four open models run on GitHub Actions against honest, injected and overcharged invoices, 390 recorded decisions
 
@@ -274,7 +275,8 @@ What NEAR makes possible here, concretely:
 | `live-guardian.envtest-theo-1747.testnet` | Guardian: approvals and loosening |
 | `live-shop-a…`, `live-shop-b.envtest-theo-1747.testnet` | The two allowed recipients |
 | `envtest-theo-1747.testnet` | Owner and funder |
-| `relayer-theo-1747.testnet` | NEP-366 relayer used by the facilitator |
+| `relayer-theo-1747.testnet` | NEP-366 relayer used by the local facilitator |
+| [`relay.envtest-theo-1747.testnet`](https://testnet.nearblocks.io/address/relay.envtest-theo-1747.testnet) | Hosted relayer behind `/api/relay`; refuses to relay below 0.5 NEAR |
 | [`3e2210e1…b8af`](https://testnet.nearblocks.io/address/3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af) | Testnet USDC (NEP-141) |
 | `amc*`, `dma*`, `task-*` `.envtest-theo-1747.testnet` | Disposable envelopes from demo, gate and catalog runs; deleted after each run |
 
@@ -359,11 +361,12 @@ Every suite below runs offline unless noted. Counts are from the clean rerun of 
 |---|---|---|---|
 | Contract unit and property tests | `make contract-test` | **138 passed** (~3 min) | Invariants P1 to P10, fund conservation, state transitions, role matrix, and the 627 Layer A catalog cases |
 | Contract sandbox (needs network once) | `make contract-it` | integration suite + **160** Layer D cases | Release wasm against a mock NEP-141 in near-workspaces: parallel burst, refunds, malformed calls |
-| Client SDK | `cd client && node --test test/` | **163 passed** | Intent hashing, guarded signing, counterparty guard |
+| Client SDK | `cd client && node --test test/` | **165 passed** | Intent hashing, guarded signing, counterparty guard, `payGasless` delegates accepted by the facilitator validator |
 | Facilitator (relayer) | `cd facilitator && node --test test/` | **293 passed** | Key checks, 64-position bit flips, replay, rate limits, NEP-366 validation |
 | Demo scenarios | `make demo-test` | **35 passed** | Honest payment, injected agent refused, overcharge refused, x402 flow |
 | Scripts and verifiers | `make script-test` | **48 passed** | CLI parsing, envelope recovery sweeps, on-chain verification, link extraction |
-| Web | `cd web && node --test src/lib/ tests/` | **197 passed** | Live outcome parsing, event parsing, transaction verification, owner-flow transaction builders, rule simulation, catalog loading |
+| Web | `cd web && node --test src/lib/ tests/` | **205 passed** | Live outcome parsing, event parsing, transaction verification, owner-flow transaction builders, rule simulation, catalog loading, hosted relayer gate (and a check that its relayer modules are byte-identical to `facilitator/src`) |
+| Hosted relayer on testnet (needs network, no key) | `cd web && RELAY_URL=https://scrip-dev.vercel.app/api/relay node scripts/relay-e2e.mjs` | **all checks passed** ([`results/relay-e2e.json`](results/relay-e2e.json)) | Gasless payment settled, gasless payment to an attacker refused on-chain, delegate from a non-agent refused by the relayer |
 | Owner flow on testnet (needs network and a funded key) | `cd web && KEY_DIR=… node scripts/owner-flow-e2e.mjs` | **all checks passed** ([`results/owner-flow-e2e.json`](results/owner-flow-e2e.json)) | Signs the exact transactions `/mandates/new` hands to the wallet: create agent and guardian, create and fund a wNEAR mandate, pay, two refusals, agent key cannot send NEAR, revoke, withdraw |
 | Attack catalog, Layer C | `node scripts/attack-catalog/run.mjs --layers C` | **317 passed** | Client payload validation |
 | Attack catalog, Layer B | `node scripts/attack-catalog/run.mjs --layers B` | **385 passed** | Relayer checks |
@@ -444,6 +447,22 @@ bun run dev            # http://localhost:3000, reads the live testnet contract
 
 No environment variables are needed. Optional: `SCRIP_SAMPLE_DATA=1` switches the dashboard to bundled sample data; `SCRIP_CONTRACT_ID` and `SCRIP_MANDATE_IDS` point it at another deployment. Deployment notes: [web/DEPLOY.md](web/DEPLOY.md).
 
+### Use the SDK
+
+```bash
+npm install --allow-remote=all https://github.com/theodhorex/scrip/releases/download/client-v0.1.0/scrip-client-0.1.0.tgz
+```
+
+```js
+import { KeyPair } from 'near-api-js';
+import { payGasless } from 'scrip-client';
+
+const r = await payGasless({ agentId, keyPair: KeyPair.fromString(agentKey), contractId, mandateId, recipient, amount: '10000' });
+// { ok: true, txHash, innerStatus: 'Settled' } or { ok: true, innerStatus: 'Rejected', innerCode: 'RECIPIENT_NOT_ALLOWED' }
+```
+
+Details: [client/README.md](client/README.md). The hosted relayer needs `RELAYER_ACCOUNT_ID` and `RELAYER_PRIVATE_KEY` on the deployment; without them `/api/relay` answers `RELAYER_NOT_CONFIGURED` and `/try` falls back to the agent key paying its own gas.
+
 ### Run the tests
 
 ```bash
@@ -498,6 +517,7 @@ scrip/
 
 **Not trustless:**
 - **Relayer liveness**: if the relayer is down or censors, the agent's payments stall (an owner can run another relayer or submit directly)
+- **Hosted relayer is a shared demo service**: its dedupe set lives in memory per serverless instance (a replay that reaches another instance still fails on-chain on the reused nonce, at the cost of a little relayer gas), and its rate limits are per instance. It runs on testnet with a 3 NEAR account and stops relaying below 0.5 NEAR
 - **Indexers for the signing guard**: if they are unreachable the guard fails closed to `warn`
 - **Local guard state**: code-hash pins and interaction counts are local files per client
 - **Shared token pool**: mandates on one contract share its USDC balance; isolation relies on the contract's ledger (use one envelope per tenant to avoid it)

@@ -11,8 +11,12 @@ Node 20+, ESM. One runtime dependency: `near-api-js` 7.4.0 (pinned).
 From the GitHub release (no npm registry needed):
 
 ```bash
-npm install https://github.com/theodhorex/scrip/releases/download/client-v0.1.0/scrip-client-0.1.0.tgz
+npm install --allow-remote=all https://github.com/theodhorex/scrip/releases/download/client-v0.1.0/scrip-client-0.1.0.tgz
 ```
+
+npm 12 refuses tarball URLs unless `--allow-remote=all` is passed (older npm does not need the flag). Or download the
+`.tgz` from the [release page](https://github.com/theodhorex/scrip/releases/tag/client-v0.1.0) and run
+`npm install ./scrip-client-0.1.0.tgz`.
 
 ## Pay gasless in five lines
 
