@@ -150,3 +150,10 @@ html:has(.nl-app), body:has(.nl-app) { background: #050505; }
 .nl-app .bp-btn-primary:hover { box-shadow: 0 0 0 4px rgba(255,255,255,.12); }
 .nl-app .bp-btn { transition: background-color .25s, color .25s, border-color .25s, box-shadow .35s var(--ease), transform .35s var(--ease); }
 .nl-app .bp-app-card .bp-app-link-cta span { transition: translate .35s var(--ease); }
+
+/* "Try a payment" panel on the new-mandate page */
+.nl-app .bp-app-try-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 16px; margin-top: 18px; }
+@media (max-width: 700px) { .nl-app .bp-app-try-grid { grid-template-columns: minmax(0, 1fr); } }
+.nl-app .bp-app-try-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; margin-top: 18px; }
+.nl-app .bp-app-try-result { min-height: 64px; margin-top: 18px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); animation: nl-dash-row .45s var(--ease) both; }
+.nl-app .bp-app-try-result .bp-app-chip { margin-right: 10px; }

@@ -16,6 +16,7 @@ function getServerTime() {
   return 0;
 }
 import type { U128 } from "@/lib/types";
+import { TryPayment } from "./TryPayment";
 
 function parseUsdcToU128(input: string): { value: U128; error?: string } {
   const trimmed = input.trim();
@@ -352,10 +353,10 @@ export function NewMandateForm() {
             aria-disabled="true"
             className="bp-btn bp-btn-secondary bp-app-btn-off py-2.5"
           >
-            Wallet connection not implemented yet
+            Creating on testnet needs a wallet (not built yet)
           </button>
           <p className="bp-app-hint text-center">
-            Form is in preview &amp; validation mode for the hackathon prototype.
+            This form checks your input and shows the contract call it would send. Use &ldquo;Try a payment&rdquo; to see the rules run.
           </p>
         </div>
       </form>
@@ -378,6 +379,8 @@ export function NewMandateForm() {
             <code>{JSON.stringify(mandateArgsPreview, null, 2)}</code>
           </pre>
         </div>
+
+        <TryPayment mandate={mandateArgsPreview} />
 
         <div className="bp-plate p-5 text-xs text-bp-muted space-y-2">
           <p className="bp-kicker">
