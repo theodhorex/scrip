@@ -1,8 +1,47 @@
-# scrip-client (pure library)
+# scrip-client
 
-Node ESM, no network, no keys held. One dependency: `near-api-js` 7.4.0 (pinned, for `delegate.mjs`; run `npm install` once). Run: `make -C .. test` or `cd client && npm test`.
+Agent-side SDK for [Scrip](https://github.com/theodhorex/scrip) spending mandates on NEAR testnet. Your agent holds a
+function-call key that can only call `request_payment`; this library signs those calls as NEP-366 delegates, sends
+them to a relayer that pays the gas, and reads back what the contract decided.
+
+Node 20+, ESM. One runtime dependency: `near-api-js` 7.4.0 (pinned).
+
+## Install
+
+From the GitHub release (no npm registry needed):
+
+```bash
+npm install https://github.com/theodhorex/scrip/releases/download/client-v0.1.0/scrip-client-0.1.0.tgz
+```
+
+## Pay gasless in five lines
+
+Create a mandate at [scrip-dev.vercel.app/mandates/new](https://scrip-dev.vercel.app/mandates/new) (or use the
+public demo agent in `web/src/data/live.json`), then:
+
+```js
+import { KeyPair } from 'near-api-js';
+import { payGasless } from 'scrip-client';
+
+const r = await payGasless({
+  agentId: 'scrip-agent-xxxx.you.testnet',
+  keyPair: KeyPair.fromString(process.env.AGENT_KEY), // the agent's function-call key
+  contractId: 'live-scrip.envtest-theo-1747.testnet',
+  mandateId: 2,
+  recipient: 'live-shop-a.envtest-theo-1747.testnet',
+  amount: '10000', // token units (0.01 USDC)
+});
+// r = { ok, txHash, innerStatus: 'Settled' | 'Rejected' | 'Refunded' | ..., innerCode, code, retryable }
+```
+
+`ok` means the relayer submitted the transaction. The contract's answer is `innerStatus`: a payment to a recipient
+outside the allowlist comes back `Rejected` with `innerCode: 'RECIPIENT_NOT_ALLOWED'`, and no token moves. The hosted
+relayer (`https://scrip-dev.vercel.app/api/relay`) only relays for the agent recorded on the mandate; pass `relayUrl`
+to use your own facilitator (`facilitator/` in the repo).
 
 ## API
+
+- `payGasless(...)` (above), `HOSTED_RELAY_URL`, `TESTNET_RPC_URL`. The only module that uses the network; `provider` and `fetch` are injectable.
 - `intentHash({mandateId, recipient, amount, nonce, expiresAtMs})` → `Uint8Array(32)`; `intentHashHex(...)` → hex.
   `mandateId/nonce/expiresAtMs`: BigInt or safe-integer Number. `amount`: canonical decimal string.
   Throws `TypeError` (wrong type, non-integer Number) / `RangeError` (range, non-canonical, bad recipient).
@@ -34,3 +73,7 @@ Node ESM, no network, no keys held. One dependency: `near-api-js` 7.4.0 (pinned,
 ## Vectors
 `python3 tools/gen_vectors.py` writes `docs/vectors/intent_hash.json` using only `hashlib` (never calls JS).
 Tests read that file; expected hashes are never computed in JS. The Rust contract should reuse the same file.
+
+## Tests
+
+`npm test` (offline, `node --test`). From the repo root, `make test` runs them with the contract and facilitator suites.

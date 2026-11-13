@@ -1,9 +1,35 @@
 {
   "name": "scrip-client",
   "version": "0.1.0",
-  "private": true,
+  "description": "Agent-side SDK for Scrip spending mandates on NEAR: sign request_payment delegates, pay gasless through the hosted relayer, verify intent hashes, parse events.",
   "type": "module",
-  "description": "Pure client library for Scrip: intent hash, NEP-297 event parser, stats reducer",
+  "main": "./src/index.mjs",
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/theodhorex/scrip.git",
+    "directory": "client"
+  },
+  "homepage": "https://scrip-dev.vercel.app",
+  "keywords": [
+    "near",
+    "ai-agents",
+    "payments",
+    "nep-366",
+    "meta-transactions",
+    "spending-limits"
+  ],
   "scripts": {
     "test": "node --test test/"
   },

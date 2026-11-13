@@ -1,17 +1,17 @@
 {
-  "relay": "http://127.0.0.1:3055/api/relay",
+  "relay": "https://scrip-dev.vercel.app/api/relay",
   "contractId": "live-scrip.envtest-theo-1747.testnet",
   "mandateId": 1,
-  "startedAt": "2026-11-13T11:30:49.431Z",
+  "startedAt": "2026-11-13T11:39:13.694Z",
   "steps": [
     {
       "name": "gasless payment to shop A (0.01 USDC)",
-      "txHash": "48d47bB1drU4jnN4EHBk86Y6NkS2bUXSuPzCLttDCi7j",
+      "txHash": "FKMrk826hPAJvAqAYQ3iLtiMLW95jzxXYCdWs354NqQD",
       "result": "Settled"
     },
     {
       "name": "gasless payment to attacker.testnet",
-      "txHash": "4oJ3k6shfPXJZSmiiuqqn4BYFBoqUegpBoJRAVrZdA5G",
+      "txHash": "84P5kdsnRHVhwCwArVoY7YcnWPkCvwhNbghAouQcbtBd",
       "result": "Rejected RECIPIENT_NOT_ALLOWED"
     },
     {
@@ -20,5 +20,5 @@
     }
   ],
   "relayer": "relay.envtest-theo-1747.testnet",
-  "finishedAt": "2026-11-13T11:31:02.721Z"
+  "finishedAt": "2026-11-13T11:39:25.347Z"
 }
