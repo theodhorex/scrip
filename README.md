@@ -21,9 +21,16 @@ Each task runs inside an isolated sub-account envelope funded with an exact budg
 | Contract vault | [`amc*.envtest-theo-1747.testnet`](https://testnet.nearblocks.io/txns/Ap3xT6w2RimLu1UkcdsjeBTKpDXgX9Pxr6SmnbreTEWY) (NEAR testnet, ephemeral envelope) |
 | Relayer / Facilitator | `relayer-theo-1747.testnet` (NEP-366 meta-transaction relayer on FastNEAR RPC) |
 | Settlement token | Testnet USDC ([`3e2210e1184b...`](https://testnet.nearblocks.io/account/3e2210e1184b45b64c8a434c0a7e7b23cc04ea7eb7a6c3c32520d03d4afcb8af)) |
+| Live demo | [scrip-tawny.vercel.app/try](https://scrip-tawny.vercel.app/try): send real testnet payments as the agent, no wallet needed. Contract [`live-scrip.envtest-theo-1747.testnet`](https://testnet.nearblocks.io/address/live-scrip.envtest-theo-1747.testnet), mandate #1 |
 | Repository | [`theodhorex/scrip`](https://github.com/theodhorex/scrip) |
 | Verification | [JUDGES.md](JUDGES.md) (claims-to-evidence matrix), [docs/TRY_IT.md](docs/TRY_IT.md) (step-by-step walkthrough) |
 | Test suite | 1,999 attack catalog cases executed (627 contract, 385 facilitator, 317 client, 160 sandbox, 510 live testnet): 1,894 PASS, 0 FAIL, 0 BREACH; the other 105 are SKIPPED (84 public testnet RPC rate limits or outages, 21 structurally unreachable on a live testnet), never counted as passes. Clean rerun, 10 to 12 Nov 2026. Plus 138 contract unit/property tests and script/web test suites |
+
+## Try it live on testnet
+
+Open [/try](https://scrip-tawny.vercel.app/try). The page holds the agent's key for a real mandate on NEAR testnet (contract `live-scrip.envtest-theo-1747.testnet`, mandate #1: budget 10 USDC, at most 0.1 USDC per payment, guardian approval above 0.05 USDC, two allowed shops). Pay a shop and the tokens move. Pay `attacker.testnet`, go over the cap or skip the approval, and the contract refuses on-chain with `RECIPIENT_NOT_ALLOWED`, `OVER_PER_PAYMENT_CAP` or `NEEDS_APPROVAL`. Every click is a transaction with an explorer link.
+
+The agent key in the page is public on purpose. It is a function-call key that can only call `request_payment` on that contract, which is the whole claim: whoever holds the agent key can do exactly what the page lets you do, and nothing more. The contract's own full-access key was deleted after init. The mandate is shared by all visitors, so when the budget runs out payments are refused with `OVER_BUDGET`. Setup: [`scripts/live-setup.mjs`](scripts/live-setup.mjs); its output is [`web/src/data/live.json`](web/src/data/live.json).
 
 ## Try it in two minutes
 
@@ -324,6 +331,7 @@ All transactions are checked by `make verify-onchain`. Reproduce a model run fro
 3. **What has not been proven:**
    - Formal verification: invariants (P1 through P10) have been verified with property-based testing (`proptest`), mutation testing, and sandbox execution, but have not been subjected to machine-checked mathematical proof (e.g. Coq or TLA+).
    - Independent security audit: the codebase underwent two internal fresh-context audit passes (AUDIT_1, AUDIT_2) and mutation testing, but has not received a formal review from an external commercial auditing firm.
+   - Live demo key: the `/try` page publishes the agent's function-call key on purpose. Anyone can spend the shared demo budget on the two allowed shops and use up the key's gas allowance (4.5 testnet NEAR). That bounds the demo, it does not break a rule; when it runs out the page shows refusals until the mandate is topped up.
    - Mainnet operation: all testing was conducted exclusively on NEAR Testnet (`testnet`). No mainnet contracts are deployed.
    - Scope of the agent demos: the scripted demo agent (`demo/agent.mjs`) is deterministic and obeys injections 100% of the time. The real-model trials use four small open models (1.7B to 4B parameters) on CPU; they measure how often small models obey an injected note, not how robust frontier models are. The claim is that Scrip bounds the loss whatever the model decides, not that any model is safe.
    - Comprehensive security guarantee: these differentiators, test suites, and attack catalog results do not constitute proof of comprehensive or universal security. They establish resilience strictly against the cataloged threat vectors tested under stated assumptions.
