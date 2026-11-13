@@ -50,18 +50,19 @@ export function ProofSection() {
             <p className="nl-note" style={{ marginTop: 14 }}>The same run left {PROOF.cleanup.leftoverCount} leftover accounts.</p>
           </div>
           <div>
-            <h3 className="nl-h3" style={{ marginTop: 0 }}>Test suites</h3>
+            <h3 className="nl-h3" style={{ marginTop: 0 }}>Test suites and checks</h3>
             <div className="nl-stats">
               {VERIFIED_STATS.map((s) => (
                 <div className="nl-stat" key={s.label} data-reveal="rise"><b>{s.value}</b><span>{s.label}</span><small>{s.source}</small></div>
               ))}
             </div>
-            <p className="nl-note" style={{ marginTop: 14 }}>Counts {VERIFIED_STATS_NOTE}.</p>
+            <p className="nl-note" style={{ marginTop: 14 }}>Counts {VERIFIED_STATS_NOTE}. The catalog covers 1,999 listed cases in five layers (A contract, B relayer, C client, D sandbox, E live testnet).</p>
+            <p className="nl-body" style={{ marginTop: 14 }}>Recorded transactions are re-checked against the public FastNear indexer on <Link className="nl-link" href="/verify">the verify page</Link>: 35 of 35 matched on 13 Nov 2026. Run <code>node scripts/verify-onchain.mjs</code> to do it yourself.</p>
           </div>
         </div>
 
         <h3 className="nl-h3">Attack catalog</h3>
-        <Explorer rows={rows} verifiedD={{ pass: 160, total: 160, asOf: "3 Nov 2026" }} />
+        <Explorer rows={rows} verifiedD={{ pass: 160, total: 160, asOf: "12 Nov 2026" }} />
         <p style={{ marginTop: 28 }}><Link className="nl-link" href="/attack">Open the full attack page</Link></p>
       </div>
     </section>

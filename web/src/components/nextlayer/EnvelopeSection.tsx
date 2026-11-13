@@ -10,7 +10,7 @@ export function EnvelopeSection() {
   return (
     <section className="nl-sec" id="envelope" aria-labelledby="envelope-title">
       <div className="nl-wrap">
-        <SectionHead id="envelope" n={6} label="Around the contract" lines={["One disposable account.", "One look at the recipient."]}
+        <SectionHead id="envelope" n={7} label="Around the contract" lines={["One disposable account.", "One look at the recipient."]}
           plain="Two helper pieces around the contract: a throwaway account for the agent, and a check on who is being paid. The recipient check is not connected to payments yet." />
         <div className="nl-env">
           <div data-reveal="rise">

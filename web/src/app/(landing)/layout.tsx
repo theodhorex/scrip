@@ -10,7 +10,7 @@ const mono = JetBrains_Mono({ variable: "--font-mono", subsets: ["latin"], displ
 export const metadata: Metadata = {
   title: "Scrip: give agents a budget, not your keys",
   description:
-    "Scrip is a NEAR testnet contract that caps what an AI agent can spend: a budget, allowed recipients and a guardian. Testnet only, not audited.",
+    "Scrip is a NEAR testnet contract that caps what an AI agent can spend: a budget, allowed recipients and a guardian. Tested against 4 small real AI models and a 1,999-case attack catalog, with transactions you can verify. Testnet only, not audited.",
 };
 
 export const viewport: Viewport = { colorScheme: "dark", themeColor: "#050505" };

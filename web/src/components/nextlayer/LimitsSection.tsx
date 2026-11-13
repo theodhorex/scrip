@@ -14,7 +14,9 @@ import "./limits.css";
 const LIMITS = [
   { t: "Testnet only.", b: "No mainnet contract is deployed. Nothing here has ever held real money." },
   { t: "No third-party audit.", b: "The contract went through internal review rounds plus unit, property and mutation tests. No independent firm has reviewed it." },
-  { t: "The demo agent is a script, not an LLM.", b: "It always obeys the injected instruction on purpose, to test whether the contract holds. It says nothing about how a real model behaves." },
+  { t: "Real-model tests used small models only.", b: "Four small open models were tested, 390 decisions in total, and qwen3:4b has only 5 seeds. The result says nothing about large models. The recorded demo agent is a script that always obeys the injected note, on purpose." },
+  { t: "Only 6 model decisions ran on-chain.", b: "The rest were judged by a local copy of the contract rules. Overcharge invoices model a dishonest merchant, not a reasoning failure." },
+  { t: "105 attack cases were skipped.", b: "84 hit public RPC limits and 21 cannot be reached on testnet. They are reported as skipped and are not counted as passed." },
   { t: "Counterparty signals need an indexer.", b: "Account age and history cannot come from a node RPC alone. The counterparty guard is a client-side module and is not wired into the main payment flow." },
   { t: "All mandates share one token pool.", b: "Mandates on one deployment share the contract's NEP-141 balance, and isolation is bookkeeping. You also have to trust the token contract itself." },
   { t: "The contract cannot be upgraded.", b: "There is no migrate function and the full-access key was burnt at initialisation. A fix means a new deployment and a withdrawal." },
@@ -75,7 +77,7 @@ export function LimitsSection() {
   return (
     <section className="nl-sec" id="limits" aria-labelledby="limits-title">
       <div className="nl-wrap">
-        <SectionHead id="limits" n={7} label="Limits" lines={["What does not", "exist yet."]}
+        <SectionHead id="limits" n={8} label="Limits" lines={["What does not", "exist yet."]}
           lede="Read this before anything else on the page. It is the same list as the repository README."
           plain="An honest list of what is not ready yet. Scrip is a testnet prototype: do not put real money in it." />
         <div className="nl-limits-grid">
@@ -92,7 +94,7 @@ export function LimitsSection() {
           </ol>
           <div className="nl-lstack-col">
             <LimitStack active={active} />
-            <p className="nl-note">Eight plates, one per limit, standing on the one thing that does hold: the contract checks spent + reserved + amount against the budget on every payment. Hover, focus or press a limit to lift its plate. Drag to turn.</p>
+            <p className="nl-note">{LIMITS.length} plates, one per limit, standing on the one thing that does hold: the contract checks spent + reserved + amount against the budget on every payment. Hover, focus or press a limit to lift its plate. Drag to turn.</p>
           </div>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { RulesSection } from "@/components/nextlayer/RuleMachine";
 import { RaceSection } from "@/components/nextlayer/RaceSection";
 import { GuardianSection } from "@/components/nextlayer/GuardianSection";
 import { ProofSection } from "@/components/nextlayer/ProofSection";
+import { ModelsSection } from "@/components/nextlayer/ModelsSection";
 import { EnvelopeSection } from "@/components/nextlayer/EnvelopeSection";
 import { LimitsSection } from "@/components/nextlayer/LimitsSection";
 import { Closing } from "@/components/nextlayer/Closing";
@@ -28,6 +29,7 @@ export default function LandingPage() {
         <RaceSection />
         <GuardianSection />
         <ProofSection />
+        <ModelsSection />
         <EnvelopeSection />
         <LimitsSection />
       </main>

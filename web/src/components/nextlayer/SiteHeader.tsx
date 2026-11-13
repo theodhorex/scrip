@@ -8,7 +8,7 @@ import "./header.css";
 const LINKS = [
   { href: "#how", label: "How it works", watch: ["what", "how"] },
   { href: "#rules", label: "Rules", watch: ["rules", "race", "guardian"] },
-  { href: "#proof", label: "Proof", watch: ["proof", "envelope"] },
+  { href: "#proof", label: "Proof", watch: ["proof", "models", "envelope"] },
   { href: "#limits", label: "Limits", watch: ["limits", "closing"] },
 ] as const;
 

@@ -6,7 +6,6 @@ import { mapProofData } from "@/lib/proof-data";
 export function formatRecorded(iso: string): string {
   return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(new Date(iso));
 }
-export const RERUN_NOTE = "A re-run is planned before the final freeze.";
 export const RACE = RACE_DATA; // results/attack.json (copy in src/data/attack.json)
 // Verbatim copy of results/gate.json (run of 30 Oct 2026). The old landing keeps its own older copy.
 export const PROOF = mapProofData(gateLab);

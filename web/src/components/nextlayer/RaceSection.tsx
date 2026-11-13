@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { SectionHead } from "./Section";
-import { RACE, RERUN_NOTE, formatRecorded } from "./data";
+import { RACE, formatRecorded } from "./data";
 import { motionOK } from "./scroll-bus";
 import "./base.css";
 import "./race.css";
@@ -101,7 +101,7 @@ export function RaceSection() {
               <div><dt>Scrip paid</dt><dd>{RACE.scrip.paymentsPaid} ({RACE.scrip.spentUsdc} USDC)</dd></div>
               <div><dt>Burst length</dt><dd>about {RACE.scrip.burstSeconds} s</dd></div>
             </dl>
-            <p className="nl-note" style={{ marginTop: 16 }}>Source: results/attack.json. {RERUN_NOTE}</p>
+            <p className="nl-note" style={{ marginTop: 16 }}>Source: results/attack.json.</p>
           </div>
         </div>
       </div>
