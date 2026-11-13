@@ -1,0 +1,116 @@
+/* Dashboard theme. Scoped under .nl-app so it re-skins the existing bp-* classes with the landing tokens
+   (.nl in components/nextlayer/hero.css and base.css). No new palette: near-black, white, one rejection red. */
+.nl-app {
+  --bp-canvas: #050505;
+  --bp-surface: #0b0b0b;
+  --bp-surface-raised: #121212;
+  --bp-line: var(--line);
+  --bp-line-strong: var(--line-strong);
+  --bp-ink: var(--ink);
+  --bp-muted: var(--muted);
+  --bp-pass: #fafafa;
+  --bp-pass-dim: rgba(250, 250, 250, .08);
+  --bp-reject: var(--reject);
+  --bp-reject-dim: rgba(229, 72, 77, .12);
+  --font-geist-sans: var(--font-manrope);
+  --font-geist-mono: var(--font-mono);
+  --font-fraunces: var(--font-manrope);
+  min-height: 100vh; display: flex; flex-direction: column;
+}
+html:has(.nl-app), body:has(.nl-app) { background: #050505; }
+.nl-app *, .nl-app *::before, .nl-app *::after { border-color: var(--line); }
+.nl-app ::selection { background: #fff; color: #050505; }
+.nl-skip { position: absolute; left: 12px; top: -60px; z-index: 100; padding: 12px 18px; background: #fff; color: #050505; border-radius: 999px; }
+.nl-skip:focus { top: 12px; }
+.nl-app :focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+
+/* header */
+.nl-dash-nav { position: sticky; top: 0; z-index: 40; min-height: 64px; background: rgba(5,5,5,.92); border-bottom: 1px solid var(--line); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+.nl-dash-nav-in { max-width: 1760px; margin-inline: auto; padding: 0 var(--gutter); min-height: 64px; display: flex; align-items: center; gap: 12px 32px; flex-wrap: wrap; }
+.nl-dash-brand { display: inline-flex; align-items: center; gap: 12px; color: var(--ink); font-weight: 500; font-size: 18px; letter-spacing: -.01em; min-height: 44px; }
+.nl-dash-mark { display: block; width: 18px; height: 28px; }
+.nl-dash-tag { font-family: var(--mono); font-size: 11.5px; color: var(--strip); border: 1px solid var(--line-strong); border-radius: 999px; padding: 3px 9px; }
+.nl-dash-links { display: flex; align-items: center; gap: 4px 22px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.nl-dash-links::-webkit-scrollbar { display: none; }
+.nl-dash-link { position: relative; display: inline-flex; align-items: center; min-height: 44px; font-size: 15px; color: var(--nav); white-space: nowrap; transition: color .25s var(--ease); }
+.nl-dash-link::after { content: ""; position: absolute; left: 0; right: 0; bottom: 8px; height: 1px; background: #fff; transform: scaleX(0); transform-origin: left; transition: transform .4s var(--ease); }
+.nl-dash-link:hover { color: #fff; }
+.nl-dash-link[aria-current="page"] { color: #fff; }
+.nl-dash-link[aria-current="page"]::after { transform: scaleX(1); }
+.nl-dash-home { display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 999px; background: #fff; color: #050505; font-size: 15px; font-weight: 500; }
+.nl-dash-home:hover { background: #e9e9e9; }
+@media (max-width: 760px) { .nl-dash-links { order: 3; flex-basis: 100%; } .nl-dash-home { margin-left: auto; } }
+
+/* page frame */
+.nl-dash-main { flex: 1; width: 100%; max-width: 1760px; margin-inline: auto; padding: clamp(40px, 5vw, 88px) var(--gutter) clamp(64px, 8vw, 128px); }
+.nl-dash-center { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 22px; }
+.nl-dash-h1 { font-size: clamp(34px, 4.6vw, 70px); line-height: 1.04; letter-spacing: -.012em; font-weight: 400; max-width: 20ch; margin: 0; }
+.nl-dash-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+.nl-dash-footer { border-top: 1px solid var(--line-strong); padding: 28px var(--gutter) 36px; }
+.nl-dash-footer-in { max-width: 1760px; margin-inline: auto; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px 32px; font-size: 14px; color: var(--strip); }
+.nl-dash-footer-links { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.nl-dash-footer-links a { color: var(--muted); min-height: 44px; display: inline-flex; align-items: center; }
+
+/* page head: mono index on a hairline, thin large title, lede, actions */
+.nl-app .bp-app-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 28px 48px; padding-bottom: 0; border-bottom: 0; margin-bottom: clamp(40px, 5vw, 80px); animation: none; }
+.nl-app .bp-app-head > div:first-child { display: grid; gap: 22px; }
+.nl-app .bp-chapter-label { display: flex; align-items: center; gap: 16px; width: 100%; font-family: var(--mono); font-size: 13px; font-variant-caps: normal; letter-spacing: .02em; color: var(--strip); }
+.nl-app .bp-chapter-label::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.nl-app .bp-app-title { margin: 0; font-weight: 400; font-size: clamp(34px, 4.6vw, 70px); line-height: 1.04; letter-spacing: -.012em; max-width: 18ch; }
+.nl-app .bp-app-lede { margin: 0; font-size: clamp(16px, 1.2vw, 19px); line-height: 1.6; color: var(--muted); max-width: 62ch; }
+@media (max-width: 860px) { .nl-app .bp-app-head { grid-template-columns: minmax(0, 1fr); } .nl-app .bp-app-title { max-width: none; } }
+.nl-app .bp-app-stack { gap: clamp(48px, 6vw, 96px); }
+.nl-app .bp-app-section-title { font-weight: 400; font-size: clamp(20px, 1.8vw, 26px); letter-spacing: -.005em; }
+.nl-app .bp-kicker { font-family: var(--mono); font-variant-caps: normal; font-size: 12.5px; letter-spacing: .01em; color: var(--strip); }
+
+/* plates become ruled blocks, not boxes */
+.nl-app .bp-plate { background: transparent; border: 0; border-top: 1px solid var(--line-strong); border-radius: 0; }
+.nl-app .bp-plate-pass { border-top-color: #fff; }
+.nl-app .bp-plate-reject { border-top-color: var(--reject); }
+.nl-app .bp-app-plate, .nl-app .bp-app-card { padding: 22px 0 8px; }
+.nl-app .bp-app-card:hover { translate: none; border-top-color: #fff; }
+.nl-app .bp-app-grid2, .nl-app .bp-app-grid3 { gap: 28px 40px; }
+.nl-app .bp-app-rows > * + * { border-top: 1px solid var(--line); }
+.nl-app .bp-app-row { padding: 16px 0; }
+
+/* chips */
+.nl-app .bp-app-chip { border-radius: 999px; padding: 3px 11px; background: transparent; border-color: var(--line-strong); color: var(--ink); font-size: 12px; }
+.nl-app .bp-app-chip-pass { color: #fff; border-color: rgba(250,250,250,.55); background: var(--bp-pass-dim); }
+.nl-app .bp-app-chip-reject { color: var(--reject); border-color: rgba(229,72,77,.6); background: var(--bp-reject-dim); }
+.nl-app .bp-app-link-cta { color: var(--ink); }
+.nl-app .bp-app-accent { color: #fff; }
+.nl-app .bp-app-inline { color: var(--muted); }
+
+/* buttons: white pill for the main action, outline pill for the rest */
+.nl-app .bp-btn { font-family: var(--font-manrope), system-ui, sans-serif; font-size: 15px; font-weight: 500; letter-spacing: 0; border-radius: 999px; min-height: 44px; padding: 0 24px; transition: background-color .25s, color .25s, border-color .25s, transform .35s var(--ease); }
+.nl-app .bp-btn::after { display: none; }
+.nl-app .bp-btn:hover { transform: none; }
+.nl-app .bp-btn:active { transform: translateY(1px); }
+.nl-app .bp-btn-primary { background: #fff; color: #050505; border: 1px solid #fff; }
+.nl-app .bp-btn-primary:hover { background: #e9e9e9; }
+.nl-app .bp-btn-secondary { background: transparent; color: var(--ink); border: 1px solid var(--line-strong); }
+.nl-app .bp-btn-secondary:hover, .nl-app .bp-btn-secondary:focus-visible { border-color: #fff; background: rgba(255,255,255,.06); }
+.nl-app .bp-btn-sm { min-height: 36px; padding: 0 16px; font-size: 13.5px; }
+.nl-app .bp-btn[disabled], .nl-app .bp-btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; }
+
+/* tables and forms inside Tailwind-styled pages */
+.nl-app table { border-collapse: collapse; }
+.nl-app th { font-weight: 500; }
+.nl-app .bp-app-table-wrap { overflow-x: auto; max-width: 100%; }
+.nl-app input, .nl-app select, .nl-app textarea { background: #0b0b0b; color: var(--ink); border-color: var(--line-strong); border-radius: 0; font-family: var(--mono); }
+.nl-app input::placeholder, .nl-app textarea::placeholder { color: var(--strip); }
+.nl-app input:focus-visible, .nl-app select:focus-visible, .nl-app textarea:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.nl-app code, .nl-app pre, .nl-app .font-mono { font-family: var(--mono); font-variant-ligatures: none; }
+.nl-app .font-serif { font-family: var(--font-manrope), system-ui, sans-serif; font-weight: 400; }
+@media (prefers-reduced-motion: reduce) { .nl-app *, .nl-app *::before, .nl-app *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+/* contain wide children: grid tracks must be allowed to shrink, tables scroll inside their own wrapper */
+.nl-app .bp-app-stack { grid-template-columns: minmax(0, 1fr); }
+.nl-dash-main { min-width: 0; }
+.nl-dash-main > * { min-width: 0; }
+.nl-app pre { overflow-x: auto; max-width: 100%; }
+.nl-app .bp-app-code { overflow-x: auto; max-width: 100%; border: 0; border-left: 1px solid var(--line-strong); border-radius: 0; background: transparent; }
+.nl-app p, .nl-app li, .nl-app dd { overflow-wrap: anywhere; }
+.nl-app .bp-app-table th { background: transparent; font-variant-caps: normal; letter-spacing: .01em; font-size: 12.5px; color: var(--strip); }
+.nl-app .bp-app-table tbody tr:hover { background: rgba(255, 255, 255, .04); }
+.nl-app .bp-app-table-wrap.bp-plate { border-bottom: 1px solid var(--line-strong); }

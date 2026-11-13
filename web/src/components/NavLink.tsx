@@ -21,7 +21,7 @@ export function NavLink({ href, children }: NavLinkProps) {
         (pathname.startsWith(href + "/") && pathname !== "/mandates/new");
 
   return (
-    <Link href={href} aria-current={isActive ? "page" : undefined} className="bp-app-link">
+    <Link href={href} aria-current={isActive ? "page" : undefined} className="nl-dash-link">
       {children}
     </Link>
   );

@@ -58,8 +58,9 @@ export default function Home() {
           ))}
         </ul>
         <p className="mt-5 max-w-[62ch] text-xs leading-relaxed text-bp-muted">
-          Status: specification and spike stage. The contract is not deployed yet, so these
-          behaviors are design goals, not verified results.
+          Status: the contract is deployed on NEAR testnet only, with test USDC. It has not been
+          audited by a third party. Recorded transactions can be re-checked on the{" "}
+          <Link href="/verify" className="bp-app-inline">verify page</Link>.
         </p>
       </section>
     </div>

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
-import { Nav } from "@/components/Nav";
+import { useState, useEffect, useCallback } from "react";
+import { DashShell } from "@/components/DashShell";
 import { EXPLORER_TX_BASE } from "@/lib/network";
 import {
   extractVerificationItems,
@@ -95,12 +95,8 @@ export default function VerifyPage() {
   }
 
   return (
-    <div className="blueprint-grid bp-app-shell min-h-screen">
-      <Suspense fallback={<header className="bp-app-nav" style={{ height: "3.75rem" }} />}>
-        <Nav />
-      </Suspense>
-
-      <main className="bp-app-main">
+    <DashShell>
+      <>
         <header className="bp-app-head">
           <div>
             <span className="bp-chapter-label">Verification</span>
@@ -201,7 +197,7 @@ export default function VerifyPage() {
                             title={`View ${item.txHash} on NearBlocks`}
                           >
                             <span>{shortenHash(item.txHash)}</span>
-                            <span aria-hidden="true">&nearr;</span>
+                            <span aria-hidden="true">↗</span>
                           </a>
                         </div>
                       </th>
@@ -296,7 +292,7 @@ export default function VerifyPage() {
             <p>Explorer fallback: https://testnet.nearblocks.io/txns/{SAMPLE_TX}</p>
           </div>
         </section>
-      </main>
-    </div>
+      </>
+    </DashShell>
   );
 }
