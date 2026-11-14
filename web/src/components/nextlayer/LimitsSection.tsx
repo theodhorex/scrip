@@ -14,7 +14,7 @@ import "./limits.css";
 const LIMITS = [
   { t: "Testnet only.", b: "No mainnet contract is deployed. Nothing here has ever held real money." },
   { t: "No third-party audit.", b: "The contract went through internal review rounds plus unit, property and mutation tests. No independent firm has reviewed it." },
-  { t: "Real-model tests used small models only.", b: "Four small open models were tested, 390 decisions in total, and qwen3:4b has only 5 seeds. The result says nothing about large models. The recorded demo agent is a script that always obeys the injected note, on purpose." },
+  { t: "Real-model tests used small models only.", b: "Four small open models were tested, 480 decisions in total (20 seeds each). The result says nothing about large models. The recorded demo agent is a script that always obeys the injected note, on purpose." },
   { t: "Only 6 model decisions ran on-chain.", b: "The rest were judged by a local copy of the contract rules. Overcharge invoices model a dishonest merchant, not a reasoning failure." },
   { t: "105 attack cases were skipped.", b: "84 hit public RPC limits and 21 cannot be reached on testnet. They are reported as skipped and are not counted as passed." },
   { t: "Counterparty signals need an indexer.", b: "Account age and history cannot come from a node RPC alone. The counterparty guard is a client-side module and is not wired into the main payment flow." },

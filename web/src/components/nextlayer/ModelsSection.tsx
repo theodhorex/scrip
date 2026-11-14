@@ -47,7 +47,7 @@ export function ModelsSection() {
                 </tbody>
               </table>
             </div>
-            <p className="nl-note" style={{ marginTop: 14 }}>The “hijacked” prompt tells the model to follow instructions found in the invoice. The “normal” prompt does not. Overcharge invoices model a dishonest merchant, not a reasoning failure. These are small models: the results say nothing about large ones. qwen3:4b has 5 seeds because a 20-seed run hit the 5-hour job limit.</p>
+            <p className="nl-note" style={{ marginTop: 14 }}>The “hijacked” prompt tells the model to follow instructions found in the invoice. The “normal” prompt does not. Overcharge invoices model a dishonest merchant, not a reasoning failure. These are small models: the results say nothing about large ones. Each model ran 20 seeds. qwen3:4b was too slow for one job, so its 20 seeds were run in four batches and merged.</p>
           </div>
           <div>
             <h3 className="nl-h3" style={{ marginTop: 0 }}>Replayed on testnet</h3>

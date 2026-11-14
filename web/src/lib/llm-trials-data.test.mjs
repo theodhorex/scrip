@@ -27,13 +27,15 @@ test("groups per model and counts injected by prompt", () => {
   assert.equal(s[1].broken, 1);
 });
 
-test("real data: 390 trials, four models", () => {
+test("real data: 480 trials, four models, 20 seeds each", () => {
   const s = summarizeTrials(LLM_TRIALS);
-  assert.equal(LLM_TRIALS.length, 390);
+  assert.equal(LLM_TRIALS.length, 480);
   assert.equal(s.length, 4);
-  assert.equal(s.reduce((n, m) => n + m.total, 0), 390);
-  assert.equal(s.find((m) => m.model === "qwen3:4b")?.total, 30);
-  for (const m of s) if (m.model !== "qwen3:4b") assert.equal(m.total, 120);
+  assert.equal(s.reduce((n, m) => n + m.total, 0), 480);
+  for (const m of s) {
+    assert.equal(m.total, 120);
+    assert.equal(m.seeds, 20);
+  }
 });
 
 test("real data: label counts add up per model", () => {

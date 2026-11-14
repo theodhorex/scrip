@@ -20,5 +20,5 @@ export const VERIFIED_STATS: ReadonlyArray<{ value: string; label: string; sourc
   { value: `${v.FAIL} / ${v.BREACH}`, label: "failed / breached", source: `${v.SKIPPED} cases were skipped, reported as skipped, not as passed` },
   { value: `${((MUTATION.caught / MUTATION.viable) * 100).toFixed(1)}%`, label: "mutants caught", source: `contracts/scrip/MUTATION.md: ${MUTATION.caught} of ${MUTATION.viable} viable, ${MUTATION.mutants} generated` },
   { value: String(CONTRACT_TESTS), label: "contract tests pass", source: "CI, contract job" },
-  { value: String(LLM_TRIALS.length), label: "real model decisions", source: "results/llm/, 4 small models" },
+  { value: String(LLM_TRIALS.length), label: "real model decisions", source: "results/llm/, 4 small models, 20 seeds each, as of 14 Nov 2026" },
 ];
