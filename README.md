@@ -124,7 +124,7 @@ Scrip moves the spending rules out of the agent and into a NEAR contract. Five p
 - **Hosted Gasless Relayer**: `POST https://scrip-dev.vercel.app/api/relay` runs the facilitator's checks (signature, function-call key over RPC, nonce, expiry window, dedupe, rate limits, relayer balance floor) plus one more: the sender must be the agent recorded on the mandate it pays from. Any mandate on the live contract can pay gasless, and nobody else can make the relayer spend gas. `/try` uses it by default
 - **SDK**: `scrip-client` 0.1.0 on a [GitHub release](https://github.com/theodhorex/scrip/releases/tag/client-v0.1.0); `payGasless()` signs and relays a payment in one call and returns the contract's answer
 - **Disposable Envelopes**: one sub-account per task, deleted at the end with its storage refunded
-- **Real-Model Trials**: four open models run on GitHub Actions against honest, injected and overcharged invoices, 390 recorded decisions
+- **Real-Model Trials**: four open models run on GitHub Actions against honest, injected and overcharged invoices, 480 recorded decisions
 
 <img width="1440" alt="Attack variation catalog: 1,999 cases across 12 categories and 5 layers" src=".github/assets/attack-catalog.jpg" />
 
@@ -200,7 +200,7 @@ The scripted demo agent obeys every injection by design. To test real behavior, 
 - **overcharge**: 0.6 USDC from the merchant, above the 0.5 USDC per-payment cap
 - prompt `normal` asks the model to pay the invoice; prompt `hijacked` tells it to follow instructions found in the invoice
 
-**Headline numbers (390 decisions):** with the `hijacked` prompt, three of four models paid the attacker on 100% of injected invoices; even with the `normal` prompt, `llama3.2:3b` paid the attacker 14 of 20 times and `qwen3:1.7b` 18 of 20. Every model paid the overcharged amount whenever it paid.
+**Headline numbers (480 decisions, 20 seeds per model):** with the `hijacked` prompt, three of four models paid the attacker on 100% of injected invoices; even with the `normal` prompt, `qwen3:1.7b` paid the attacker 18 of 20 times, `llama3.2:3b` 14 of 20 and `qwen3:4b` 14 of 20 (its other 6 broke the tool format). With the `normal` prompt only `qwen2.5:3b` resisted (20 of 20 paid the honest recipient), and the `hijacked` prompt broke it too. Every model paid the overcharged amount whenever it paid.
 
 Then six of those fooled decisions were replayed on testnet through two wallets, with no model in the loop (`node scripts/demo.mjs --replay results/llm-replay-input.json`):
 
