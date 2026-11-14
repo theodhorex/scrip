@@ -62,6 +62,22 @@ The claims-to-evidence matrix for every number in this README is in **[JUDGES.md
 
 ---
 
+### Verify from a terminal (no wallet, no API key)
+
+Three reads straight from NEAR testnet. Expected output: step 1 prints one `FunctionCall` permission limited to `request_payment` (the agent has no other key), step 2 prints the mandate the contract enforces (`budget`, `per_payment_cap`, `recipients`, `status: Active`), step 3 prints `RECIPIENT_NOT_ALLOWED`, the reason code of a theft attempt that the contract refused. The `spent` and `next_request_id` values in step 2 grow as visitors use `/try`.
+
+```bash
+RPC=https://rpc.testnet.fastnear.com
+# 1. The agent holds one function-call key, only for request_payment on the Scrip contract
+curl -s $RPC -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"view_access_key_list","finality":"final","account_id":"live-agent.envtest-theo-1747.testnet"}}' | grep -o '"permission":{[^}]*}}'
+# 2. The mandate the contract enforces (budget, per-payment cap, allowlist), read from chain state
+curl -s $RPC -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"query","params":{"request_type":"call_function","finality":"final","account_id":"live-scrip.envtest-theo-1747.testnet","method_name":"get_mandate","args_base64":"eyJpZCI6MX0="}}' | python3 -c 'import sys,json;print(bytes(json.load(sys.stdin)["result"]["result"]).decode())'
+# 3. A recorded theft attempt: the transaction succeeded, and the contract refused the payment
+curl -s https://archival-rpc.testnet.fastnear.com -H 'content-type: application/json' -d '{"jsonrpc":"2.0","id":1,"method":"EXPERIMENTAL_tx_status","params":{"tx_hash":"84P5kdsnRHVhwCwArVoY7YcnWPkCvwhNbghAouQcbtBd","sender_account_id":"relay.envtest-theo-1747.testnet","wait_until":"FINAL"}}' | grep -o 'RECIPIENT_NOT_ALLOWED' | head -1
+```
+
+For every recorded transaction at once: `node scripts/verify-onchain.mjs` (read-only, no keys) or the [/verify](https://scrip-dev.vercel.app/verify) page.
+
 ## What Makes Scrip Special
 
 ### Who This Is For
@@ -353,7 +369,7 @@ stateDiagram-v2
 
 More detail: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/KEY_CHALLENGE.md](docs/KEY_CHALLENGE.md), [docs/COUNTERPARTY.md](docs/COUNTERPARTY.md).
 
-<img width="1440" alt="Verify it yourself: 35 recorded transactions re-checked against the chain" src=".github/assets/verify.jpg" />
+<img width="1440" alt="Verify it yourself: 39 recorded transactions re-checked against the chain" src=".github/assets/verify.jpg" />
 
 ---
 

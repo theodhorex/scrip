@@ -6,6 +6,19 @@ Demo video (about 100 seconds): https://x.com/0xnoxxs/status/2121705644021653897
 
 All offline verification commands run on a fresh clone with Node.js 22.18+ (Node 26 in CI) and Rust installed, without network connectivity or private keys. Commands that query the public blockchain or download external sandbox binaries are explicitly labeled `(needs network)`.
 
+## Start here (3 minutes)
+
+| # | Do | See |
+|---|---|---|
+| 1 | Open https://scrip-dev.vercel.app/try and press a "steal" button (stranger, too much, skip the guardian) | the attempt is refused with a reason code such as `RECIPIENT_NOT_ALLOWED`; only the allowed payment goes through |
+| 2 | Run the three `curl` commands in the README section "Verify from a terminal" | one function-call key limited to `request_payment`, the live mandate, and a recorded refusal |
+| 3 | `node scripts/verify-onchain.mjs` (Node 20+, no install, no keys) | `51 verified, 0 mismatched, 0 unverifiable` |
+| 4 | Open https://scrip-dev.vercel.app/verify | `39 of 39` recorded claims re-read from the chain |
+| 5 | `cd web && node --test src/lib/ tests/` | `tests 205, pass 205, fail 0` |
+| 6 | `node scripts/llm-summary.mjs` | per-model table of 480 recorded decisions from four small models |
+
+What is deliberately not claimed is listed at the end of this file.
+
 ## Claims to Evidence Matrix
 
 | # | Claim | Command to Verify | Expected Output | Evidence / Source File |
