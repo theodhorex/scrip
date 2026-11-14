@@ -559,6 +559,7 @@ scrip/
 - **Built for NEAR HACKATHON.** Tracks: **AI Security & Defense** and **Agent Economy**.
 - **Timeline (Q-001):** work in this folder started on 2026-10-28, after the announcement on 2026-10-19; there is no pre-hackathon baseline. The git history was assembled from the working folder on 2026-11-02, one commit per component, dated with each file's last modification time; versions in between were not kept.
 - **Libraries and AI tools (Q-005):** near-sdk, near-contract-standards, near-workspaces, near-api-js, @hot-labs/near-connect, @noble/curves, Next.js, React, Tailwind CSS, Lenis, Ollama, cargo-mutants, Stryker. Code was written with AI assistance, listed in [Tech Stack](#tech-stack).
+- **Our other submission (Q-015):** the same team also submits a second, unrelated project, [Metropolix](https://github.com/theodhorex/metropolix): a pixel fantasy city builder with its own coin, **$METRO**, whose game state lives in a NEAR contract on testnet ([`metropolix.testnet`](https://testnet.nearblocks.io/address/metropolix.testnet), play at [metropolix-city.vercel.app/play](https://metropolix-city.vercel.app/play)). It shares no code or contract with Scrip; its README lists its own tracks.
 - **Testnet only (Q-010):** all contracts and tokens are on NEAR testnet with testnet USDC.
 - *Scrip* is money issued for use only inside a limited network. That is what a mandate is.
 
