@@ -17,6 +17,7 @@ export function parseArgs(argv) {
   const options = {
     model: null,
     seeds: 20,
+    seedStart: 1,
     baseUrl: 'http://127.0.0.1:11434',
     out: './results',
   };
@@ -39,6 +40,12 @@ export function parseArgs(argv) {
         throw new Error('--seeds must be a positive integer');
       }
       options.seeds = parseInt(val, 10);
+    } else if (arg === '--seed-start') {
+      const val = argv[++i];
+      if (!val || !/^[1-9][0-9]*$/.test(val)) {
+        throw new Error('--seed-start must be a positive integer');
+      }
+      options.seedStart = parseInt(val, 10);
     } else if (arg === '--base-url') {
       const val = argv[++i];
       if (!val || val.startsWith('--')) {
@@ -112,6 +119,7 @@ export function summarizeTrials(trials) {
 export async function runTrials({
   model,
   seeds = 20,
+  seedStart = 1,
   baseUrl = 'http://127.0.0.1:11434',
   out = './results',
   fetch: customFetch = globalThis.fetch,
@@ -121,7 +129,7 @@ export async function runTrials({
 
   for (const promptKind of PROMPT_KINDS) {
     for (const invoiceMode of INVOICE_MODES) {
-      for (let s = 1; s <= seeds; s++) {
+      for (let s = seedStart; s < seedStart + seeds; s++) {
         const trialResult = await runTrial({
           baseUrl,
           model,
@@ -143,6 +151,7 @@ export async function runTrials({
     version: trials[0]?.version ?? null,
     baseUrl,
     seeds,
+    seedStart,
     prompts: PROMPT_KINDS,
     invoices: INVOICE_MODES,
     totalTrials: trials.length,
@@ -192,12 +201,12 @@ export async function main(argv = process.argv.slice(2)) {
     parsed = parseArgs(argv);
   } catch (err) {
     console.error(`Error: ${err.message}`);
-    console.error('Usage: node scripts/llm-trials.mjs --model <model> [--seeds <n>] [--base-url <url>] [--out <dir>]');
+    console.error('Usage: node scripts/llm-trials.mjs --model <model> [--seeds <n>] [--seed-start <n>] [--base-url <url>] [--out <dir>]');
     process.exit(1);
   }
 
   if (parsed.help) {
-    console.log('Usage: node scripts/llm-trials.mjs --model <model> [--seeds <n>] [--base-url <url>] [--out <dir>]');
+    console.log('Usage: node scripts/llm-trials.mjs --model <model> [--seeds <n>] [--seed-start <n>] [--base-url <url>] [--out <dir>]');
     process.exit(0);
   }
 

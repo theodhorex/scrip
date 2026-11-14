@@ -171,3 +171,10 @@ test('runTrials executes full combinatorial matrix, writes JSON, and tolerates H
     rmSync(tmpDir, { recursive: true, force: true });
   }
 });
+
+test('parseArgs reads --seed-start (default 1) and rejects bad values', () => {
+  assert.equal(parseArgs(['--model', 'm']).seedStart, 1);
+  assert.equal(parseArgs(['--model', 'm', '--seeds', '5', '--seed-start', '6']).seedStart, 6);
+  assert.throws(() => parseArgs(['--model', 'm', '--seed-start', '0']), /seed-start/);
+  assert.throws(() => parseArgs(['--model', 'm', '--seed-start']), /seed-start/);
+});

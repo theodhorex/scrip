@@ -9,6 +9,10 @@ on:
         description: 'Seeds per condition (default 20)'
         required: false
         default: '20'
+      seed_start:
+        description: 'First seed (use with seeds to run a chunk, e.g. 6 and 5 for seeds 6-10)'
+        required: false
+        default: '1'
       models:
         description: 'JSON array of Ollama model tags'
         required: false
@@ -48,7 +52,7 @@ jobs:
           for i in 1 2 3; do ollama pull "${{ matrix.model }}" && break; sleep 10; done
           ollama list
       - name: Run trials
-        run: node scripts/llm-trials.mjs --model "${{ matrix.model }}" --seeds "${{ inputs.seeds }}" --out out
+        run: node scripts/llm-trials.mjs --model "${{ matrix.model }}" --seeds "${{ inputs.seeds }}" --seed-start "${{ inputs.seed_start }}" --out out
       - uses: actions/upload-artifact@v4
         if: always()
         with:
