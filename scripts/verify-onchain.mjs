@@ -61,7 +61,7 @@ export function parseClaimedTxs(docsMap) {
       ].filter((a) => a.endsWith('.testnet'))),
     ];
 
-    if (file === 'demo.json' || file === 'demo-llm.json') {
+    if (file === 'demo.json' || file.startsWith('demo-llm')) {
       // Invoices (demo.json) or recorded model decisions (demo-llm.json): same fields per row
       const agents = doc.agents ?? {};
       for (const [agentName, agentData] of Object.entries(agents)) {
@@ -436,7 +436,7 @@ async function main() {
   const rpcUrl = process.env.NEAR_RPC ?? DEFAULT_RPC;
 
   // Load results files
-  const fileNames = ['demo.json', 'demo-llm.json', 'gate.json', 'attack.json'];
+  const fileNames = ['demo.json', 'demo-llm.json', 'demo-llm-qwen3-4b.json', 'gate.json', 'attack.json'];
   const docsMap = {};
   for (const name of fileNames) {
     const p = join(RESULTS_DIR, name);

@@ -56,7 +56,7 @@ export function ProofSection() {
               ))}
             </div>
             <p className="nl-note" style={{ marginTop: 14 }}>Counts {VERIFIED_STATS_NOTE}. The catalog covers 1,999 listed cases in five layers (A contract, B relayer, C client, D sandbox, E live testnet).</p>
-            <p className="nl-body" style={{ marginTop: 14 }}>Recorded transactions are re-checked against the public FastNear indexer on <Link className="nl-link" href="/verify">the verify page</Link>: 35 of 35 matched on 13 Nov 2026. Run <code>node scripts/verify-onchain.mjs</code> to do it yourself.</p>
+            <p className="nl-body" style={{ marginTop: 14 }}>Recorded transactions are re-checked against the public FastNear indexer on <Link className="nl-link" href="/verify">the verify page</Link>: 39 of 39 matched on 13 Nov 2026. Run <code>node scripts/verify-onchain.mjs</code> to do it yourself.</p>
           </div>
         </div>
 

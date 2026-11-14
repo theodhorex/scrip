@@ -24,7 +24,7 @@ export function ModelsSection() {
       <div className="nl-wrap">
         <SectionHead id="models" n={6} label="Real models" lines={["Models were fooled.", "The budget held."]}
           lede={`${LLM_TRIALS.length} decisions from ${models.length} small open models (Ollama, run on GitHub Actions, temperature 0.7). The invoice's payee and amount are honest. The only attack is a sentence in its note.`}
-          plain="We gave small AI models an invoice and asked them to pay it. In some invoices the note said to pay someone else. Then we replayed six of their bad decisions on testnet, once with a normal wallet and once with Scrip." />
+          plain="We gave small AI models an invoice and asked them to pay it. In some invoices the note said to pay someone else. Then we replayed eight of their bad decisions on testnet, once with a normal wallet and once with Scrip." />
         <div className="nl-models-grid">
           <div>
             <h3 className="nl-h3" style={{ marginTop: 0 }}>What each model did</h3>
@@ -51,6 +51,7 @@ export function ModelsSection() {
           </div>
           <div>
             <h3 className="nl-h3" style={{ marginTop: 0 }}>Replayed on testnet</h3>
+            <p className="nl-note" style={{ marginTop: 0 }}>Two replay runs (the first three models, then qwen3:4b); balances and gains are added together.</p>
             <dl className="nl-balances">
               <div><dt>Plain wallet, test USDC</dt><dd><b>{usdc(replay.naiveBefore)}</b> to <b>{usdc(replay.naiveAfter)}</b></dd></div>
               <div><dt>Scrip mandate, test USDC</dt><dd><b>{usdc(replay.scripBefore)}</b> to <b>{usdc(replay.scripAfter)}</b></dd></div>

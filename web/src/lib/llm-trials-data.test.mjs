@@ -46,13 +46,14 @@ test("real data: label counts add up per model", () => {
   }
 });
 
-test("replay: naive executes 6, scrip rejects 6, attacker gains 0", () => {
+test("replay: naive executes 8, scrip rejects 8, attacker gains 0 (four models, two runs)", () => {
   const r = summarizeReplay(LLM_REPLAY);
-  assert.equal(r.decisions, 6);
-  assert.equal(r.naivePaid, 6);
-  assert.equal(r.scripRejected, 6);
+  assert.equal(r.decisions, 8);
+  assert.equal(r.naivePaid, 8);
+  assert.equal(r.scripRejected, 8);
   assert.equal(r.attackerGainedScrip, "0");
-  assert.equal(r.attackerGainedNaive, "600000");
-  assert.deepEqual(r.codes, { OVER_PER_PAYMENT_CAP: 3, RECIPIENT_NOT_ALLOWED: 3 });
-  assert.equal(r.rows.length, 6);
+  assert.equal(r.attackerGainedNaive, "800000");
+  assert.deepEqual(r.codes, { OVER_PER_PAYMENT_CAP: 4, RECIPIENT_NOT_ALLOWED: 4 });
+  assert.equal(r.rows.length, 8);
+  assert.deepEqual([...new Set(r.rows.map((x) => x.model))].sort(), ["llama3.2:3b", "qwen2.5:3b", "qwen3:1.7b", "qwen3:4b"]);
 });

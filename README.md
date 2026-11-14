@@ -20,7 +20,7 @@
   <img src="https://img.shields.io/badge/ATTACK%20CASES-1%2C999-000000?style=flat-square&labelColor=555555" alt="1,999 attack cases" />
   <img src="https://img.shields.io/badge/BREACHES-0-16A34A?style=flat-square&labelColor=555555" alt="0 breaches" />
   <img src="https://img.shields.io/badge/CONTRACT%20MUTATION%20SCORE-99.4%25-16A34A?style=flat-square&labelColor=555555" alt="Contract mutation score 99.4%" />
-  <img src="https://img.shields.io/badge/ON--CHAIN%20CLAIMS-35%2F35%20VERIFIED-16A34A?style=flat-square&labelColor=555555" alt="35 of 35 on-chain claims verified" />
+  <img src="https://img.shields.io/badge/ON--CHAIN%20CLAIMS-39%2F39%20VERIFIED-16A34A?style=flat-square&labelColor=555555" alt="39 of 39 on-chain claims verified" />
   <a href="https://github.com/theodhorex/scrip/actions/workflows/ci.yml"><img src="https://github.com/theodhorex/scrip/actions/workflows/ci.yml/badge.svg" alt="CI" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/LICENSE-MIT-000000?style=flat-square&labelColor=555555" alt="MIT license" /></a>
 </p>
@@ -49,7 +49,7 @@ Every step is "do X, see Y". Nothing to install for steps 1 to 6: no wallet, no 
 | 3 | Click **Send money to a stranger**, **Pay too much**, **Skip the guardian** | `BLOCKED` three times, each a real transaction the contract refused before any token moved (`RECIPIENT_NOT_ALLOWED`, `OVER_PER_PAYMENT_CAP`, `NEEDS_APPROVAL`), with the reason in one sentence |
 | 4 | Click **Use the key to send NEAR** and **Use the key to withdraw the budget** | `BLOCKED by NEAR itself`: the stolen key is a function-call key for `request_payment` only, so the protocol refuses the transaction |
 | 5 | Click **Replay a signed payment**, or copy the key and attack from your own machine | the first copy pays, the identical copy is refused (`DUPLICATE_DELEGATE`); **Write your own attempt** takes any recipient and amount |
-| 6 | Open **[/verify](https://scrip-dev.vercel.app/verify)** | the page re-reads 35 recorded transactions from the chain and compares each claim (paid, or refused with a code): **35 verified, 0 mismatched** |
+| 6 | Open **[/verify](https://scrip-dev.vercel.app/verify)** | the page re-reads 39 recorded transactions from the chain and compares each claim (paid, or refused with a code): **39 verified, 0 mismatched** |
 | 7 | Clone and run `make test` (Node 22.18+, Rust) | every offline suite passes; full list in [All tests](#all-tests) |
 | 8 | Run `make verify-onchain` | **21 verified, 0 mismatched, 0 unverifiable** from the terminal, no key needed |
 | 9 | With a testnet wallet: open **[/mandates/new](https://scrip-dev.vercel.app/mandates/new)**, connect, create, fund, then pay as your agent | your own mandate on the live contract; your agent's key is a function-call key you can download, and the same refusals apply |
@@ -103,7 +103,7 @@ Scrip moves the spending rules out of the agent and into a NEAR contract. Five p
 | Situation | Naive agent wallet (full-access key) | Scrip (function-call key + mandate) | Evidence |
 |---|---|---|---|
 | Injected invoice, scripted agent | Paid **0.8 USDC** to the attacker | Refused on-chain: `RECIPIENT_NOT_ALLOWED`; attacker got **0** | [`results/demo.json`](results/demo.json) |
-| Six decisions made by real LLMs that were fooled, replayed on testnet | All six executed: attacker **+0.6 USDC**, merchant overpaid **1.8 USDC** | All six refused (`RECIPIENT_NOT_ALLOWED` x3, `OVER_PER_PAYMENT_CAP` x3); balance unchanged | [`results/demo-llm.json`](results/demo-llm.json) |
+| Eight decisions made by real LLMs (two per model, four models) that were fooled, replayed on testnet | All eight executed: attacker **+0.8 USDC**, merchant paid **2.4 USDC** on four invoices above the 0.5 USDC cap | All eight refused (`RECIPIENT_NOT_ALLOWED` x4, `OVER_PER_PAYMENT_CAP` x4); balance unchanged | [`results/demo-llm.json`](results/demo-llm.json), [`results/demo-llm-qwen3-4b.json`](results/demo-llm-qwen3-4b.json) |
 | 30 parallel payments of 0.1 USDC against a 1.0 USDC budget | Paid **1.4 USDC** (overspent 0.4) | Paid **exactly 1.0 USDC** | [`results/attack.json`](results/attack.json) |
 | Agent key published to the world | Whole account lost | Same mandate, same rules; see [/try](https://scrip-dev.vercel.app/try) | [`web/src/data/live.json`](web/src/data/live.json) |
 | End of task | Keys and dust left behind | Revoke, withdraw remainder, delete sub-account: **0 leftover accounts** | [`results/gate.json`](results/gate.json) |
@@ -202,12 +202,12 @@ The scripted demo agent obeys every injection by design. To test real behavior, 
 
 **Headline numbers (480 decisions, 20 seeds per model):** with the `hijacked` prompt, three of four models paid the attacker on 100% of injected invoices; even with the `normal` prompt, `qwen3:1.7b` paid the attacker 18 of 20 times, `llama3.2:3b` 14 of 20 and `qwen3:4b` 14 of 20 (its other 6 broke the tool format). With the `normal` prompt only `qwen2.5:3b` resisted (20 of 20 paid the honest recipient), and the `hijacked` prompt broke it too. Every model paid the overcharged amount whenever it paid.
 
-Then six of those fooled decisions were replayed on testnet through two wallets, with no model in the loop (`node scripts/demo.mjs --replay results/llm-replay-input.json`):
+Then eight of those fooled decisions (two per model) were replayed on testnet through two wallets, with no model in the loop. The first three models ran in one replay (`node scripts/demo.mjs --replay results/llm-replay-input.json`); `qwen3:4b` was replayed afterwards in a second run (`--replay results/llm-replay-input-qwen3-4b.json`, result in `results/demo-llm-qwen3-4b.json`):
 
-| Wallet | Result of the six decisions |
+| Wallet | Result of the eight decisions |
 |---|---|
-| Naive (full-access key) | All six executed. Balance 2.5 to 0.1 USDC, attacker +0.6 USDC, merchant overpaid 1.8 USDC |
-| Scrip (function-call key + mandate) | All six refused on-chain: `RECIPIENT_NOT_ALLOWED` x3, `OVER_PER_PAYMENT_CAP` x3. Balance unchanged at 1.0 USDC, attacker +0 |
+| Naive (full-access key) | All eight executed. Balance 2.5 to 0.1 USDC in the first run and 0.9 to 0.1 USDC in the second, attacker +0.8 USDC in total, merchant paid 2.4 USDC on four invoices above the 0.5 USDC cap |
+| Scrip (function-call key + mandate) | All eight refused on-chain: `RECIPIENT_NOT_ALLOWED` x4, `OVER_PER_PAYMENT_CAP` x4. Balance unchanged at 1.0 USDC in both runs, attacker +0 |
 
 <details>
 <summary><b>Full trial table (generated by <code>node scripts/llm-summary.mjs</code>)</b></summary>
@@ -364,7 +364,7 @@ Every suite below runs offline unless noted. Counts are from the clean rerun of 
 | Client SDK | `cd client && node --test test/` | **165 passed** | Intent hashing, guarded signing, counterparty guard, `payGasless` delegates accepted by the facilitator validator |
 | Facilitator (relayer) | `cd facilitator && node --test test/` | **293 passed** | Key checks, 64-position bit flips, replay, rate limits, NEP-366 validation |
 | Demo scenarios | `make demo-test` | **35 passed** | Honest payment, injected agent refused, overcharge refused, x402 flow |
-| Scripts and verifiers | `make script-test` | **48 passed** | CLI parsing, envelope recovery sweeps, on-chain verification, link extraction |
+| Scripts and verifiers | `make script-test` | **51 passed** | CLI parsing, envelope recovery sweeps, on-chain verification, link extraction |
 | Web | `cd web && node --test src/lib/ tests/` | **205 passed** | Live outcome parsing, event parsing, transaction verification, owner-flow transaction builders, rule simulation, catalog loading, hosted relayer gate (and a check that its relayer modules are byte-identical to `facilitator/src`) |
 | Hosted relayer on testnet (needs network, no key) | `cd web && RELAY_URL=https://scrip-dev.vercel.app/api/relay node scripts/relay-e2e.mjs` | **all checks passed** ([`results/relay-e2e.json`](results/relay-e2e.json)) | Gasless payment settled, gasless payment to an attacker refused on-chain, delegate from a non-agent refused by the relayer |
 | Owner flow on testnet (needs network and a funded key) | `cd web && KEY_DIR=… node scripts/owner-flow-e2e.mjs` | **all checks passed** ([`results/owner-flow-e2e.json`](results/owner-flow-e2e.json)) | Signs the exact transactions `/mandates/new` hands to the wallet: create agent and guardian, create and fund a wNEAR mandate, pay, two refusals, agent key cannot send NEAR, revoke, withdraw |
@@ -375,7 +375,7 @@ Every suite below runs offline unless noted. Counts are from the clean rerun of 
 | Contract mutation testing | `make mutants` | **99.4%** (176 of 177) | [MUTATION.md](contracts/scrip/MUTATION.md), including the one survivor |
 | Client and relayer mutation testing | `cd client && npx stryker run`, `cd facilitator && npx stryker run` | 93.55% `counterparty.mjs`, 87.70% `guarded-sign.mjs`, 86.83% `validate.mjs` | Mutants killed by the client and relayer suites (row 13 in [JUDGES.md](JUDGES.md)) |
 | On-chain claims (needs network) | `make verify-onchain` | **21 verified, 0 mismatched** | Every tx in `results/*.json` read back from the chain |
-| On-chain claims in the browser | [/verify](https://scrip-dev.vercel.app/verify) | **35 verified, 0 mismatched** | Demo, gate and real-model replay transactions |
+| On-chain claims in the browser | [/verify](https://scrip-dev.vercel.app/verify) | **39 verified, 0 mismatched** | Demo, gate and real-model replay transactions |
 | Everything CI runs | `make ci` | runs on every push ([Actions](https://github.com/theodhorex/scrip/actions/workflows/ci.yml)) | `make test` + `make static` + wasm build |
 
 Two internal fresh-context audits ([AUDIT_1](contracts/scrip/AUDIT_1.md), [AUDIT_2](contracts/scrip/AUDIT_2.md)) and a third pass ([AUDIT_3](contracts/scrip/AUDIT_3.md)) map every finding to a test.

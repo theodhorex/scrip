@@ -2,6 +2,7 @@
 // Erasable TypeScript only, so `node --test` can import it directly.
 import trialsJson from "../data/llm-trials.json" with { type: "json" };
 import replayJson from "../data/demo-llm.json" with { type: "json" };
+import replayQwen4bJson from "../data/demo-llm-qwen3-4b.json" with { type: "json" };
 
 export type Trial = { model: string; prompt: string; invoiceMode: string; seed: number; label: string };
 export type Cond = { fooled: number; total: number };
@@ -74,4 +75,15 @@ export function summarizeReplay(r: ReplayInput) {
 }
 
 export const LLM_TRIALS = trialsJson.trials as ReadonlyArray<Trial>;
-export const LLM_REPLAY = replayJson as unknown as ReplayInput;
+// Two testnet replay runs (three models, then qwen3:4b) are combined: decisions are concatenated in the same order for both wallets,
+// wallet balances and attacker gains are summed, so the page reports one total over all four models.
+export function mergeReplays(runs: ReadonlyArray<ReplayInput>): ReplayInput {
+  const add = (a: string | number, b: string | number) => String(BigInt(a) + BigInt(b));
+  const side = (k: "naive" | "scrip") => runs.map((r) => r.agents[k]).reduce((acc, s) => ({
+    before: add(acc.before, s.before), after: add(acc.after, s.after),
+    decisions: [...acc.decisions, ...s.decisions],
+    attackerGained: add(acc.attackerGained, s.attackerGained),
+  }), { before: "0", after: "0", decisions: [] as ReadonlyArray<ReplayDecision>, attackerGained: "0" as string | number });
+  return { agents: { naive: side("naive"), scrip: side("scrip") } };
+}
+export const LLM_REPLAY = mergeReplays([replayJson, replayQwen4bJson] as unknown as ReplayInput[]);

@@ -1,5 +1,6 @@
 import demoJson from "../data/demo.json" with { type: "json" };
 import demoLlmJson from "../data/demo-llm.json" with { type: "json" };
+import demoLlmQwen4bJson from "../data/demo-llm-qwen3-4b.json" with { type: "json" };
 import gateJson from "../data/gate.json" with { type: "json" };
 
 export type TxClassificationType = "SUCCESS" | "FAILURE" | "UNVERIFIABLE";
@@ -526,6 +527,12 @@ function buildFacilitatorMap(): Map<string, string> {
     }
   }
 
+  if (Array.isArray(demoLlmQwen4bJson?.facilitatorLog)) {
+    for (const line of demoLlmQwen4bJson.facilitatorLog) {
+      if (typeof line === "string") parseLogLine(line);
+    }
+  }
+
   return map;
 }
 
@@ -594,16 +601,20 @@ export function extractVerificationItems(): VerificationItem[] {
   }
 
   // 3b. From demo-llm.json: recorded decisions of real models, re-executed on testnet by two wallets.
-  const llmAgents = demoLlmJson?.agents as
-    | Record<string, { decisions?: Array<{ model: string; label: string; paid: boolean; txHash: string | null; rejectionCode: string | null }> }>
-    | undefined;
+  type LlmAgents = Record<string, { decisions?: Array<{ model: string; label: string; paid: boolean; txHash: string | null; rejectionCode: string | null }> }>;
+  // Two replay runs: the first three models, then qwen3:4b (second run, ids carry a "b" suffix).
+  const llmRuns: Array<{ agents: LlmAgents | undefined; suffix: string }> = [
+    { agents: demoLlmJson?.agents as LlmAgents | undefined, suffix: "" },
+    { agents: demoLlmQwen4bJson?.agents as LlmAgents | undefined, suffix: "b" },
+  ];
+  for (const { agents: llmAgents, suffix } of llmRuns)
   for (const agentName of ["naive", "scrip"]) {
     const decisions = llmAgents?.[agentName]?.decisions;
     if (!Array.isArray(decisions)) continue;
     decisions.forEach((d, i) => {
       if (!d.txHash) return;
       items.push({
-        id: `llm-${agentName}-${i}-${d.label}`,
+        id: `llm-${agentName}-${i}-${d.label}${suffix}`,
         source: "demo-llm.json",
         label: `Model replay ${agentName === "naive" ? "Naive" : "Scrip"}: ${d.model} ${d.label} (${d.rejectionCode || "PAID"})`,
         txHash: d.txHash,
