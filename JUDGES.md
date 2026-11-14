@@ -2,6 +2,8 @@
 
 This document maps every protocol claim to a reproducible verification command, expected output, and source or artifact file.
 
+Demo video (about 100 seconds): https://x.com/0xnoxxs/status/2121705644021653897. Live demo: https://scrip-dev.vercel.app/try
+
 All offline verification commands run on a fresh clone with Node.js 22.18+ (Node 26 in CI) and Rust installed, without network connectivity or private keys. Commands that query the public blockchain or download external sandbox binaries are explicitly labeled `(needs network)`.
 
 ## Claims to Evidence Matrix

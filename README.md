@@ -11,6 +11,7 @@
 
 <p align="center">
   <a href="https://scrip-dev.vercel.app/try"><img src="https://img.shields.io/badge/TRY%20IT%20LIVE-SCRIP--DEV.VERCEL.APP-000000?style=flat-square&labelColor=555555" alt="Try it live" /></a>
+  <a href="https://x.com/0xnoxxs/status/2121705644021653897"><img src="https://img.shields.io/badge/DEMO%20VIDEO-WATCH%20ON%20X-000000?style=flat-square&labelColor=555555&logo=x&logoColor=white" alt="Demo video on X" /></a>
   <a href="https://github.com/theodhorex/scrip"><img src="https://img.shields.io/badge/SOURCE-GITHUB-000000?style=flat-square&labelColor=555555&logo=github&logoColor=white" alt="Source on GitHub" /></a>
   <a href="https://nearhackathon.com"><img src="https://img.shields.io/badge/BUILT%20AT-NEAR%20HACKATHON-000000?style=flat-square&labelColor=555555" alt="Built at NEAR HACKATHON" /></a>
   <img src="https://img.shields.io/badge/TRACK-AI%20SECURITY%20%26%20DEFENSE-E5484D?style=flat-square&labelColor=555555" alt="Track: AI Security and Defense" />
@@ -35,6 +36,9 @@ Scrip is for **anyone who wants an AI agent to pay for things without handing it
 > - Every payment is checked **on-chain** against the mandate: allowed recipients, a per-payment cap, a total budget, an expiry, and a guardian approval for large amounts.
 > - We gave four real language models a poisoned invoice. They were fooled up to 100% of the time. On testnet, the naive wallet paid the attacker; Scrip refused every one of those payments.
 > - **The live demo publishes the agent's key on purpose.** Take it. You can still only do what the mandate allows.
+
+<a href="https://x.com/0xnoxxs/status/2121705644021653897"><img width="1440" alt="Scrip demo video (about 100 seconds): watch it on X" src=".github/assets/demo-video.jpg" /></a>
+<p align="center"><sub>Demo video, about 100 seconds: <a href="https://x.com/0xnoxxs/status/2121705644021653897">watch it on X</a>.</sub></p>
 
 <img width="1440" alt="Scrip: try to steal from a live agent. Its key is public; only the payment its rules allow goes through, every theft attempt is refused on-chain." src=".github/assets/try.jpg" />
 
